@@ -70,6 +70,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float glassTargetX, glassTargetY;
     private boolean glassShown;
     private int lastFocused = 0;
+    /** Dock slot to land on when pressing Down from the top bar. */
+    private int lastDockFocused = 0;
+    /** Set in onResume: once the window has focus again, put focus back on the last tile. */
+    private boolean refocusPending;
     private float density;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -148,10 +152,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
-        // jump to a tile far below when there is nothing in that direction.
+        // jump to a tile far below when there is nothing in that direction. Down always goes to the dock.
         View.OnKeyListener pillKeys = (v, keyCode, event) -> {
             if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                focusTile(lastDockFocused);
+                return true;
+            }
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v.getId() == R.id.btnInputs) return true;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings;
         };
@@ -180,12 +188,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateWifiLabel();
         handler.postDelayed(minuteTick, MINUTE_MS);
 
-        // Return to the tile we left from, or the first one.
-        grid.post(() -> {
-            View focused = getCurrentFocus();
-            if (focused != null && grid.findContainingViewHolder(focused) != null) return;
+        // Return to the tile we left from, or the first one. The window restores its old focus (often a
+        // top-bar pill) when it regains focus, so this runs again from onWindowFocusChanged.
+        refocusPending = true;
+        grid.post(() -> focusTile(lastFocused));
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && refocusPending) {
+            refocusPending = false;
             focusTile(lastFocused);
-        });
+        }
     }
 
     @Override
@@ -204,6 +219,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
+        if (position < COLUMNS) lastDockFocused = position;
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
@@ -394,9 +410,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
 
-        // Compact: as wide as the Inputs pill (a touch wider so "HDMI 1" fits), hanging right below it.
-        int width = Math.max(anchor.getWidth(), (int) (150 * density));
-        final PopupWindow popup = new PopupWindow(panel, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        // Compact, hanging right below the pill; sized to its rows once they are added.
+        final PopupWindow popup = new PopupWindow(panel, ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));   // needed for Back to dismiss
         popup.setOutsideTouchable(true);
         popup.setAnimationStyle(0);
@@ -405,24 +421,41 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         boolean sawNonHdmi = false;
         if (tim != null) {
-            List<TvInputInfo> inputs = new ArrayList<>(tim.getTvInputList());
-            // HDMI ports first in port order, then AV and the rest.
-            Collections.sort(inputs, (a, b) -> {
+            List<TvInputInfo> ports = new ArrayList<>();
+            // Devices found over HDMI-CEC are separate inputs under their port; show them as the
+            // port's subtitle instead of extra rows.
+            java.util.Map<String, String> deviceOnPort = new java.util.HashMap<>();
+            for (TvInputInfo info : tim.getTvInputList()) {
+                if (!info.isPassthroughInput()) continue;
+                if (info.getParentId() == null) {
+                    ports.add(info);
+                } else if (!deviceOnPort.containsKey(info.getParentId())) {
+                    String name = cleanLabel(info.loadLabel(this));
+                    if (!name.isEmpty()) deviceOnPort.put(info.getParentId(), name);
+                }
+            }
+            // HDMI ports first in port order (HW4 < HW5 < HW6), then AV and the rest.
+            Collections.sort(ports, (a, b) -> {
                 boolean ha = a.getType() == TvInputInfo.TYPE_HDMI, hb = b.getType() == TvInputInfo.TYPE_HDMI;
                 if (ha != hb) return ha ? -1 : 1;
-                return String.valueOf(a.loadLabel(this)).compareToIgnoreCase(String.valueOf(b.loadLabel(this)));
+                if (a.getId().length() != b.getId().length()) return a.getId().length() - b.getId().length();
+                return a.getId().compareTo(b.getId());
             });
-            for (TvInputInfo info : inputs) {
-                if (!info.isPassthroughInput()) continue;
-                CharSequence l = info.loadLabel(this);
-                String label = l == null ? info.getId() : l.toString();
+            int hdmiNumber = 0;
+            for (TvInputInfo info : ports) {
                 boolean hdmi = info.getType() == TvInputInfo.TYPE_HDMI;
-                if (hdmi && !label.toUpperCase().contains("HDMI")) label = "HDMI " + label;
+                if (hdmi) hdmiNumber++;
+                String label = cleanLabel(info.loadLabel(this));
+                if (label.isEmpty()) label = hdmi ? "HDMI " + hdmiNumber : getString(R.string.av);
                 final String id = info.getId();
+                String device = deviceOnPort.get(id);
                 int state = tim.getInputState(id);
+                if (device != null && state != TvInputManager.INPUT_STATE_DISCONNECTED) {
+                    state = TvInputManager.INPUT_STATE_CONNECTED;
+                }
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, state,
+                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, device, state,
                         () -> open(new Intent(Intent.ACTION_VIEW).setDataAndType(
                                 TvContract.buildChannelUriForPassthroughInput(id), "vnd.android.cursor.item/channel")));
             }
@@ -430,12 +463,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Intent liveTv = liveTvPkg.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);
         if (liveTv != null) {
             if (rows.getChildCount() > 0) addSeparator(rows);
-            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), -1, () -> open(liveTv));
+            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), null, -1, () -> open(liveTv));
         }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
             return;
         }
+        // At least as wide as the pill, at most wide enough for a long device name.
+        panel.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+        popup.setWidth(Math.max(anchor.getWidth(), Math.min(panel.getMeasuredWidth(), (int) (320 * density))));
 
         // Drop in: fade and unfold from the top edge.
         panel.setAlpha(0f);
@@ -457,16 +493,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rows.addView(line, lp);
     }
 
-    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, int state, Runnable action) {
+    /** Input labels can be null or only whitespace/invisible characters; treat those as missing. */
+    private static String cleanLabel(CharSequence l) {
+        return l == null ? "" : l.toString().replaceAll("[\\p{Z}\\p{C}]+", " ").trim();
+    }
+
+    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String device,
+                             int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
         // This TV reports "standby" for every port whether or not something is plugged in, so only
-        // definite states are shown.
+        // definite states are shown. A device name found over HDMI-CEC replaces "Connected".
         if (state == TvInputManager.INPUT_STATE_CONNECTED) {
-            status.setText(R.string.connected);
+            status.setText(device != null ? device : getString(R.string.connected));
             dot.setVisibility(View.VISIBLE);
         } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {
             status.setText(R.string.not_connected);
