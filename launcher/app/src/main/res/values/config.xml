@@ -15,7 +15,7 @@
 
     <!-- Grid tiles shown first, right after the dock, in this order. Everything else follows A–Z. -->
     <string-array name="grid_order">
-        <item>com.gathin.tvtoday</item>                 <!-- Today (launcher/today) -->
+        <item>com.gathin.tv1400</item>                  <!-- 1400 (launcher/app1400) -->
         <item>com.apple.atve.androidtv.appletv</item>   <!-- Apple TV -->
         <item>com.sonyliv</item>                        <!-- Sony LIV -->
         <item>com.formulaone.production</item>          <!-- F1 TV -->

@@ -64,9 +64,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private GlassView glass;
     private TextView greeting;
     private TextView btnWifi, btnToday;
-    /** The Today app (its own APK): the moon pill opens it, and is hidden while it is not installed. */
-    static final String TODAY_APP = "com.gathin.tvtoday";
-    /** Back from the Today app opened by the moon: focus goes to the moon, not the last tile. */
+    /** The 1400 app (its own APK): the moon pill opens it, and is hidden while it is not installed. */
+    static final String TODAY_APP = "com.gathin.tv1400";
+    /** Back from the 1400 app opened by the moon: focus goes to the moon, not the last tile. */
     private boolean focusMoon;
     private SpringAnimation springX, springY;
     private float glassTargetX, glassTargetY;
@@ -201,7 +201,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View btnSettings = findViewById(R.id.btnSettings);
         btnToday = findViewById(R.id.btnToday);
         btnInputs.setOnClickListener(v -> showInputs());
-        // the moon: the Today app's normal launch; back on the moon when it closes
+        // the moon: the 1400 app's normal launch; back on the moon when it closes
         btnToday.setOnClickListener(v -> {
             Intent i = todayIntent();
             if (i == null) return;
@@ -271,7 +271,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.post(this::refocus);
     }
 
-    /** Back on the last tile, or on the moon pill when the Today app it opened just closed. */
+    /** Back on the last tile, or on the moon pill when the 1400 app it opened just closed. */
     private void refocus() {
         if (focusMoon) btnToday.requestFocus();
         else focusTile(lastFocused);
@@ -516,7 +516,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         showWifi(btnWifi.isFocused());
     }
 
-    /** The moon pill: icon only and square, with "Today" beside the moon while focused (as the Wi-Fi pill). */
+    /** The moon pill: icon only and square, with "1400" beside the moon while focused (as the Wi-Fi pill). */
     private void showTodayPill(boolean focused) {
         String want = focused ? getString(R.string.today) : "";
         if (!want.contentEquals(btnToday.getText())) btnToday.setText(want);

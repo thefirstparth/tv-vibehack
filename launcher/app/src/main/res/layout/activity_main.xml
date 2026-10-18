@@ -105,7 +105,7 @@
                 android:layout_marginBottom="6dp"
                 android:orientation="horizontal">
 
-                <!-- the Today app: icon only, "Today" beside the moon while focused; hidden when it is not installed -->
+                <!-- the 1400 app: icon only, "1400" beside the moon while focused; hidden when it is not installed -->
                 <TextView
                     android:id="@+id/btnToday"
                     style="@style/TopButton"
