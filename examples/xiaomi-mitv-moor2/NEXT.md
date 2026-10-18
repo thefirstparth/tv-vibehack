@@ -2,22 +2,27 @@
 
 Three parts, in this order (Part 1 is already decided). Times are caps, not estimates to stretch.
 
-## The 45-minute version (Parth, 2026-10-19): hard limits, these override the times below
+## The 60-minute version, no compromises (Parth, 2026-10-19): this overrides the times below
 
-| Step | Hard limit | Ends by | Cut to fit |
+Full rigour kept: the 5-round A/B, and every app tested from a fresh restart with playback proved.
+It fits because Part 1b (Mac) runs while Part 3 (TV) runs.
+
+| Time | On the TV | On the Mac | Hard limit |
 |---|---|---|---|
-| 1b: Right at a row's end (code, unit test, emulator, build) | 10 min | 0:10 | emulator check on rows 1–2 only |
-| 2: QA (A/B, key check, merge to `main`) | 12 min | 0:22 | A/B 2 alternating rounds each, not 5; evening word check skipped |
-| 3: Video lag | 20 min | 0:42 | one restart, then JioHotstar → Netflix → FanCode back to back, measuring Home after each (one run each); restart again only if an app causes lag; runs 4 and 5 (AI super-resolution, minimal post-processing) dropped |
-| Wrap-up: restart if needed, Home, commit, report | 3 min | 0:45 | |
+| 0:00–0:31 | Part 3: JioHotstar, Netflix, FanCode, each from a fresh restart (measure Home, play 60 s proved, measure) | Part 1b: row-end fix, unit test, emulator on every row, release build | TV 31 min, Mac 15 min |
+| 0:31–0:54 | Part 2: full A/B, 5 alternating rounds each after a restart, the keep rules | — | 23 min |
+| 0:54–0:58 | Key check (row wrap, dock, Inputs, newspaper pill, Settings, grid), install | Merge to `main` (PR) | 4 min |
+| 0:58–1:00 | Home; report | Commit, push | 2 min |
 
-At a limit, the step stops where it is; unused time carries forward, nothing is extended.
+Not in the 60 minutes: fix attempts for an app that still lags (AI super-resolution off in the menu,
+minimal post-processing for Home), about 12 min each. If one lags, report it; they are the next session.
+At a limit, the step stops where it is; nothing is extended.
 
 Start prompt:
 
 ```
-Start the plan in examples/xiaomi-mitv-moor2/NEXT.md, the 45-minute version, hard limits per step.
-Pull first. Follow CLAUDE.md's rules. Run Parts 1b, 2 and 3 in order; Part 1 is decided, skip it.
+Start the plan in examples/xiaomi-mitv-moor2/NEXT.md, the 60-minute version, hard limits per step.
+Pull first. Follow CLAUDE.md's rules. Part 1 is decided, skip it.
 Update me at each milestone with an ETA. If the TV is in use, ask before touching it.
 At the end: TV on Home, everything committed and pushed, a short report of what got fixed and what didn't.
 ```
