@@ -1,0 +1,44 @@
+# Xiaomi TV (MiTV-MOOR2, codename venom), Google TV on Android TV 11, firmware RTM5.220609.003.2674
+#
+# Apply:   TV_HOST=<tv ip> tools/disable.sh examples/xiaomi-mitv-moor2/debloat.txt
+# Undo:    TV_HOST=<tv ip> tools/restore.sh examples/xiaomi-mitv-moor2/debloat.txt com.google.android.apps.tv.launcherx
+# Everything is DISABLED, not uninstalled. Comment out any line you want to keep.
+# See the last section before replacing the stock launcher: on Google TV it needs one extra step.
+#
+# Deliberately kept: update services (com.xiaomi.mitv.updateservice, com.mitv.upgrader,
+# com.mitv.ABUpdateStatus), Google Assistant voice (com.google.android.katniss), Chromecast built-in
+# (com.google.android.apps.mediashell), Live TV (com.mitv.livetv*), Netflix, Play Services, Play Store,
+# and every media/DRM/player package (videoplayer, mediaexplorer, mimusic2, gallery, Dolby).
+# No Alexa package ships on this firmware.
+
+# Xiaomi telemetry
+com.miui.tv.analytics
+com.xiaomi.statistic
+
+# PatchWall and Mi content rows / promos
+com.mitv.tvhome.atv
+com.mitv.tvhome.oemtab                 # "Mi Home" tab in the Google TV top bar
+com.mitv.tvhome.michannel
+com.mitv.tvhome.mitvplus               # Mi TV+ ad-supported channels (not the Live TV tuner app)
+com.xm.webcontent
+
+# Xiaomi background services
+com.xiaomi.mitv.tvmanager              # "TV Manager" cleaner app
+com.mitv.milinkservice                 # Mi Cast, Chromecast still works
+com.xiaomi.mitv.smartshare             # Miracast screen mirroring
+com.xiaomi.wfdsinkhelperservice        # Miracast helper
+android.autoinstalls.config.xiaomi.amelie
+
+# Preloaded apps nobody asked for
+com.google.android.youtube.tvmusic
+com.google.android.play.games
+com.google.android.feedback
+com.xiaomi.mitv.manualhelp
+fusion.android.tv.demo                 # retail store demo
+
+# Stock Google TV launcher, replaced by launcher/ (apply only after installing it).
+# Left commented out: on this Google TV firmware, disabling launcherx makes setupwraith's
+# RecoveryActivity (HOME priority 1) win over any set-home-activity choice, and Home shows a black
+# screen. Uncomment BOTH lines together; restore.sh re-enables the component as well.
+# com.google.android.tungsten.setupwraith/.RecoveryActivity
+# com.google.android.apps.tv.launcherx
