@@ -92,6 +92,14 @@ Last resort: a factory reset. It wipes the disabled-package state, so every app 
    On a Mac without Homebrew they were installed to `~/Library/Java/jdk-17*` and
    `~/Library/Android/sdk`; with Homebrew see the main README.
 
+### Keep the signing key
+
+Debug builds are signed with `~/.android/debug.keystore` on the computer that built them. Keep a
+private copy of that file (never commit it). A build signed with a different key cannot update the
+installed launcher: it would have to be uninstalled first, which drops it as the Home app, so the
+Home setup above (set-home-activity, with setupwraith and launcherx disabled) would have to be
+done again.
+
 ### Rebuild and reinstall the launcher
 
 Don't run `launcher/build-and-install.sh` while `setupwraith` is enabled: it disables the stock

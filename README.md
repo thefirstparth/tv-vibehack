@@ -39,17 +39,55 @@ step with screenshots from the TV. If you'd rather do it by hand, the pieces are
 
 A small native Android TV home screen (`com.gathin.tvhome`), built for sets with 1 GB of RAM:
 
-- Pitch-black background, like Apple TV 4K.
-- A dock at the bottom in a lighter rounded band with the four apps you choose. The shelf above
-  shows the focused dock app's name in large type with an ambient glow sampled from its banner.
-  Press Down and the dock slides up to reveal the rest of your apps in a grid.
+- The "Horizon" background: a soft band of light behind the sport and weather lines that fades to
+  black well before the dock, in one of four colours by time of day (morning, day, evening, night),
+  with a faint edge of the same colour on top of the dock. It is drawn once into a small image and
+  used as the window's background, so the screen still draws one layer as with plain black; it
+  changes at most four times a day, never with focus, and never animates.
+- A dock at the bottom in a lighter rounded band with the four apps you choose. Press Down and the
+  dock slides up to reveal the rest of your apps in a grid. (The large app name above the dock and
+  the colour glow behind it were removed: the tile already shows the name, and the full-screen glow
+  was the GPU's heaviest job. Without them the home screen measured smoother than before.)
 - One translucent glass highlight springs from tile to tile. The focused tile lifts and shows its
   name.
 - Frosted pills top right: **Inputs** (a dropdown of HDMI ports, AV and Live TV), **Wi-Fi**
   (shows the network name) and **Settings**. Greeting, a large thin clock and the date top left,
   set in [Outfit](https://fonts.google.com/specimen/Outfit).
 - Deterministic D-pad navigation, last focused tile remembered, staggered entrance animation.
-  No blur, no video, no network, no background services.
+  Down from the top bar goes to the dock tile you were last on; pressing Home brings focus back
+  to the last tile even if you left from a top-bar button. The Inputs menu sizes itself to its
+  rows and shows a device found over HDMI-CEC (for example "Living room TV") on its port's row.
+- No blur, no video, no background services, and no network, with one opt-in exception below.
+
+### Sports and weather (optional)
+
+Above the dock, on plain black: what is live, just finished or next among the teams and players
+you follow (left, under the clock), and now, feels-like, high and low with at most one word or
+warning for three cities (right). The launcher reads it from a single feed of your own (the
+companion site's `/api/live/tv`), which decides what to show; the TV only words the times and
+draws the lines.
+
+- **Off unless you set it.** Put the feed's address in `launcher/local.properties` (not committed,
+  as the address may be private):
+
+  ```
+  tv.feedUrl=https://your-site.example/api/live/tv
+  ```
+
+  Empty or missing, the launcher never touches the network and looks exactly as before.
+- **One request each time the home screen appears** (TV on, Home, back from an app), on a
+  background thread with a 5 second timeout and no retries. Never on a timer, never while you
+  watch: no services, no WorkManager. Every minute, with the clock, the times are worded again from
+  what is already on screen ("Tonight 12:30 am   IN 17H", then "Started"), without a request.
+- **When the site does not answer,** the last good copy is shown with "as of h:mm am" in amber, and
+  anything whose start has passed is dropped unless it was live less than ten minutes before.
+- Lines never end in "…": a long line steps down to shorter names, then the competition's short
+  form, then without it.
+- One accent: the competition's colour on its name and on the countdown pill
+  (`accent_colours` in `config.xml`). Everything else is white.
+
+The Inputs menu can name a port: `input_names` in `config.xml` (`HDMI 2|Xbox`) shows "Xbox" with
+"HDMI 2" beside it, and a games console gets a controller icon.
 
 Configure it in [`launcher/app/src/main/res/values/config.xml`](launcher/app/src/main/res/values/config.xml):
 dock order, hidden apps, Live TV package and columns. Build and install with

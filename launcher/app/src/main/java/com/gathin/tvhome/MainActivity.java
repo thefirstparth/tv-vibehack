@@ -69,6 +69,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Set in onResume: once the window has focus again, put focus back on the last tile. */
     private boolean refocusPending;
     private float density;
+    /** Sports and weather above the dock (off when no feed address is set). */
+    private HomeLines homeLines;
+    /** The window's background, by time of day; drawn once per look. */
+    private final HorizonBackground horizon = new HorizonBackground();
+    private DockDecoration dock;
+    /** Names for inputs (config input_names), by the port's label. */
+    private final java.util.Map<String, String> inputNames = new java.util.HashMap<>();
+    private static final java.util.regex.Pattern CONSOLE = java.util.regex.Pattern.compile("xbox|playstation|ps[45]|switch|nintendo", java.util.regex.Pattern.CASE_INSENSITIVE);
+    /** A look asked for in the launch intent ("--es look night"), for screenshots; any plain Home clears it. */
+    private HorizonBackground.Look forcedLook;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable minuteTick = new Runnable() {
@@ -76,6 +86,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateWifiLabel();
+            homeLines.tick();
+            updateHorizon();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -87,17 +99,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         COLUMNS = Math.max(1, getResources().getInteger(R.integer.columns));
         liveTvPkg = getString(R.string.live_tv_package).trim();
+        for (String pair : getResources().getStringArray(R.array.input_names)) {
+            String[] kv = pair.split("\\|");
+            if (kv.length == 2) inputNames.put(kv[0].trim(), kv[1].trim());
+        }
 
         root = findViewById(R.id.root);
         glass = findViewById(R.id.glass);
         greeting = findViewById(R.id.greeting);
+        homeLines = new HomeLines(this, density);
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
         grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
-        grid.addItemDecoration(new DockDecoration(COLUMNS, density));
+        dock = new DockDecoration(COLUMNS, density);
+        grid.addItemDecoration(dock);
+        forcedLook = HorizonBackground.Look.named(getIntent().getStringExtra("look"));
+        updateHorizon();
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS);
@@ -111,6 +131,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
+            // the sports and weather lines: centred between the top bar and the dock band's top edge
+            Rect top = new Rect(0, 0, 0, findViewById(R.id.leftBlock).getHeight()), g = new Rect(0, 0, 0, 0);
+            root.offsetDescendantRectToMyCoords(findViewById(R.id.leftBlock), top);
+            root.offsetDescendantRectToMyCoords(grid, g);
+            homeLines.frame(top.bottom, g.top + want);
         });
 
         // Keep the glass glued to its tile while the grid scrolls.
@@ -169,12 +194,30 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.scheduleLayoutAnimation();
         updateGreeting();
         updateWifiLabel();
+        updateHorizon();
+        homeLines.tick();      // the times worded for now, from the copy already here
+        homeLines.refresh();   // and one request for a fresh copy
         handler.postDelayed(minuteTick, MINUTE_MS);
 
         // Return to the tile we left from, or the first one. The window restores its old focus (often a
         // top-bar pill) when it regains focus, so this runs again from onWindowFocusChanged.
         refocusPending = true;
         grid.post(() -> focusTile(lastFocused));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        forcedLook = HorizonBackground.Look.named(intent.getStringExtra("look"));
+    }
+
+    /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
+    private void updateHorizon() {
+        HorizonBackground.Look look = horizon.due(forcedLook);
+        if (look == null) return;
+        getWindow().setBackgroundDrawable(horizon.draw(getResources(), look));
+        dock.setTopEdge(HorizonBackground.edge(look));
+        grid.invalidate();
     }
 
     @Override
@@ -203,6 +246,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         if (position < COLUMNS) lastDockFocused = position;
+        homeLines.setAway(position >= COLUMNS);
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
@@ -389,7 +433,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 }
                 if (!hdmi && rows.getChildCount() > 0 && !sawNonHdmi) addSeparator(rows);
                 if (!hdmi) sawNonHdmi = true;
-                addInputRow(rows, popup, hdmi ? R.drawable.ic_input : R.drawable.ic_av, label, device, state,
+                // a port with its own name (config input_names: "HDMI 2|Xbox") reads as that, the port beside it
+                String named = inputNames.get(label);
+                int icon = named != null && CONSOLE.matcher(named).find() ? R.drawable.ic_game : hdmi ? R.drawable.ic_input : R.drawable.ic_av;
+                addInputRow(rows, popup, icon, named != null ? named : label, named != null ? label : null, device, state,
                         () -> open(new Intent(Intent.ACTION_VIEW).setDataAndType(
                                 TvContract.buildChannelUriForPassthroughInput(id), "vnd.android.cursor.item/channel")));
             }
@@ -397,7 +444,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Intent liveTv = liveTvPkg.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);
         if (liveTv != null) {
             if (rows.getChildCount() > 0) addSeparator(rows);
-            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), null, -1, () -> open(liveTv));
+            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), null, null, -1, () -> open(liveTv));
         }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();
@@ -432,7 +479,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return l == null ? "" : l.toString().replaceAll("[\\p{Z}\\p{C}]+", " ").trim();
     }
 
-    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String device,
+    private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String port, String device,
                              int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
@@ -441,7 +488,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View dot = row.findViewById(R.id.dot);
         // This TV reports "standby" for every port whether or not something is plugged in, so only
         // definite states are shown. A device name found over HDMI-CEC replaces "Connected".
-        if (state == TvInputManager.INPUT_STATE_CONNECTED) {
+        if (port != null) {
+            // a named port: the port's own label on the right, with the dot when something is on
+            status.setText(port);
+            dot.setVisibility(state == TvInputManager.INPUT_STATE_CONNECTED ? View.VISIBLE : View.GONE);
+        } else if (state == TvInputManager.INPUT_STATE_CONNECTED) {
             status.setText(device != null ? device : getString(R.string.connected));
             dot.setVisibility(View.VISIBLE);
         } else if (state == TvInputManager.INPUT_STATE_DISCONNECTED) {

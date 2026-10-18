@@ -33,6 +33,26 @@
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
     <string name="live_tv_package" translatable="false">com.mitv.livetv</string>
 
+    <!-- The one accent on the home screen: a competition's colour on its name in the sport label and on the countdown
+         pill. Matched by the competition's name (as the feed sends it, full or short), then by sport; else white. -->
+    <string-array name="accent_colours">
+        <item>La Liga|#FF8A5C</item>
+        <item>Champions League|#8FB4FF</item>
+        <item>UCL|#8FB4FF</item>
+        <item>Copa del Rey|#FFB27A</item>
+        <item>football|#FF8A5C</item>
+        <item>f1|#FF6B6B</item>
+        <item>cricket|#6FB8FF</item>
+        <item>nba|#FFC94D</item>
+        <item>tennis|#CDE86A</item>
+        <item>intl|#4FD1A5</item>
+    </string-array>
+
+    <!-- Names for the TV's inputs in the Inputs menu: "port label|name" (the port moves to the right of the row). -->
+    <string-array name="input_names">
+        <item>HDMI 2|Xbox</item>
+    </string-array>
+
     <!-- Tiles per row in the grid; the dock always has this many slots. -->
     <integer name="columns">4</integer>
 </resources>

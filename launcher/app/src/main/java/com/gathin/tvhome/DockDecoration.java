@@ -16,6 +16,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final float density;
     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** The top edge in the Horizon background's colour (set once per look, never by focus). */
+    private final Paint topEdge = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
 
     DockDecoration(int dockSize, float density) {
@@ -25,6 +27,13 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         edge.setStyle(Paint.Style.STROKE);
         edge.setStrokeWidth(density);
         edge.setColor(0x1FFFFFFF);
+        topEdge.setStrokeWidth(1f);
+        topEdge.setColor(0);
+    }
+
+    /** The top edge's colour; the caller redraws the grid once. */
+    void setTopEdge(int color) {
+        topEdge.setColor(color);
     }
 
     @Override
@@ -63,5 +72,6 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         float radius = 26 * density;
         c.drawRoundRect(rect, radius, radius, band);
         c.drawRoundRect(rect, radius, radius, edge);
+        if (topEdge.getColor() != 0) c.drawLine(rect.left + radius, rect.top + 0.5f, rect.right - radius, rect.top + 0.5f, topEdge);
     }
 }

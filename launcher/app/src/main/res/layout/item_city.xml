@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One city's weather column (HomeLines.java): right-aligned, the columns equally wide. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="42dp"
+    android:orientation="vertical"
+    android:gravity="end">
+
+    <TextView android:id="@+id/city" style="@style/CityName" />
+    <TextView android:id="@+id/temp" style="@style/CityTemp" />
+    <TextView android:id="@+id/feels" style="@style/CitySmall" />
+    <TextView android:id="@+id/hilo" style="@style/CitySmall" />
+    <TextView android:id="@+id/word" style="@style/CityWord" />
+</LinearLayout>
