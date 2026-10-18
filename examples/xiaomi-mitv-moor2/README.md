@@ -124,8 +124,9 @@ Last resort: a factory reset. It wipes the disabled-package state, so every app 
 
 ### Keep the signing key
 
-Debug builds are signed with `~/.android/debug.keystore` on the computer that built them. Keep a
-private copy of that file (never commit it). A build signed with a different key cannot update the
+Both the release builds that go on the TV and debug builds are signed with `~/.android/debug.keystore`
+on the computer that built them. Keep a private copy of that file (never commit it). A build signed
+with a different key cannot update the
 installed launcher: it would have to be uninstalled first, which drops it as the Home app, so the
 Home setup above (set-home-activity, with setupwraith and launcherx disabled) would have to be
 done again.
@@ -139,11 +140,15 @@ launcher straight away, which gives a black Home screen on this TV. Install by h
 export JAVA_HOME=$(ls -d ~/Library/Java/jdk-17*)/Contents/Home ANDROID_HOME=~/Library/Android/sdk
 cd launcher
 [ -f local.properties ] || echo "sdk.dir=$ANDROID_HOME" > local.properties
-./gradlew assembleDebug
-../tools/venv/bin/python -I ../tools/b64push.py app/build/outputs/apk/debug/app-debug.apk /data/local/tmp/tvhome.apk
+./gradlew :app:assembleRelease
+../tools/venv/bin/python -I ../tools/b64push.py app/build/outputs/apk/release/app-release.apk /data/local/tmp/tvhome.apk
 ../tools/venv/bin/python -I ../tools/tv.py 'pm install -r /data/local/tmp/tvhome.apk'
 ../tools/venv/bin/python -I ../tools/tv.py 'rm -f /data/local/tmp/tvhome.apk'
 ```
+
+The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `pm install -r`
+`app1400/build/outputs/apk/release/app1400-release.apk`. Keep the APK that was on the TV in
+`backup/launcher-builds/` before installing a new one, so it can go straight back.
 
 ### Prompt for a new Claude session
 
@@ -151,6 +156,27 @@ cd launcher
 > `examples/xiaomi-mitv-moor2/README.md` first: it records what was done and how to undo it.
 > Connect with `tools/tv.py`, confirm the model with `--probe`, and check the live state against
 > that file before changing anything. Run one command per call and stop at the first error.
+
+## Open items (where this was left, 2026-10-18)
+
+Nothing here blocks using the TV. Pick up any of it later.
+
+- **System speed and memory tweaks:** pre-compiling the apps in the dock (`cmd package compile`),
+  0.5× system animations, and stopping rarely used apps running in the background
+  (`appops RUN_ANY_IN_BACKGROUND ignore`). They were planned with before/after measurements and undo
+  commands. If they aren't recorded under Current state, they haven't run yet. The "Background process
+  limit" developer option is deliberately not used: it closes the launcher too, so Home gets slower.
+- **The remote's Settings key** is still broken (see Current state, item 6). An accessibility service
+  that catches the key and opens Android TV Settings would fix it, but it would run all the time, so
+  it was left out. The Settings pill works.
+- **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
+  favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
+  DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).
+- **A before/after comparison against the stock Google TV home** (speed and memory) was offered and
+  never run.
+- **The personal days** (dates, greetings, colours) and the feed address live only in
+  `launcher/local.properties` on the Mac. They are not in git; recreate them there (format in the
+  main README) on a new computer.
 
 ## Lessons from this TV
 
