@@ -74,6 +74,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The window's background, by time of day; drawn once per look. */
     private final HorizonBackground horizon = new HorizonBackground();
     private DockDecoration dock;
+    private WifiBars wifiBars;
+    private String wifiName = "";
+    private boolean wifiIconOnly;
     /** Names for inputs (config input_names), by the port's label. */
     private final java.util.Map<String, String> inputNames = new java.util.HashMap<>();
     private static final java.util.regex.Pattern CONSOLE = java.util.regex.Pattern.compile("xbox|playstation|ps[45]|switch|nintendo", java.util.regex.Pattern.CASE_INSENSITIVE);
@@ -160,6 +163,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
+        // the bars as the pill's icon; the name comes and goes with the pill's focus
+        WifiBars bars = wifiBars = new WifiBars(density);
+        bars.setBounds(0, 0, bars.getIntrinsicWidth(), bars.getIntrinsicHeight());
+        btnWifi.setCompoundDrawablesRelative(bars, null, null, null);
+        btnWifi.setOnFocusChangeListener((v, focused) -> showWifi(focused));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
@@ -348,9 +356,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         greeting.setText(res);
     }
 
-    /** Shows the Wi-Fi network name on the button when we can read it, otherwise the connection type. */
+    /**
+     * The Wi-Fi pill: the signal's bars only, and the network's name only while the pill is focused. Offline and
+     * Ethernet are said in words at all times (no bars to show).
+     */
     private void updateWifiLabel() {
         String text = getString(R.string.wifi);
+        boolean wifi = false;
         try {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             Network net = cm != null ? cm.getActiveNetwork() : null;
@@ -363,6 +375,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = wm != null ? wm.getConnectionInfo() : null;
                 String ssid = info != null ? info.getSSID() : null;
+                wifi = true;
+                if (info != null) wifiBars.setBars(WifiManager.calculateSignalLevel(info.getRssi(), 4));
                 if (ssid != null) {
                     ssid = ssid.replace("\"", "").trim();
                     if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) text = ssid;
@@ -370,7 +384,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         } catch (Exception ignored) {
         }
-        btnWifi.setText(text);
+        wifiName = text;
+        wifiIconOnly = wifi;
+        showWifi(btnWifi.isFocused());
+    }
+
+    private void showWifi(boolean focused) {
+        boolean iconOnly = wifiIconOnly && !focused;
+        String want = iconOnly ? "" : wifiName;
+        if (!want.contentEquals(btnWifi.getText())) btnWifi.setText(want);
+        // an icon-only pill is as wide as it is tall: no gap for the missing text
+        int side = (int) ((iconOnly ? 11 : 16) * density), end = (int) ((iconOnly ? 11 : 20) * density);
+        btnWifi.setCompoundDrawablePadding(iconOnly ? 0 : (int) (9 * density));
+        btnWifi.setPaddingRelative(side, btnWifi.getPaddingTop(), end, btnWifi.getPaddingBottom());
     }
 
     private void open(Intent i) {

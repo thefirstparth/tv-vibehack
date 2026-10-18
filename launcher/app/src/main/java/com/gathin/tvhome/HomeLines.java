@@ -50,7 +50,7 @@ final class HomeLines {
     /** A copy of a live line is believed for ten minutes after it was fetched, as on the site. */
     private static final long LIVE_FOR = 10 * MIN;
     private static final int TIMEOUT_MS = 5000;
-    private static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF, COMP = 0x42FFFFFF, ON_ACCENT = 0xFF170B05;
+    private static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF;
     /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to 31 sp. */
     private static final float HEAD_SP = 44f;
 
@@ -64,7 +64,8 @@ final class HomeLines {
     private final View lines, sport, weather;
     private final TextView label, hA, hScoreA, hV, hScoreB, hB, hLoc, weatherAsOf;
     private final View then1, then2;
-    private final TextView then1Label, then1Text, then2Label, then2Text;
+    /** THEN and LATER rows: label, time, match, competition (columns lined up across the two rows). */
+    private final TextView[][] thenCells;
     private final LinearLayout weatherCols;
     private final Drawable dot;
 
@@ -97,10 +98,9 @@ final class HomeLines {
         hLoc = act.findViewById(R.id.hLoc);
         then1 = act.findViewById(R.id.then1);
         then2 = act.findViewById(R.id.then2);
-        then1Label = act.findViewById(R.id.then1Label);
-        then1Text = act.findViewById(R.id.then1Text);
-        then2Label = act.findViewById(R.id.then2Label);
-        then2Text = act.findViewById(R.id.then2Text);
+        thenCells = new TextView[][]{
+                {act.findViewById(R.id.then1Label), act.findViewById(R.id.then1Time), act.findViewById(R.id.then1Match), act.findViewById(R.id.then1Comp)},
+                {act.findViewById(R.id.then2Label), act.findViewById(R.id.then2Time), act.findViewById(R.id.then2Match), act.findViewById(R.id.then2Comp)}};
         weatherAsOf = act.findViewById(R.id.weatherAsOf);
         weatherCols = act.findViewById(R.id.weatherCols);
         for (String pair : act.getResources().getStringArray(R.array.accent_colours)) {
@@ -114,7 +114,11 @@ final class HomeLines {
             if (r - l != or - ol) v.post(this::render);
             place();
         });
-        weather.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> { if (r - l != or - ol) v.post(this::render); });
+        weather.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol) v.post(this::render);
+            alignBaselines();
+        });
+        sport.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> alignBaselines());
     }
 
     /** The space to centre the lines in, from the activity's layout (the top bar and the dock band). */
@@ -127,6 +131,20 @@ final class HomeLines {
     private void place() {
         if (frameTop < 0 || lines.getHeight() == 0) return;
         lines.setTranslationY(frameTop + (frameBottom - frameTop - lines.getHeight()) / 2f - lines.getTop());
+        alignBaselines();
+    }
+
+    /** The headline sits on the same baseline as the big temperatures: the weather side moves to meet it. */
+    private void alignBaselines() {
+        View temp = weatherCols.getChildCount() > 0 ? weatherCols.getChildAt(0).findViewById(R.id.temp) : null;
+        boolean both = sport.getVisibility() == View.VISIBLE && weatherCols.getVisibility() == View.VISIBLE && temp != null && temp.getVisibility() == View.VISIBLE;
+        weather.setTranslationY(both ? baselineIn(hA) - baselineIn(temp) : 0);
+    }
+
+    private int baselineIn(View v) {
+        int y = v.getBaseline();
+        for (View p = v; p != lines && p != null; p = (View) p.getParent()) y += p.getTop();
+        return y;
     }
 
     private Integer accentOf(JSONObject it) {
@@ -296,12 +314,19 @@ final class HomeLines {
         JSONObject h = items.get(0);
         headline(h, now, room);
         labelLine(h, now, room);
-        TextView[][] rows = {{then1Label, then1Text}, {then2Label, then2Text}};
         View[] rowViews = {then1, then2};
+        boolean[] shown = new boolean[2];
         for (int i = 0; i < 2; i++) {
             JSONObject it = i + 1 < items.size() ? items.get(i + 1) : null;
-            boolean shown = it != null && thenLine(it, i, rows[i][0], rows[i][1], now, room);
-            rowViews[i].setVisibility(shown ? View.VISIBLE : View.GONE);
+            shown[i] = it != null && thenLine(it, i, thenCells[i], now, room);
+            rowViews[i].setVisibility(shown[i] ? View.VISIBLE : View.GONE);
+        }
+        // line the columns up: each column as wide as its widest cell in the rows shown (a gap after each)
+        float[] gaps = {12 * density, 14 * density, 18 * density, 0};
+        for (int c = 0; c < 4; c++) {
+            int w = 0;
+            for (int i = 0; i < 2; i++) if (shown[i]) w = Math.max(w, Math.round(width(thenCells[i][c], thenCells[i][c].getText().toString()) + gaps[c]));
+            for (int i = 0; i < 2; i++) thenCells[i][c].setMinWidth(c == 3 ? 0 : w);
         }
         return true;
     }
@@ -360,7 +385,7 @@ final class HomeLines {
         setLabel(text, null, colour, showDot, accentOf(it), text.equals(forms[0]) ? comps[0] : text.equals(forms[1]) ? comps[1] : null);
     }
 
-    /** The competition's name in its colour, and the countdown as a filled pill in it; the rest as the state says. */
+    /** The competition's name and the countdown in its colour (plain text); the rest as the state says. */
     private void setLabel(String text, String countdown, int colour, boolean showDot, Integer accent, String comp) {
         SpannableStringBuilder b = new SpannableStringBuilder(text.toUpperCase(Locale.ENGLISH));
         if (accent != null && comp != null && !comp.isEmpty()) {
@@ -371,7 +396,7 @@ final class HomeLines {
             b.append("   ");
             int at = b.length();
             b.append(countdown.toUpperCase(Locale.ENGLISH));
-            b.setSpan(accent != null ? new PillSpan(accent, ON_ACCENT, 6 * density) : new ForegroundColorSpan(WHITE), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            b.setSpan(new ForegroundColorSpan(accent != null ? accent : WHITE), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         label.setText(b);
         label.setTextColor(colour);
@@ -445,14 +470,14 @@ final class HomeLines {
         return s.replaceAll("\\s*\\(.*\\)$", "");
     }
 
-    // "THEN  Thu 12:30 am · Real Madrid v RB Leipzig   UCL"
-    private boolean thenLine(JSONObject it, int index, TextView lbl, TextView txt, long now, int room) {
+    // "THEN   Thu 12:30 am   Real Madrid v RB Leipzig   UCL": label, time, match, competition in four cells
+    private boolean thenLine(JSONObject it, int index, TextView[] cells, long now, int room) {
         boolean live = liveNow(it, now);
         String l = live ? "Also live" : index == 0 ? "Then" : "Later";
-        lbl.setText(l.toUpperCase(Locale.ENGLISH));
+        cells[0].setText(l.toUpperCase(Locale.ENGLISH));
         String st = it.optString("state");
         String when;
-        if (live) when = null;
+        if (live) when = it.optString("clock", "");
         else if (started(it, now)) when = "Started";
         else if ("done".equals(st)) when = "f1".equals(it.optString("sp")) ? "Result" : resultWord(it);
         else if ("off".equals(st)) when = it.has("offWhy") ? it.optString("offWhy") : seenWord(it);
@@ -472,15 +497,13 @@ final class HomeLines {
             for (String[] n : nameForms(it)) whats.add(sides(it, n[0], n[1], scores));
         }
         String[] comps = "f1".equals(it.optString("sp")) ? new String[]{it.optString("gp", ""), ""} : compForms(it);
-        float labelW = width(lbl, lbl.getText().toString()) + 10 * density;
+        float fixed = width(cells[0], cells[0].getText().toString()) + 12 * density + width(cells[1], when) + 14 * density;
         for (String c : new String[]{comps[0], comps[1], ""}) {
             for (String w : whats) {
-                String main = when == null ? w : when + " · " + w;
-                String full = c.isEmpty() ? main : main + "   " + c;
-                if (labelW + width(txt, full) <= room) {
-                    SpannableString s = new SpannableString(full);
-                    if (!c.isEmpty()) s.setSpan(new ForegroundColorSpan(COMP), main.length(), full.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    txt.setText(s);
+                if (fixed + width(cells[2], w) + (c.isEmpty() ? 0 : 18 * density + width(cells[3], c)) <= room) {
+                    cells[1].setText(when);
+                    cells[2].setText(w);
+                    cells[3].setText(c);
                     return true;
                 }
             }
@@ -543,43 +566,13 @@ final class HomeLines {
 
     /** The first form that fits the room (the label's countdown counted in); the last one if none does. */
     private String pickFits(TextView v, String[] forms, String extra, int room) {
-        float more = extra == null ? 0 : width(v, "   " + extra.toUpperCase(Locale.ENGLISH)) + 12 * density;
+        float more = extra == null ? 0 : width(v, "   " + extra.toUpperCase(Locale.ENGLISH));
         for (String f : forms) if (!f.isEmpty() && width(v, f.toUpperCase(Locale.ENGLISH)) + more <= room) return f;
         return forms[forms.length - 1];
     }
 
     private static float width(TextView v, String s) {
         return v.getPaint().measureText(s);
-    }
-
-    /** A filled, rounded pill behind a run of text, drawn in one go (no extra view, nothing animated). */
-    private static final class PillSpan extends android.text.style.ReplacementSpan {
-        private final int fill, ink;
-        private final float pad;
-        private final android.graphics.RectF r = new android.graphics.RectF();
-
-        PillSpan(int fill, int ink, float pad) {
-            this.fill = fill;
-            this.ink = ink;
-            this.pad = pad;
-        }
-
-        @Override
-        public int getSize(android.graphics.Paint p, CharSequence t, int start, int end, android.graphics.Paint.FontMetricsInt fm) {
-            return Math.round(p.measureText(t, start, end) + 2 * pad);
-        }
-
-        @Override
-        public void draw(android.graphics.Canvas c, CharSequence t, int start, int end, float x, int top, int y, int bottom, android.graphics.Paint p) {
-            int was = p.getColor();
-            android.graphics.Paint.FontMetrics m = p.getFontMetrics();
-            r.set(x, y + m.ascent - pad * 0.35f, x + p.measureText(t, start, end) + 2 * pad, y + m.descent + pad * 0.35f);
-            p.setColor(fill);
-            c.drawRoundRect(r, r.height() / 2, r.height() / 2, p);
-            p.setColor(ink);
-            c.drawText(t, start, end, x + pad, y, p);
-            p.setColor(was);
-        }
     }
 
     // ---- times, in IST -------------------------------------------------------------------------------------------
@@ -653,18 +646,24 @@ final class HomeLines {
             String hl = c.has("hi") && c.has("lo") ? "H " + c.optInt("hi") + "° · L " + c.optInt("lo") + "°" : c.has("hi") ? "H " + c.optInt("hi") + "°" : c.has("lo") ? "L " + c.optInt("lo") + "°" : "";
             hilo.setText(hl);
             hilo.setVisibility(hl.isEmpty() ? View.GONE : View.VISIBLE);
-            word.setVisibility(View.GONE);
+            word.setVisibility(View.INVISIBLE);
             if (c.has("as_of")) asOf = c.optString("as_of");
             col.setMinimumWidth(0);
             col.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
             widest = Math.max(widest, col.getMeasuredWidth());
         }
-        // three equal columns; a word wider than its column steps down to its short form ("Orange alert")
+        // three equal columns; a word wider than its column steps down to its short form ("Orange alert"). Every
+        // column keeps the word's slot (as many lines as the longest word), so all three are the same height.
+        int slot = 1;
         for (int i = 0; i < list.length(); i++) {
             JSONObject c = list.optJSONObject(i);
             View col = weatherCols.getChildAt(i);
             col.setMinimumWidth(widest);
             TextView word = col.findViewById(R.id.word);
+            word.setSingleLine(false);
+            word.setMaxLines(2);
+            word.setText(" ");
+            word.setVisibility(View.INVISIBLE);
             String w = c.optString("word", "");
             if (w.isEmpty()) continue;
             String ws = c.optString("word_short", w);
@@ -676,7 +675,9 @@ final class HomeLines {
             else if (cut > 0 && width(word, w.substring(0, cut)) <= limit && width(word, w.substring(cut + 3)) <= limit) word.setText(w.substring(0, cut) + "\n" + w.substring(cut + 3));
             else word.setText(ws);
             word.setVisibility(View.VISIBLE);
+            if (word.getText().toString().contains("\n")) slot = 2;
         }
+        for (int i = 0; i < list.length(); i++) ((TextView) weatherCols.getChildAt(i).findViewById(R.id.word)).setMinLines(slot);
         String note = saved ? "as of " + clock(fetchedAt) : asOf != null ? asOfClock(asOf) : null;
         weatherAsOf.setText(note == null ? "" : note);
         weatherAsOf.setVisibility(note == null ? View.GONE : View.VISIBLE);

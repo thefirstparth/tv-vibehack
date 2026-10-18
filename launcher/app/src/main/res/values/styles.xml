@@ -38,7 +38,7 @@
     <style name="LineLabel" parent="LineBase">
         <item name="android:textSize">12sp</item>
         <item name="android:fontVariationSettings">\'wght\' 600</item>
-        <item name="android:letterSpacing">0.26</item>
+        <item name="android:letterSpacing">0.14</item>
         <item name="android:textColor">#8CFFFFFF</item>
     </style>
     <style name="LineAsOf" parent="LineBase">
@@ -61,11 +61,11 @@
         <item name="android:visibility">gone</item>
     </style>
     <style name="HeadV" parent="LineBase">
-        <item name="android:textSize">15.5sp</item>
+        <item name="android:textSize">19sp</item>
         <item name="android:fontVariationSettings">\'wght\' 600</item>
         <item name="android:letterSpacing">0.14</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">#8CFFFFFF</item>
+        <item name="android:textColor">#73FFFFFF</item>
         <item name="android:layout_marginStart">14dp</item>
         <item name="android:layout_marginEnd">14dp</item>
     </style>
@@ -85,22 +85,26 @@
         <item name="android:visibility">gone</item>
     </style>
     <style name="ThenLabel" parent="LineBase">
-        <item name="android:textSize">12.5sp</item>
+        <item name="android:textSize">13sp</item>
         <item name="android:fontVariationSettings">\'wght\' 600</item>
-        <item name="android:letterSpacing">0.2</item>
+        <item name="android:letterSpacing">0.14</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">#8CFFFFFF</item>
-        <item name="android:layout_marginEnd">10dp</item>
     </style>
-    <style name="ThenText" parent="LineBase">
+    <!-- THEN and LATER: three columns (time, match, competition), lined up across both rows in HomeLines -->
+    <style name="ThenTime" parent="LineBase">
         <item name="android:textSize">15sp</item>
         <item name="android:fontVariationSettings">\'wght\' 400</item>
-        <item name="android:textColor">#52FFFFFF</item>
+        <item name="android:textColor">#73FFFFFF</item>
     </style>
+    <style name="ThenMatch" parent="ThenTime">
+        <item name="android:textColor">#B3FFFFFF</item>
+    </style>
+    <style name="ThenComp" parent="ThenTime" />
     <style name="CityName" parent="LineBase">
         <item name="android:textSize">12sp</item>
         <item name="android:fontVariationSettings">\'wght\' 600</item>
-        <item name="android:letterSpacing">0.26</item>
+        <item name="android:letterSpacing">0.14</item>
         <item name="android:textAllCaps">true</item>
         <item name="android:textColor">#8CFFFFFF</item>
     </style>

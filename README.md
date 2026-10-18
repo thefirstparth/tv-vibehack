@@ -83,8 +83,10 @@ draws the lines.
   anything whose start has passed is dropped unless it was live less than ten minutes before.
 - Lines never end in "…": a long line steps down to shorter names, then the competition's short
   form, then without it.
-- One accent: the competition's colour on its name and on the countdown pill
-  (`accent_colours` in `config.xml`). Everything else is white.
+- One accent: the competition's colour on its name and on the countdown
+  (`accent_colours` in `config.xml`). Everything else is white or grey. THEN and LATER line up
+  in three columns (time, match, competition), and the headline shares its baseline with the
+  big temperatures. The Wi-Fi pill shows signal bars, and the network's name while focused.
 
 The Inputs menu can name a port: `input_names` in `config.xml` (`HDMI 2|Xbox`) shows "Xbox" with
 "HDMI 2" beside it, and a games console gets a controller icon.

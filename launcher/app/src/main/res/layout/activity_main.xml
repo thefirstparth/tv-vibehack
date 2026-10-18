@@ -32,7 +32,7 @@
                     android:textSize="12sp"
                     android:fontFamily="@font/outfit"
                     android:fontVariationSettings="'wght' 500"
-                    android:letterSpacing="0.22"
+                    android:letterSpacing="0.14"
                     android:textAllCaps="true" />
 
                 <LinearLayout
@@ -180,7 +180,7 @@
 
                 <TextView android:id="@+id/hA" style="@style/HeadName" />
                 <TextView android:id="@+id/hScoreA" style="@style/HeadScore" />
-                <TextView android:id="@+id/hV" style="@style/HeadV" android:text="V" />
+                <TextView android:id="@+id/hV" style="@style/HeadV" android:text="V" android:layout_gravity="center_vertical" />
                 <TextView android:id="@+id/hScoreB" style="@style/HeadScore" />
                 <TextView android:id="@+id/hB" style="@style/HeadName" />
                 <TextView android:id="@+id/hLoc" style="@style/HeadLoc" />
@@ -190,14 +190,18 @@
                 android:id="@+id/then1"
                 style="@style/ThenRow">
                 <TextView android:id="@+id/then1Label" style="@style/ThenLabel" />
-                <TextView android:id="@+id/then1Text" style="@style/ThenText" />
+                <TextView android:id="@+id/then1Time" style="@style/ThenTime" />
+                <TextView android:id="@+id/then1Match" style="@style/ThenMatch" />
+                <TextView android:id="@+id/then1Comp" style="@style/ThenComp" />
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/then2"
                 style="@style/ThenRow">
                 <TextView android:id="@+id/then2Label" style="@style/ThenLabel" />
-                <TextView android:id="@+id/then2Text" style="@style/ThenText" />
+                <TextView android:id="@+id/then2Time" style="@style/ThenTime" />
+                <TextView android:id="@+id/then2Match" style="@style/ThenMatch" />
+                <TextView android:id="@+id/then2Comp" style="@style/ThenComp" />
             </LinearLayout>
         </LinearLayout>
 

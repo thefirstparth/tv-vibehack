@@ -68,13 +68,14 @@ final class HorizonBackground {
         p.setShader(new LinearGradient(0, 0, 0, H, new int[]{clearBand, clearBand, look.band, clearBand, clearBand},
                 new float[]{0f, 0.22f, 0.44f, 0.62f, 1f}, Shader.TileMode.CLAMP));
         c.drawRect(0, 0, W, H, p);
-        // the glow on top: an ellipse at 50% x 52%, radii 80% of the width by 34% of the height, clear at 70%
+        // the glow on top: an ellipse at 50% x 60% (low, so it fills the space above the dock and the small text sits on
+        // darker ground), radii 80% of the width by 34% of the height, clear at 70%
         float rx = 0.80f * W, ry = 0.34f * H;
         RadialGradient g = new RadialGradient(0, 0, rx, new int[]{look.glow, look.glow & 0x00FFFFFF, look.glow & 0x00FFFFFF},
                 new float[]{0f, 0.70f, 1f}, Shader.TileMode.CLAMP);
         Matrix m = new Matrix();
         m.setScale(1f, ry / rx);
-        m.postTranslate(0.50f * W, 0.52f * H);
+        m.postTranslate(0.50f * W, 0.60f * H);
         g.setLocalMatrix(m);
         p.setShader(g);
         c.drawRect(0, 0, W, H, p);
