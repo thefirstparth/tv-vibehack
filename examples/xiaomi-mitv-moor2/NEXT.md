@@ -1,19 +1,16 @@
 # Next session: the plan (parked 2026-10-19, start only when Parth says "start")
 
-Three parts, in this order. Times are caps, not estimates to stretch.
+Three parts, in this order (Part 1 is already decided). Times are caps, not estimates to stretch.
 
-## Part 1: Humidity, placed cleanly (Mac first, TV last) — about 35 min
+## Part 1: Humidity — decided, no change needed
 
-Today it is a third grey line under each city ("Humidity 94%"), which makes the column busy.
+Parth chose (2026-10-19) the layout that is already on the TV: "Humidity 94%" on its own grey line
+under H/L, for **all three cities**, and the alert word (amber) **under** humidity when there is one.
 
-1. **Use what the theme already has.** Outfit only, weights fixed at build time (never changed at
-   runtime), the small style `CitySmall` (13 sp, 45% white), right-aligned, tabular figures.
-2. **Three layouts, rendered on the Android TV emulator with the live feed** (not on the TV):
-   - **A. One detail line:** `Feels 25° · 94%` with a small droplet icon before 94, H/L on its own
-     line. Same height as before humidity was added. *(Recommended: cleanest, no new line.)*
-   - **B. Humidity beside the city name:** `BENGALURU  94%` in the name's caps style, dimmer.
-   - **C. Today's line, dimmed further** (35% white), with "humidity" lowercase after the number.
-3. Parth picks one from the three screenshots; then build, unit tests, the A/B below, install.
+- **No droplet icon** (it reads as rain), **no phrases or extra wording** ("Umbrella by 4 PM",
+  "6° colder than home": he finds them too much), no new colours.
+- So skip the three-layout comparison; only check it in Part 2's QA (evening "… tomorrow" word under
+  humidity, columns equal and tight).
 
 ## Part 1b: Right at the end of a row jumps to Settings — about 15 min
 
