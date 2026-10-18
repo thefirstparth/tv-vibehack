@@ -40,7 +40,7 @@ A small native Android TV home screen (`com.gathin.tvhome`), built for sets with
   `launcher/shared/src/main/res/values/config.xml` (`horizon_lat`, `horizon_lon`): "MIDDAY · SUNSET
   5:59 PM", "NIGHT · SUNRISE 6:10 AM"; in the Sunset mood the time alone; on a personal day its
   greeting in the mood's place.
-- A small moon pill at the start of the top bar opens the **1400** app (below); it hides itself when
+- A small newspaper pill at the start of the top bar opens the **1400** app (below); it hides itself when
   the app is not installed.
 - Frosted pills top right: **Inputs** (a dropdown of HDMI ports, AV and Live TV), **Wi-Fi**
   (shows the network name) and **Settings**. A large thin clock and the date top left,
@@ -50,6 +50,23 @@ A small native Android TV home screen (`com.gathin.tvhome`), built for sets with
   to the last tile even if you left from a top-bar button. The Inputs menu sizes itself to its
   rows and shows a device found over HDMI-CEC (for example "Living room TV") on its port's row.
 - No blur, no video, no background services, and no network, with one opt-in exception below.
+
+**The weekend look.** All of Saturday and Sunday (the TV's local time), and never on a personal day:
+- the line above the clock says **WEEKEND** (in tone 1) and four small drawn symbols (a football, a
+  note, a cocktail glass, a heart) in place of the mood name, then the sun time as on weekdays:
+  "WEEKEND ⚽ ♪ 🍸 ♥ · SUNSET 5:59 PM";
+- the top-bar pills' icons are tinted (newspaper tone 1, Inputs tone 2, Wi-Fi tone 3, Settings gold
+  `#F5D58B`); a focused pill looks as always;
+- the dock's top edge is a thin gradient of tone 1 → gold → tone 2 → tone 3 at about 60%.
+
+The tones follow the Horizon look in use: tone 1 from its core, tone 2 from its spot, tone 3 from its
+band, each kept at its hue as a light pastel (HSV saturation 0.40, value 0.95). The heart is
+`#F2A9BA`. In rain or a storm every weekend colour is softened by Horizon's own 0.62 (the football's
+off-white stays). The Horizon light itself does not change. Worked out in `Weekend.java` (pure,
+unit-tested) whenever the Horizon state is checked: the existing minute tick and when Home appears;
+no new timers, no animation.
+Not on the MOOR2 yet: its A/B (2026-10-19) was even on cold start, stutter and memory but 6 ms slower
+on Home return (370 → 376 ms, inside the runs' spread), which the keep rule doesn't allow.
 
 ## Sports and weather (optional)
 
@@ -128,5 +145,5 @@ above the clock, the feed and how it is worded, and the personal days.
 Build and install it: `./gradlew :app1400:assembleDebug` in `launcher/`, then push
 `app1400/build/outputs/apk/debug/app1400-debug.apk` with `tools/b64push.py` and `pm install -r`. (The
 1400 app has no signed release build yet, so `:app1400:assembleRelease` makes an APK that won't
-install; the home screen's own release build is set up, see above.) Undo: `pm uninstall com.gathin.tv1400` (the moon hides itself) and take it out
+install; the home screen's own release build is set up, see above.) Undo: `pm uninstall com.gathin.tv1400` (the newspaper pill hides itself) and take it out
 of `grid_order`.
