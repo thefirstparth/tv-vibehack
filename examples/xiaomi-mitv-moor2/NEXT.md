@@ -15,6 +15,19 @@ Today it is a third grey line under each city ("Humidity 94%"), which makes the 
    - **C. Today's line, dimmed further** (35% white), with "humidity" lowercase after the number.
 3. Parth picks one from the three screenshots; then build, unit tests, the A/B below, install.
 
+## Part 1b: Right at the end of a row jumps to Settings — about 15 min
+
+**Seen by Parth:** Right on the last tile of a row (FanCode in the dock, Spotify on row 2) moves focus
+up to the **Settings pill** instead of the first tile of the next row. Android's focus search looks for
+the nearest thing to the right, and the only thing there is the top bar.
+
+**Fix:** at the last tile of a row, Right goes to the first tile of the next row (and on the very last
+tile, nowhere); to match, Left on the first tile of a row goes to the last tile of the row above
+(Left on YouTube stays put). Up and Down unchanged; the top bar is reached only with Up.
+
+**Test:** a unit test for the row maths; on the emulator, Right along every row and Left back; on the
+TV, the same keys in the Part 2 QA. It goes in the same build as humidity, so one A/B covers both.
+
 ## Part 2: QA of the launcher changes since the last full test — about 25 min
 
 The weather-gap fix, the newspaper icon and humidity went on the TV with only a 2-round check
@@ -23,7 +36,7 @@ The weather-gap fix, the newspaper icon and humidity went on the TV with only a 
 - Full A/B on the TV: `tvhome-release-rows.apk` (last fully tested) against the new build,
   alternating, 5 rounds each, medians, after a restart (`abrun.sh`). Keep only if cold start is no
   more than 20 ms slower and Home return, janky frames and memory are no worse.
-- Check: Home, the four dock apps, Inputs, the newspaper pill (opens 1400, "1400" shows on focus),
+- Check: Right along each row wraps to the next row (never to Settings), Left back; Home, the four dock apps, Inputs, the newspaper pill (opens 1400, "1400" shows on focus),
   Settings, the grid, the weather in the evening (from 6 pm the long "… tomorrow" word wraps inside
   Bengaluru's column, columns stay tight).
 - Then merge the work branch into `main` (PR).
