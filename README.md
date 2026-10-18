@@ -62,8 +62,14 @@ A small native Android TV home screen (`com.gathin.tvhome`), built for sets with
   was the GPU's heaviest job. Without them the home screen measured smoother than before.)
 - One highlight (a crisp rim and a soft glow around the tile, never over its logo) springs from tile
   to tile. The focused tile lifts and shows its name; every tile stays in full colour.
+- Above the clock, the light's mood and the sun's next turn, worked out on the TV for the place in
+  `launcher/shared/src/main/res/values/config.xml` (`horizon_lat`, `horizon_lon`): "MIDDAY · SUNSET
+  5:59 PM", "NIGHT · SUNRISE 6:10 AM"; in the Sunset mood the time alone; on a personal day its
+  greeting in the mood's place.
+- A small moon pill at the start of the top bar opens the **1400** app (below); it hides itself when
+  the app is not installed.
 - Frosted pills top right: **Inputs** (a dropdown of HDMI ports, AV and Live TV), **Wi-Fi**
-  (shows the network name) and **Settings**. Greeting, a large thin clock and the date top left,
+  (shows the network name) and **Settings**. A large thin clock and the date top left,
   set in [Outfit](https://fonts.google.com/specimen/Outfit).
 - Deterministic D-pad navigation, last focused tile remembered, staggered entrance animation.
   Down from the top bar goes to the dock tile you were last on; pressing Home brings focus back
@@ -112,6 +118,30 @@ TV_HOST=192.168.1.50 launcher/build-and-install.sh
 
 Needs JDK 17 and the Android SDK (platform 34, build-tools 34.0.0). On macOS:
 `brew install openjdk@17 android-commandlinetools && sdkmanager "platforms;android-34" "build-tools;34.0.0"`.
+
+### The 1400 app (optional)
+
+`launcher/app1400` (`com.gathin.tv1400`) is a separate app in the same Gradle project: the companion
+paper on the TV, in its night look (Horizon V3: the paper's fonts, flat, a halftone sun in the mood's
+inks above a double rule, the nameplate and the stops as section tabs in the foot). Two modes:
+**Today** (clock, the three cities, and a band turning every 25 seconds through sport, the day in a
+minute and Money) and **Sport** (the next event in big type, then this week, results and where you
+stand). It opens in Sport mode from an hour before a followed event until 30 minutes after it, or
+while anything is live. Left and Right switch mode, Up and Down step the band, Back closes it.
+
+It reads `/api/live/tv?saver=1` from the same `tv.feedUrl`, only while it is open (when it opens, then
+every 15 minutes, every minute while live), keeps the screen on, and closes itself after 3 hours
+without a button press. Nothing runs when it is closed. Once a minute the content moves a few pixels
+(burn-in). Its fonts are subsets of Newsreader, Libre Franklin, Source Serif 4, Titillium Web,
+Playfair Display and UnifrakturMaguntia, all under the OFL (`launcher/app1400/FONT-LICENSES-OFL.txt`).
+
+`launcher/shared` holds what both apps need and nothing else: the sun's times and the mood, the line
+above the clock, the feed and how it is worded, and the personal days.
+
+Build and install both: `./gradlew assembleDebug` in `launcher/`, then install
+`app/build/outputs/apk/debug/app-debug.apk` and `app1400/build/outputs/apk/debug/app1400-debug.apk`
+with `pm install -r`. Undo: `pm uninstall com.gathin.tv1400` (the moon hides itself) and take it out
+of `grid_order`.
 
 ## Talking to the TV by hand
 

@@ -52,6 +52,20 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    - Launcher focus after Home and Down from the top bar: fixed (focus returns to the last tile; Down
      goes to the dock).
 
+7. **1400 app (2026-10-18):** `com.gathin.tv1400` (launcher/app1400) is installed beside the launcher:
+   the paper on the TV (Today and Sport modes), opened from its tile (first in the grid) or the moon
+   pill at the start of the top bar. It reads `/api/live/tv?saver=1` only while it is open and closes
+   itself after 3 hours without a button press. It is an app, not the TV's screensaver: the screensaver
+   settings were recorded and **not changed** (Google's Backdrop stays):
+   ```
+   settings get secure screensaver_components   # com.google.android.apps.tv.dreamx/.service.Backdrop
+   settings get secure screensaver_enabled      # 1
+   settings get system screen_off_timeout       # 600000 (10 minutes: the screensaver starts)
+   settings get secure sleep_timeout            # 1800000 (30 minutes: the display turns off)
+   ```
+   The display's switch-off time is Settings > System > Power & energy > "When inactive" (Energy
+   saver / "Turn off display" on some builds), the same value as `sleep_timeout` above.
+
 Check the live state any time:
 
 ```bash
@@ -68,6 +82,22 @@ T="tools/venv/bin/python -I tools/tv.py"
 $T 'pm enable com.google.android.tungsten.setupwraith'
 $T 'pm enable com.google.android.apps.tv.launcherx'
 $T 'cmd package set-home-activity --user 0 com.google.android.apps.tv.launcherx/.home.HomeActivity'
+```
+
+The 1400 app (the moon pill hides itself when it is gone; then take `com.gathin.tv1400` out of
+`grid_order` in `launcher/app/src/main/res/values/config.xml` and reinstall the launcher):
+
+```bash
+$T 'pm uninstall com.gathin.tv1400'
+```
+
+The screensaver settings, should anything ever change them, back to the values recorded above:
+
+```bash
+$T 'settings put secure screensaver_components com.google.android.apps.tv.dreamx/.service.Backdrop'
+$T 'settings put secure screensaver_enabled 1'
+$T 'settings put system screen_off_timeout 600000'
+$T 'settings put secure sleep_timeout 1800000'
 ```
 
 Everything back to stock, debloat included: run the three lines above, then
