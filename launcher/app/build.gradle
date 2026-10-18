@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+// The feed address and the personal days are built into :shared from launcher/local.properties (README: "Sports and
+// weather"); here only whether the feed is plain http (a computer on the home network, for testing).
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+def feedUrl = (localProps.getProperty('tv.feedUrl') ?: '').trim()
+
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
@@ -12,12 +19,25 @@ android {
         targetSdk 29
         versionCode 2
         versionName '2.0'
+        // plain http only when the configured feed is http (a computer on the home network, for testing)
+        manifestPlaceholders = [cleartext: feedUrl.startsWith('http://') ? 'true' : 'false']
     }
 
     buildTypes {
+        // Release: shrunk (R8) and resources trimmed, not debuggable, and signed with the same key as the debug
+        // builds (~/.android/debug.keystore) so pm install -r updates the installed launcher in place.
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+            crunchPngs false   // banner.png and ic_launcher.png are JPEG data; packed as they are, as in debug
         }
+    }
+
+    // targetSdk 29 is on purpose (a home screen for one TV, never on Play): release lint must not fail on it
+    lint {
+        disable 'ExpiredTargetSdkVersion'
     }
 
     compileOptions {
@@ -27,6 +47,8 @@ android {
 }
 
 dependencies {
+    implementation project(':shared')
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
+    testImplementation 'junit:junit:4.13.2'   // unit tests on the computer only, not in the app
 }

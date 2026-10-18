@@ -8,9 +8,11 @@ export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@17}"
 export ANDROID_HOME="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}"
 export PATH="$JAVA_HOME/bin:$PATH"
 [ -f local.properties ] || echo "sdk.dir=$ANDROID_HOME" > local.properties
-./gradlew assembleDebug -q --console=plain
+# the release build: shrunk by R8, not debuggable, signed with ~/.android/debug.keystore (as debug builds are), so
+# pm install -r updates an installed debug build in place
+./gradlew :app:assembleRelease -q --console=plain
 PY=../tools/venv/bin/python
-APK=app/build/outputs/apk/debug/app-debug.apk
+APK=app/build/outputs/apk/release/app-release.apk
 "$PY" -I ../tools/b64push.py "$APK" /data/local/tmp/tvhome.apk
 printf '%s\n' \
   "pm install -r /data/local/tmp/tvhome.apk" \

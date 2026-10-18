@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Horizon V3: the paper's night palette (house-of-1400 docs/DESIGN.md). -->
+<resources>
+    <color name="paper">#131210</color>
+</resources>

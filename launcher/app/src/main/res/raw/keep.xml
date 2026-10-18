@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- shrinkResources: resources kept even if no code reference is seen (the feed address and personal days come
+     from local.properties as resValues and are read by id; the fonts are set from code and layouts). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@string/tv_feed_url,@string/tv_days,@font/*,@string/feed_not_answering" />

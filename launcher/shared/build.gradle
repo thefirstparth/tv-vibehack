@@ -1,0 +1,34 @@
+plugins {
+    id 'com.android.library'
+}
+
+// Shared by the launcher (:app) and the 1400 app (:app1400): Horizon, the sun, the sport and weather lines and their
+// feed, and Outfit. The feed address and the personal days are private, so they are never committed: tv.feedUrl and
+// tv.day.N in launcher/local.properties (gitignored), built in here. Empty or missing: no feed, no personal days.
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+def feedUrl = (localProps.getProperty('tv.feedUrl') ?: '').trim()
+// "MM-DD|greeting|core|spot|band|top", colours "r,g,b,a"
+def days = localProps.stringPropertyNames().findAll { it ==~ /tv\.day\.\d+/ }.sort { it.substring(7) as int }
+        .collect { localProps.getProperty(it).trim().replace("'", "\\'").replace('"', '\\"') }.join('\\n')
+
+android {
+    namespace 'com.gathin.tvshared'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 26
+        resValue 'string', 'tv_feed_url', feedUrl
+        resValue 'string', 'tv_days', days
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'   // unit tests on the computer only
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings shared by the launcher and the 1400 app. Edit, then build and install both. -->
+<resources>
+
+    <!-- Where the Horizon light's sun is worked out for (degrees, north and east positive): sunrise, sunset and the
+         line above the clock. -->
+    <string name="horizon_lat" translatable="false">12.9716</string>
+    <string name="horizon_lon" translatable="false">77.5946</string>
+</resources>

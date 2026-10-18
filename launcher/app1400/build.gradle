@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 1400: the paper on the TV, its own APK beside the launcher. The feed address and personal days come from :shared
+// (local.properties); here only whether the feed is plain http (a computer on the home network, for testing), and the
+// idle time after which it closes itself (today.idleMinutes in local.properties, for testing; 180 otherwise).
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
+def feedUrl = (localProps.getProperty('tv.feedUrl') ?: '').trim()
+def idleMinutes = (localProps.getProperty('today.idleMinutes') ?: '180').trim()
+
+android {
+    namespace 'com.gathin.tv1400'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.gathin.tv1400'
+        minSdk 26
+        targetSdk 29
+        versionCode 1
+        versionName '1.0'
+        resValue 'integer', 'idle_minutes', idleMinutes
+        manifestPlaceholders = [cleartext: feedUrl.startsWith('http://') ? 'true' : 'false']
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation project(':shared')
+    testImplementation 'junit:junit:4.13.2'
+}

@@ -2,30 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#FF000000">
-
-    <!-- Ambient glow in the colour of the focused dock app. -->
-    <View
-        android:id="@+id/ambient"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:alpha="0" />
-
-    <!-- Top shelf: the focused dock app's name, positioned above the dock in code. -->
-    <TextView
-        android:id="@+id/heroName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="68dp"
-        android:alpha="0"
-        android:textColor="#FFFFFFFF"
-        android:textSize="48sp"
-        android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 300"
-        android:letterSpacing="-0.02"
-        android:includeFontPadding="false"
-        android:singleLine="true" />
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -54,8 +31,8 @@
                     android:textColor="#8CFFFFFF"
                     android:textSize="12sp"
                     android:fontFamily="@font/outfit"
-                    android:fontVariationSettings="'wght' 500"
-                    android:letterSpacing="0.22"
+                    android:tag="w500"
+                    android:letterSpacing="0.14"
                     android:textAllCaps="true" />
 
                 <LinearLayout
@@ -69,11 +46,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:format12Hour="h:mm"
-                        android:format24Hour="HH:mm"
+                        android:format24Hour="h:mm"
                         android:textColor="#FFFFFFFF"
                         android:textSize="52sp"
                         android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 300"
+                        android:tag="w300"
                         android:letterSpacing="-0.04"
                         android:includeFontPadding="false" />
 
@@ -85,11 +62,11 @@
                         android:layout_gravity="bottom"
                         android:layout_marginBottom="8dp"
                         android:format12Hour="a"
-                        android:format24Hour=""
+                        android:format24Hour="a"
                         android:textColor="#B3FFFFFF"
                         android:textSize="15sp"
                         android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 500"
+                        android:tag="w500"
                         android:letterSpacing="0.08"
                         android:textAllCaps="true" />
 
@@ -113,7 +90,7 @@
                         android:textColor="#A6FFFFFF"
                         android:textSize="14sp"
                         android:fontFamily="@font/outfit"
-                        android:fontVariationSettings="'wght' 400"
+                        android:tag="w400"
                         android:letterSpacing="0.14"
                         android:textAllCaps="true" />
                 </LinearLayout>
@@ -128,26 +105,30 @@
                 android:layout_marginBottom="6dp"
                 android:orientation="horizontal">
 
+                <!-- the 1400 app: icon only, "1400" beside the moon while focused; hidden when it is not installed -->
+                <TextView
+                    android:id="@+id/btnToday"
+                    style="@style/TopButton"
+                    android:drawableStart="@drawable/ic_moon"
+                    android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/btnInputs"
                     style="@style/TopButton"
                     android:text="@string/inputs"
-                    android:drawableStart="@drawable/ic_input"
-                    android:nextFocusDown="@+id/grid" />
+                    android:drawableStart="@drawable/ic_input" />
 
                 <TextView
                     android:id="@+id/btnWifi"
                     style="@style/TopButton"
                     android:text="@string/wifi"
-                    android:drawableStart="@drawable/ic_wifi"
-                    android:nextFocusDown="@+id/grid" />
+                    android:drawableStart="@drawable/ic_wifi" />
 
                 <TextView
                     android:id="@+id/btnSettings"
                     style="@style/TopButton"
                     android:text="@string/settings"
-                    android:drawableStart="@drawable/ic_settings"
-                    android:nextFocusDown="@+id/grid" />
+                    android:drawableStart="@drawable/ic_settings" />
             </LinearLayout>
         </RelativeLayout>
 
@@ -171,6 +152,17 @@
                 android:descendantFocusability="afterDescendants" />
         </FrameLayout>
     </LinearLayout>
+
+    <!-- Sports and weather lines: layout/home_lines.xml, built after the first frame and only when a feed is set -->
+    <ViewStub
+        android:id="@+id/linesStub"
+        android:inflatedId="@+id/lines"
+        android:layout="@layout/home_lines"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="116dp"
+        android:layout_marginStart="60dp"
+        android:layout_marginEnd="56dp" />
 
     <!-- The single floating glass highlight that springs between tiles. -->
     <com.gathin.tvhome.GlassView

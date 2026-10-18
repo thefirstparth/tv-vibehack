@@ -1,0 +1,61 @@
+# Xiaomi TV (MiTV-MOOR2, codename venom), Google TV on Android TV 11, firmware RTM5.220609.003.2674
+#
+# Apply:   TV_HOST=<tv ip> tools/disable.sh examples/xiaomi-mitv-moor2/debloat.txt
+# Undo:    TV_HOST=<tv ip> tools/restore.sh examples/xiaomi-mitv-moor2/debloat.txt com.google.android.apps.tv.launcherx
+# Everything is DISABLED, not uninstalled. Comment out any line you want to keep.
+# See the last section before replacing the stock launcher: on Google TV it needs one extra step.
+#
+# Deliberately kept: update services (com.xiaomi.mitv.updateservice, com.mitv.upgrader,
+# com.mitv.ABUpdateStatus), Google Assistant voice (com.google.android.katniss), Chromecast built-in
+# (com.google.android.apps.mediashell), Live TV (com.mitv.livetv*), Netflix, Play Services, Play Store,
+# and every media/DRM/player package (videoplayer, mediaexplorer, mimusic2, gallery, Dolby).
+# No Alexa package ships on this firmware.
+
+# Xiaomi telemetry
+com.miui.tv.analytics
+com.xiaomi.statistic
+
+# PatchWall and Mi content rows / promos
+com.mitv.tvhome.atv
+com.mitv.tvhome.oemtab                 # "Mi Home" tab in the Google TV top bar
+com.mitv.tvhome.michannel
+com.mitv.tvhome.mitvplus               # Mi TV+ ad-supported channels (not the Live TV tuner app)
+com.xm.webcontent
+
+# Xiaomi background services
+com.xiaomi.mitv.tvmanager              # "TV Manager" cleaner app
+com.mitv.milinkservice                 # Mi Cast, Chromecast still works
+com.xiaomi.mitv.smartshare             # Miracast screen mirroring
+com.xiaomi.wfdsinkhelperservice        # Miracast helper
+android.autoinstalls.config.xiaomi.amelie
+
+# Preloaded apps nobody asked for
+com.google.android.youtube.tvmusic
+com.google.android.play.games
+com.google.android.feedback
+com.xiaomi.mitv.manualhelp
+fusion.android.tv.demo                 # retail store demo
+
+# Stock Google TV launcher, replaced by launcher/.
+# What worked on this TV (verified after a reboot on 2026-10-18). Install launcher/ by hand first
+# (NOT build-and-install.sh, which disables launcherx straight away), then run these one command
+# per call and stop at the first error:
+#   pm disable-user --user 0 com.google.android.tungsten.setupwraith
+#   cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity
+#   pm disable-user --user 0 com.google.android.apps.tv.launcherx
+# Disable the whole setupwraith package, not its RecoveryActivity component: the shell is refused
+# ("Shell cannot change component state"), and while RecoveryActivity is enabled it takes Home
+# (priority 1) and shows a black screen. setupwraith is the Google TV setup app, so re-enable it
+# before a factory reset or account setup.
+# Side effect: the remote's Settings key stops working (Xiaomi's GlobalKeyReceiver in
+# com.xiaomi.android.tvsetup.partnercustomizer always opens launcherx's dashboard); use the
+# launcher's Settings pill instead.
+#
+# Undo, one command per call (back to the stock Google TV home, debloat kept):
+#   pm enable com.google.android.tungsten.setupwraith
+#   pm enable com.google.android.apps.tv.launcherx
+#   cmd package set-home-activity --user 0 com.google.android.apps.tv.launcherx/.home.HomeActivity
+# Full undo (everything in this file): the three lines above, then
+#   TV_HOST=<tv ip> tools/restore.sh examples/xiaomi-mitv-moor2/debloat.txt com.google.android.apps.tv.launcherx
+com.google.android.tungsten.setupwraith
+com.google.android.apps.tv.launcherx

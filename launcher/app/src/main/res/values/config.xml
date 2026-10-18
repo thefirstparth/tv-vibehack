@@ -7,20 +7,59 @@
 
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
     <string-array name="dock_apps">
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
         <item>com.google.android.youtube.tv</item>
+        <item>com.netflix.ninja</item>
         <item>in.startv.hotstar</item>
+        <item>com.fancode.tv</item>                 <!-- FanCode -->
+    </string-array>
+
+    <!-- Grid tiles shown first, right after the dock, in this order (4 a row). Everything else follows A–Z.
+         Row 2, watched most after the dock: the other streaming apps and music. Row 3: the paper, F1, and the
+         two utilities. -->
+    <string-array name="grid_order">
+        <item>com.amazon.amazonvideo.livingroom</item>  <!-- Prime Video -->
+        <item>com.sonyliv</item>                        <!-- Sony LIV -->
+        <item>com.apple.atve.androidtv.appletv</item>   <!-- Apple TV -->
+        <item>com.spotify.tv.android</item>             <!-- Spotify -->
+        <item>com.gathin.tv1400</item>                  <!-- 1400 (launcher/app1400) -->
+        <item>com.formulaone.production</item>          <!-- F1 TV -->
+        <item>com.android.vending</item>                <!-- Play Store -->
+        <item>com.android.tv.settings</item>            <!-- Settings -->
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
     <string-array name="hidden_apps">
-        <item>com.mediatek.wwtv.tvcenter</item>
+        <item>com.mitv.livetv</item>
         <item>com.mitv.gallery</item>
+        <item>com.xiaomi.mitv.mediaexplorer</item>      <!-- Media Player -->
+        <item>com.google.android.videos</item>          <!-- Google Play Movies & TV -->
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+    <string name="live_tv_package" translatable="false">com.mitv.livetv</string>
+
+    <!-- The one accent on the home screen: a competition's colour on its name in the sport label and on the countdown
+         pill. Matched by the competition's name (as the feed sends it, full or short), then by sport; else white. -->
+    <string-array name="accent_colours">
+        <item>La Liga|#FF8A5C</item>
+        <item>Champions League|#8FB4FF</item>
+        <item>UCL|#8FB4FF</item>
+        <item>Copa del Rey|#FFB27A</item>
+        <item>football|#FF8A5C</item>
+        <item>f1|#FF6B6B</item>
+        <item>cricket|#6FB8FF</item>
+        <item>nba|#FFC94D</item>
+        <item>tennis|#CDE86A</item>
+        <item>intl|#4FD1A5</item>
+    </string-array>
+
+    <!-- The place the sun is worked out for (sunrise, sunset, the line above the clock): launcher/shared/src/main/
+         res/values/config.xml, shared with the 1400 app. -->
+
+    <!-- Names for the TV's inputs in the Inputs menu: "port label|name" (the port moves to the right of the row). -->
+    <string-array name="input_names">
+        <item>HDMI 2|Xbox</item>
+    </string-array>
 
     <!-- Tiles per row in the grid; the dock always has this many slots. -->
     <integer name="columns">4</integer>
