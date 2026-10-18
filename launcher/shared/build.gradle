@@ -2,7 +2,7 @@ plugins {
     id 'com.android.library'
 }
 
-// Shared by the launcher (:app) and the Today app (:today): Horizon, the sun, the sport and weather lines and their
+// Shared by the launcher (:app) and the 1400 app (:app1400): Horizon, the sun, the sport and weather lines and their
 // feed, and Outfit. The feed address and the personal days are private, so they are never committed: tv.feedUrl and
 // tv.day.N in launcher/local.properties (gitignored), built in here. Empty or missing: no feed, no personal days.
 def localProps = new Properties()

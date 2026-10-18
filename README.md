@@ -119,6 +119,7 @@ most:
 |---|---|
 | [`PROMPT.md`](PROMPT.md) | The prompt to give your assistant |
 | [`LESSONS.md`](LESSONS.md) | Everything we learned, including what went wrong |
+| [`CLAUDE.md`](CLAUDE.md) | Instructions for an AI agent picking this up: the rules for working on the TV safely |
 | [`launcher/`](launcher/) | The home screen and the 1400 app ([details](launcher/README.md)). Your dock, grid order and hidden apps are in `launcher/app/src/main/res/values/config.xml` |
 | [`tools/tv.py`](tools/tv.py) | A small ADB client in Python. Works where the usual `adb` is blocked (macOS) |
 | [`tools/b64push.py`](tools/b64push.py) | Sends an app file (APK) to the TV in pieces and checks it arrived whole |
