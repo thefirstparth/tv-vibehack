@@ -39,6 +39,7 @@ fusion.android.tv.demo                 # retail store demo
 # Stock Google TV launcher, replaced by launcher/ (apply only after installing it).
 # Left commented out: on this Google TV firmware, disabling launcherx makes setupwraith's
 # RecoveryActivity (HOME priority 1) win over any set-home-activity choice, and Home shows a black
-# screen. Uncomment BOTH lines together; restore.sh re-enables the component as well.
-# com.google.android.tungsten.setupwraith/.RecoveryActivity
+# screen. Disabling just that component over ADB fails ("Shell cannot change component state"), so
+# launcherx can only go if the whole com.google.android.tungsten.setupwraith package is disabled too.
+# Until then, open the new launcher from the app list (it declares LEANBACK_LAUNCHER).
 # com.google.android.apps.tv.launcherx
