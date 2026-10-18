@@ -1,11 +1,9 @@
 package com.gathin.tvhome;
 
-import android.animation.ValueAnimator;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -21,14 +19,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.dynamicanimation.animation.DynamicAnimation;
-import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -49,9 +45,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for D-pad Up/Down on a tile. Return true when handled. */
         boolean onTileVerticalKey(int position, int keyCode);
-
-        /** Left/Right pressed at the end of a row (direction -1 or 1); focus stays put. */
-        void onTileEdge(int direction);
     }
 
     static final class Entry {
@@ -60,23 +53,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
-        /** The installed APK's path; it changes when the app updates, which invalidates its saved colour. */
-        final String sourceDir;
-        Palette palette;
+        int ambient;
 
-        Entry(String label, ComponentName component, Drawable banner, Drawable icon, String sourceDir) {
+        Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
-            this.sourceDir = sourceDir;
         }
     }
 
     static final float FOCUS_SCALE = 1.10f;
-    /** Tile corner radius at rest and when focused (the focused tile's corners morph rounder). */
-    static final float REST_RADIUS_DP = 16f, FOCUS_RADIUS_DP = 22f;
 
     private final Context ctx;
     private final TileListener listener;
@@ -86,8 +74,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final List<Entry> items = new ArrayList<>();
-    /** Each app's seed colour, worked out once: "<sourceDir>|<colour>" by package name. */
-    private final SharedPreferences colours;
 
     AppAdapter(Context ctx, TileListener listener, int dockSize) {
         this.ctx = ctx;
@@ -97,7 +83,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.favourites = new ArrayList<>(Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
         this.favourites.addAll(Arrays.asList(ctx.getResources().getStringArray(R.array.grid_order)));
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
-        this.colours = ctx.getSharedPreferences("app_colours", Context.MODE_PRIVATE);
     }
 
     void reload() {
@@ -113,8 +98,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
             Drawable icon = ri.loadIcon(pm);
             String label = String.valueOf(ri.loadLabel(pm));
-            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon,
-                    String.valueOf(ri.activityInfo.applicationInfo.sourceDir)));
+            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon));
         }
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
@@ -143,7 +127,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.name.setText(e.label);
         h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
         h.name.setAlpha(0f);
-        h.reset();
+        h.card.setScaleX(1f);
+        h.card.setScaleY(1f);
         if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
@@ -190,28 +175,12 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return position >= 0 && position < items.size() ? items.get(position).label : "";
     }
 
-    /** The app's tonal palette, from a seed colour sampled from its banner (or icon) once and saved. */
-    Palette paletteAt(int position) {
-        if (position < 0 || position >= items.size()) return Palette.NEUTRAL;
+    /** A vivid colour sampled from the app's banner (or icon), cached per entry. */
+    int ambientColorAt(int position) {
+        if (position < 0 || position >= items.size()) return 0xFF444444;
         Entry e = items.get(position);
-        if (e.palette == null) e.palette = new Palette(seedColour(e));
-        return e.palette;
-    }
-
-    private int seedColour(Entry e) {
-        String saved = colours.getString(e.pkg, null);
-        if (saved != null) {
-            int bar = saved.lastIndexOf('|');
-            if (bar > 0 && saved.substring(0, bar).equals(e.sourceDir)) {
-                try {
-                    return Integer.parseInt(saved.substring(bar + 1));
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
-        int seed = vividColor(e.banner != null ? e.banner : e.icon);
-        colours.edit().putString(e.pkg, e.sourceDir + "|" + seed).apply();
-        return seed;
+        if (e.ambient == 0) e.ambient = vividColor(e.banner != null ? e.banner : e.icon);
+        return e.ambient;
     }
 
     private static int vividColor(Drawable live) {
@@ -263,14 +232,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final TextView label;
         final TextView name;
 
-        private final float density;
-        private final float restRadius, focusRadius;
-        /** Current corner radius; the outline provider reads it, the morph animates it. */
-        private float cornerRadius;
-        private ValueAnimator morph;
-        // Spatial springs (position, size) may bounce a little; nothing here runs once it settles.
-        private final SpringAnimation scaleX, scaleY, nudge;
-
         Holder(View v, TileListener listener) {
             super(v);
             card = v.findViewById(R.id.card);
@@ -279,53 +240,29 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             label = v.findViewById(R.id.label);
             name = v.findViewById(R.id.name);
 
-            density = v.getResources().getDisplayMetrics().density;
-            restRadius = density * REST_RADIUS_DP;
-            focusRadius = density * FOCUS_RADIUS_DP;
-            cornerRadius = restRadius;
+            final float density = v.getResources().getDisplayMetrics().density;
+            final float radius = density * 16f;
             card.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius);
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
                 }
             });
             card.setClipToOutline(true);
 
-            scaleX = spring(DynamicAnimation.SCALE_X, 1f);
-            scaleY = spring(DynamicAnimation.SCALE_Y, 1f);
-            nudge = spring(DynamicAnimation.TRANSLATION_X, 0f);
-            nudge.getSpring().setStiffness(700f).setDampingRatio(0.35f);
-
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode != KeyEvent.KEYCODE_DPAD_UP && keyCode != KeyEvent.KEYCODE_DPAD_DOWN) return false;
                 int pos = getBindingAdapterPosition();
-                if (listener == null || pos == RecyclerView.NO_POSITION) return false;
-                if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-                    return listener.onTileVerticalKey(pos, keyCode);
-                }
-                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                    // Row ends: bump instead of letting focus wrap to another row.
-                    RecyclerView.Adapter<?> a = getBindingAdapter();
-                    int count = a == null ? 0 : a.getItemCount();
-                    int col = pos % MainActivity.COLUMNS;
-                    boolean left = keyCode == KeyEvent.KEYCODE_DPAD_LEFT;
-                    boolean edge = left ? col == 0 : (col == MainActivity.COLUMNS - 1 || pos == count - 1);
-                    if (!edge) return false;
-                    bump(left ? -1 : 1);
-                    listener.onTileEdge(left ? -1 : 1);
-                    return true;
-                }
-                return false;
+                return listener != null && pos != RecyclerView.NO_POSITION && listener.onTileVerticalKey(pos, keyCode);
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
-                // Grow with a slight bounce; shrink back without one.
                 float s = focused ? FOCUS_SCALE : 1.0f;
-                for (SpringAnimation sp : new SpringAnimation[]{scaleX, scaleY}) {
-                    sp.getSpring().setStiffness(focused ? 420f : 600f).setDampingRatio(focused ? 0.6f : 1f);
-                    sp.animateToFinalPosition(s);
-                }
-                morphCorners(focused ? focusRadius : restRadius);
+                view.animate().scaleX(s).scaleY(s)
+                        .setDuration(focused ? 260 : 180)
+                        .setInterpolator(new OvershootInterpolator(focused ? 1.6f : 0f))
+                        .start();
                 name.animate().alpha(focused ? 1f : 0f)
                         .translationY(focused ? density * 4f : -density * 6f)
                         .setDuration(220).start();
@@ -334,45 +271,6 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     listener.onTileFocused(pos, view);
                 }
             });
-        }
-
-        private SpringAnimation spring(DynamicAnimation.ViewProperty property, float rest) {
-            SpringAnimation s = new SpringAnimation(card, property, rest);
-            s.getSpring().setStiffness(500f).setDampingRatio(1f);
-            return s;
-        }
-
-        /** Rebound view: drop any half-finished motion from the tile it showed before. */
-        void reset() {
-            for (SpringAnimation s : new SpringAnimation[]{scaleX, scaleY, nudge}) s.cancel();
-            if (morph != null) morph.cancel();
-            card.setScaleX(1f);
-            card.setScaleY(1f);
-            card.setTranslationX(0f);
-            cornerRadius = restRadius;
-            card.invalidateOutline();
-        }
-
-        /** Material-style shape morph: the focused tile's corners round out, then settle. */
-        private void morphCorners(float target) {
-            if (morph != null) morph.cancel();
-            if (cornerRadius == target) return;
-            morph = ValueAnimator.ofFloat(cornerRadius, target);
-            morph.setDuration(240);
-            morph.setInterpolator(new DecelerateInterpolator(1.5f));
-            morph.addUpdateListener(a -> {
-                cornerRadius = (float) a.getAnimatedValue();
-                card.invalidateOutline();
-            });
-            morph.start();
-        }
-
-        /** Nothing further this way: a short sideways bounce. */
-        private void bump(int direction) {
-            nudge.cancel();
-            nudge.setStartValue(0f);
-            nudge.setStartVelocity(direction * 900f * density);
-            nudge.animateToFinalPosition(0f);
         }
     }
 }

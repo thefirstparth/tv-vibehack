@@ -1,17 +1,13 @@
 package com.gathin.tvhome;
 
-import android.animation.ArgbEvaluator;
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.StateListDrawable;
 import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
@@ -80,19 +76,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean refocusPending;
     private float density;
 
-    // Glass and colour: the top bar, dock band and highlight take the focused app's palette.
-    private DockDecoration dock;
-    private TextView[] pills;
-    private GlassDrawable[] pillGlass;
-    private GradientDrawable[] pillFocus;
-    private Palette shownPalette;
-    private ValueAnimator paletteFade;
-    private int curContainer, curLight, curOnLight, curRim;
-    private final ArgbEvaluator argb = new ArgbEvaluator();
-
     private final Handler handler = new Handler(Looper.getMainLooper());
-    /** One gloss sweep across the glass once it has settled on a tile. */
-    private final Runnable sheen = () -> glass.sweep();
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
@@ -127,8 +111,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
         grid.setHasFixedSize(true);
         grid.setItemAnimator(null);
-        dock = new DockDecoration(COLUMNS, density);
-        grid.addItemDecoration(dock);
+        grid.addItemDecoration(new DockDecoration(COLUMNS, density));
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS);
@@ -184,22 +167,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
 
-        // Liquid-glass pills; focused, they fill with the palette's light tone.
-        pills = new TextView[]{(TextView) btnInputs, btnWifi, (TextView) btnSettings};
-        pillGlass = new GlassDrawable[pills.length];
-        pillFocus = new GradientDrawable[pills.length];
-        for (int i = 0; i < pills.length; i++) {
-            pillGlass[i] = new GlassDrawable(21 * density, density, 0, 0x2EFFFFFF, 0x0EFFFFFF);
-            pillFocus[i] = new GradientDrawable();
-            pillFocus[i].setCornerRadius(21 * density);
-            StateListDrawable bg = new StateListDrawable();
-            bg.addState(new int[]{android.R.attr.state_focused}, pillFocus[i]);
-            bg.addState(new int[0], pillGlass[i]);
-            pills[i].setBackground(bg);
-        }
-        Palette n = Palette.NEUTRAL;
-        setColours(n.container, n.light, n.onLight, n.rim);
-
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
@@ -253,7 +220,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         if (position < COLUMNS) lastDockFocused = position;
-        fadeToPalette(adapter.paletteAt(position));
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
@@ -268,11 +234,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             lp.width = (int) w;
             lp.height = (int) h;
             glass.setLayoutParams(lp);
-            glass.setRadius(AppAdapter.FOCUS_RADIUS_DP * density * AppAdapter.FOCUS_SCALE + pad);
+            glass.setRadius(16f * density * AppAdapter.FOCUS_SCALE + pad);
         }
-        glass.cancelSweep();
-        handler.removeCallbacks(sheen);
-        handler.postDelayed(sheen, 260);   // only once focus rests, so fast scrolling never sweeps
         glassTargetX = x;
         glassTargetY = y;
         if (!glassShown) {
@@ -305,7 +268,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void showHero(int position, float dockTopInRoot) {
         String label = adapter.labelAt(position);
-        int color = adapter.paletteAt(position).seed;
+        int color = adapter.ambientColorAt(position);
         float y = dockTopInRoot - 14 * density - 26 * density - heroName.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
 
@@ -349,61 +312,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void hideGlass() {
-        handler.removeCallbacks(sheen);
-        glass.cancelSweep();
         if (!glassShown) return;
         glassShown = false;
         glass.animate().alpha(0f).setDuration(160).start();
-    }
-
-    // ---- glass and colour ------------------------------------------------------------------------
-
-    /** One short fade from the current colours to the focused app's palette; nothing runs after it. */
-    private void fadeToPalette(Palette p) {
-        if (shownPalette != null && shownPalette.seed == p.seed) return;
-        shownPalette = p;
-        final int c0 = curContainer, l0 = curLight, o0 = curOnLight, r0 = curRim;
-        if (paletteFade != null) paletteFade.cancel();
-        paletteFade = ValueAnimator.ofFloat(0f, 1f);
-        paletteFade.setDuration(250);
-        paletteFade.addUpdateListener(a -> {
-            float f = (float) a.getAnimatedValue();
-            setColours(blend(f, c0, p.container), blend(f, l0, p.light), blend(f, o0, p.onLight), blend(f, r0, p.rim));
-        });
-        paletteFade.start();
-    }
-
-    private int blend(float f, int from, int to) {
-        return (int) argb.evaluate(f, from, to);
-    }
-
-    private void setColours(int container, int light, int onLight, int rim) {
-        curContainer = container;
-        curLight = light;
-        curOnLight = onLight;
-        curRim = rim;
-        ColorStateList text = focusColours(onLight, 0xFFFFFFFF);
-        for (int i = 0; i < pills.length; i++) {
-            pillGlass[i].setGlassTint(container);
-            pillFocus[i].setColor(light);
-            pills[i].setTextColor(text);
-            pills[i].setCompoundDrawableTintList(text);
-        }
-        dock.setTint(container);
-        grid.invalidate();
-        glass.setRimTint(rim);
-    }
-
-    private static ColorStateList focusColours(int focused, int normal) {
-        return new ColorStateList(new int[][]{{android.R.attr.state_focused}, {}}, new int[]{focused, normal});
-    }
-
-    @Override
-    public void onTileEdge(int direction) {
-        // The glass bumps with its tile, then springs back.
-        if (!glassShown) return;
-        springX.animateToFinalPosition(glassTargetX + direction * 10f * density);
-        handler.postDelayed(() -> springX.animateToFinalPosition(glassTargetX), 70);
     }
 
     // ---- navigation ------------------------------------------------------------------------------
@@ -497,11 +408,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showInputs() {
         View anchor = findViewById(R.id.btnInputs);
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
-        // Denser glass than the pills: the menu sits over bright tiles and must stay readable.
-        GlassDrawable panelGlass = new GlassDrawable(20 * density, density, 0xF0161618, 0x14FFFFFF, 0x04FFFFFF)
-                .withoutInnerHighlight();
-        panelGlass.setGlassTint(curContainer);
-        panel.setBackground(panelGlass);
         LinearLayout rows = panel.findViewById(R.id.rows);
 
         // Compact, hanging right below the pill; sized to its rows once they are added.
@@ -595,19 +501,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String device,
                              int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
-        GradientDrawable focusedBg = new GradientDrawable();
-        focusedBg.setCornerRadius(13 * density);
-        focusedBg.setColor(curLight);
-        StateListDrawable bg = new StateListDrawable();
-        bg.addState(new int[]{android.R.attr.state_focused}, focusedBg);
-        row.setBackground(bg);
-        ColorStateList text = focusColours(curOnLight, 0xFFFFFFFF);
-        ImageView icon = row.findViewById(R.id.icon);
-        icon.setImageResource(iconRes);
-        icon.setImageTintList(text);
-        TextView titleView = row.findViewById(R.id.title);
-        titleView.setText(title);
-        titleView.setTextColor(text);
+        ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
+        ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);
         View dot = row.findViewById(R.id.dot);
         // This TV reports "standby" for every port whether or not something is plugged in, so only

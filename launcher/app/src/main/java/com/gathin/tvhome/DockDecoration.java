@@ -1,6 +1,7 @@
 package com.gathin.tvhome;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
@@ -8,23 +9,22 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-/** Draws the tvOS style glass band behind the first (dock) row and adds a gap below it. */
+/** Draws the tvOS style lighter band behind the first (dock) row and adds a gap below it. */
 public class DockDecoration extends RecyclerView.ItemDecoration {
 
     private final int dockSize;
     private final float density;
-    private final GlassDrawable band;
+    private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
 
     DockDecoration(int dockSize, float density) {
         this.dockSize = dockSize;
         this.density = density;
-        band = new GlassDrawable(26 * density, density, 0xFF0E0E10, 0x1CFFFFFF, 0x06FFFFFF).withoutInnerHighlight();
-    }
-
-    /** Tint for the band (a palette's container colour). The caller invalidates the RecyclerView. */
-    void setTint(int color) {
-        band.setGlassTint(color);
+        band.setColor(0xFF141416);
+        edge.setStyle(Paint.Style.STROKE);
+        edge.setStrokeWidth(density);
+        edge.setColor(0x1FFFFFFF);
     }
 
     @Override
@@ -60,13 +60,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         if (!any) return;
         float pad = 14 * density;
         rect.inset(-pad, -pad);
-        // Fixed bounds, moved with a translate: scrolling then never rebuilds the band's gradients.
-        int w = Math.round(rect.width()), h = Math.round(rect.height());
-        Rect b = band.getBounds();
-        if (b.width() != w || b.height() != h) band.setBounds(0, 0, w, h);
-        int save = c.save();
-        c.translate(rect.left, rect.top);
-        band.draw(c);
-        c.restoreToCount(save);
+        float radius = 26 * density;
+        c.drawRoundRect(rect, radius, radius, band);
+        c.drawRoundRect(rect, radius, radius, edge);
     }
 }
