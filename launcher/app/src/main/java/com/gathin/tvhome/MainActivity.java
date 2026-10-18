@@ -2,8 +2,10 @@ package com.gathin.tvhome;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -83,6 +85,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int linesTop = -1, linesBottom = -1;
     /** Set once the first frame is on screen: the work kept off the startup path may begin. */
     private boolean firstFrameDone, resumed;
+    /** An app was installed, removed or updated while Home was in the background: the tiles and the moon are redone on return. */
+    private boolean appsChanged;
+    /** The app list is loaded once (onCreate) and redone only when a package changes, not on every return to Home. */
+    private final BroadcastReceiver packages = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent i) {
+            if (resumed) reloadApps();
+            else appsChanged = true;
+        }
+    };
     /** The Horizon image is drawn here, never on the main thread. */
     private final java.util.concurrent.ExecutorService painter = java.util.concurrent.Executors.newSingleThreadExecutor();
     /** The window's background, by time of day; drawn once per look. */
@@ -161,6 +173,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS);
         grid.setAdapter(adapter);
+        adapter.reload();
+        grid.scheduleLayoutAnimation();   // the tiles' entrance: on a real start only, not on each return to Home
+        IntentFilter pf = new IntentFilter();
+        pf.addAction(Intent.ACTION_PACKAGE_ADDED);
+        pf.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        pf.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        pf.addAction(Intent.ACTION_PACKAGE_REPLACED);
+        pf.addDataScheme("package");
+        registerReceiver(packages, pf);
 
         // tvOS layout: push the dock row to the bottom of the screen; the grid hides below until you press Down.
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
@@ -251,15 +272,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onResume();
         glassShown = false;
         glass.setAlpha(0f);
-        adapter.reload();
-        grid.scheduleLayoutAnimation();
-        updateWifiLabel();
-        // the line above the clock and the moon pill (a package query) are kept off the startup path: on a cold
-        // start they come just after the first frame (afterFirstFrame), on every later return straight away
-        if (firstFrameDone) {
-            updateGreeting();
-            showMoon();
+        if (appsChanged) {
+            appsChanged = false;
+            reloadApps();
         }
+        updateWifiLabel();
+        // the line above the clock is kept off the startup path: on a cold start it comes just after the first
+        // frame (afterFirstFrame), on every later return straight away
+        if (firstFrameDone) updateGreeting();
         resumed = true;
         updateHorizon();
         if (homeLines != null) {
@@ -280,7 +300,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else focusTile(lastFocused);
     }
 
-    /** The moon pill only while the 1400 app is installed. */
+    /** The tiles and the moon again, after a package change; focus goes back where it was. */
+    private void reloadApps() {
+        adapter.reload();
+        showMoon();
+        grid.post(this::refocus);
+    }
+
+    @Override
+    protected void onDestroy() {
+        unregisterReceiver(packages);
+        super.onDestroy();
+    }
+
+    /** The moon pill only while the 1400 app is installed (checked after the first frame and on a package change). */
     private void showMoon() {
         btnToday.setVisibility(todayIntent() != null ? View.VISIBLE : View.GONE);
         if (btnToday.getVisibility() != View.VISIBLE) focusMoon = false;
