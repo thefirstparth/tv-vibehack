@@ -544,6 +544,30 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         int side = (int) ((iconOnly ? 11 : 16) * density), end = (int) ((iconOnly ? 11 : 20) * density);
         btnWifi.setCompoundDrawablePadding(iconOnly ? 0 : (int) (9 * density));
         btnWifi.setPaddingRelative(side, btnWifi.getPaddingTop(), end, btnWifi.getPaddingBottom());
+        if (!iconOnly) fitWifi();
+    }
+
+    /**
+     * A long network name never reaches the clock, the date or the line above them: the pill grows to the left only as
+     * far as the left block leaves room (a gap kept), and the name ends in "…" beyond that.
+     */
+    private void fitWifi() {
+        View left = findViewById(R.id.leftBlock);
+        ViewGroup bar = findViewById(R.id.topButtons);
+        if (left.getWidth() == 0 || bar.getWidth() == 0) {
+            bar.post(this::fitWifi);   // not laid out yet
+            return;
+        }
+        int room = bar.getRight() - left.getRight() - (int) (16 * density), others = 0;
+        for (int i = 0; i < bar.getChildCount(); i++) {
+            View c = bar.getChildAt(i);
+            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) c.getLayoutParams();
+            if (c.getVisibility() == View.GONE) continue;
+            others += lp.getMarginStart() + lp.getMarginEnd() + (c == btnWifi ? 0 : c.getWidth());
+        }
+        btnWifi.setSingleLine(true);
+        btnWifi.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        btnWifi.setMaxWidth(Math.max((int) (44 * density), room - others));
     }
 
     private void open(Intent i) {
