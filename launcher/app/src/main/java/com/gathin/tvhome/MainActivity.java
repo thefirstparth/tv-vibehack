@@ -64,7 +64,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private GlassView glass;
     private TextView greeting;
-    private TextView btnWifi;
+    private TextView btnWifi, btnToday;
+    /** The Today app (its own APK): the moon pill opens it, and is hidden while it is not installed. */
+    static final String TODAY_APP = "com.gathin.tvtoday";
+    /** Back from the Today app opened by the moon: focus goes to the moon, not the last tile. */
+    private boolean focusMoon;
     private SpringAnimation springX, springY;
     private float glassTargetX, glassTargetY;
     private boolean glassShown;
@@ -196,7 +200,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         View btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
+        btnToday = findViewById(R.id.btnToday);
         btnInputs.setOnClickListener(v -> showInputs());
+        // the moon: the Today app's normal launch; back on the moon when it closes
+        btnToday.setOnClickListener(v -> {
+            Intent i = todayIntent();
+            if (i == null) return;
+            focusMoon = true;
+            open(i);
+        });
+        btnToday.setOnFocusChangeListener((v, focused) -> showTodayPill(focused));
+        showTodayPill(false);
         btnWifi.setOnClickListener(v -> open(new Intent(Settings.ACTION_WIFI_SETTINGS)));
         // the bars as the pill's icon; the name comes and goes with the pill's focus
         WifiBars bars = wifiBars = new WifiBars(density);
@@ -214,9 +228,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(lastDockFocused);
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v.getId() == R.id.btnInputs) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v.getId() == R.id.btnToday) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && v.getId() == R.id.btnInputs) {
+                if (btnToday.getVisibility() == View.VISIBLE) btnToday.requestFocus();
+                return true;
+            }
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == R.id.btnSettings;
         };
+        btnToday.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
@@ -237,6 +256,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.scheduleLayoutAnimation();
         updateGreeting();
         updateWifiLabel();
+        btnToday.setVisibility(todayIntent() != null ? View.VISIBLE : View.GONE);
+        if (btnToday.getVisibility() != View.VISIBLE) focusMoon = false;
         resumed = true;
         updateHorizon();
         if (homeLines != null) {
@@ -248,7 +269,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // Return to the tile we left from, or the first one. The window restores its old focus (often a
         // top-bar pill) when it regains focus, so this runs again from onWindowFocusChanged.
         refocusPending = true;
-        grid.post(() -> focusTile(lastFocused));
+        grid.post(this::refocus);
+    }
+
+    /** Back on the last tile, or on the moon pill when the Today app it opened just closed. */
+    private void refocus() {
+        if (focusMoon) btnToday.requestFocus();
+        else focusTile(lastFocused);
+    }
+
+    private Intent todayIntent() {
+        return getPackageManager().getLeanbackLaunchIntentForPackage(TODAY_APP);
     }
 
     @Override
@@ -328,7 +359,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus && refocusPending) {
             refocusPending = false;
-            focusTile(lastFocused);
+            refocus();
+            focusMoon = false;
         }
     }
 
@@ -483,6 +515,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         wifiName = text;
         wifiIconOnly = wifi;
         showWifi(btnWifi.isFocused());
+    }
+
+    /** The moon pill: icon only and square, with "Today" beside the moon while focused (as the Wi-Fi pill). */
+    private void showTodayPill(boolean focused) {
+        String want = focused ? getString(R.string.today) : "";
+        if (!want.contentEquals(btnToday.getText())) btnToday.setText(want);
+        int side = (int) ((focused ? 16 : 11) * density), end = (int) ((focused ? 20 : 11) * density);
+        btnToday.setCompoundDrawablePadding(focused ? (int) (9 * density) : 0);
+        btnToday.setPaddingRelative(side, btnToday.getPaddingTop(), end, btnToday.getPaddingBottom());
     }
 
     private void showWifi(boolean focused) {
