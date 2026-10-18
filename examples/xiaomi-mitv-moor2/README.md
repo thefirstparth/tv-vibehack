@@ -204,6 +204,8 @@ The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `
 
 Nothing here blocks using the TV. Pick up any of it later.
 
+**The next session's plan is in [NEXT.md](NEXT.md)** (humidity layout, QA, the video lag test).
+
 - **Known issue: Home lags after watching video, until a restart.** Measured 2026-10-18: after a
   reboot Home is smooth (0% janky frames, 6 ms a frame); after 45 s of video (FanCode live) it is
   60–70% janky (38 ms a frame), and stays so after closing the app, closing every app, standby and
