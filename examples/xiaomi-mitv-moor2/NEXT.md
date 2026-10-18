@@ -2,26 +2,32 @@
 
 Three parts, in this order (Part 1 is already decided). Times are caps, not estimates to stretch.
 
-## The 60-minute version, no compromises (Parth, 2026-10-19): this overrides the times below
+## The plan to run: about an hour, hard stop at 70 minutes (Parth, 2026-10-19; overrides the times below)
 
-Full rigour kept: the 5-round A/B, and every app tested from a fresh restart with playback proved.
-It fits because Part 1b (Mac) runs while Part 3 (TV) runs.
+Full rigour: the 5-round A/B, and every app tested from a *measured* clean state with playback proved.
+Timings are from today's runs: an A/B round ~2 min 15 s; a restart plus rest ~4.5 min; a Home
+measurement (warm-up + 2 runs) ~3 min; 60 s of proved playback ~1.5 min.
 
-| Time | On the TV | On the Mac | Hard limit |
-|---|---|---|---|
-| 0:00–0:31 | Part 3: JioHotstar, Netflix, FanCode, each from a fresh restart (measure Home, play 60 s proved, measure) | Part 1b: row-end fix, unit test, emulator on every row, release build | TV 31 min, Mac 15 min |
-| 0:31–0:54 | Part 2: full A/B, 5 alternating rounds each after a restart, the keep rules | — | 23 min |
-| 0:54–0:58 | Key check (row wrap, dock, Inputs, newspaper pill, Settings, grid), install | Merge to `main` (PR) | 4 min |
-| 0:58–1:00 | Home; report | Commit, push | 2 min |
+1. **TV, from 0:00 — Part 3, restart only when needed.** Restart, rest, measure Home (clean). Then
+   JioHotstar: play 60 s, measure. If Home stayed smooth, the TV is still clean: Netflix next without a
+   restart, then FanCode (MEMC off, as now) last. After any app that lags: restart, re-measure clean,
+   carry on. ~21 min if only FanCode lags, ~35 if all three do.
+2. **Mac, at the same time — Part 1b,** limit 15 min: row-end fix, unit test, emulator on every row,
+   release build.
+3. **TV — Part 2,** the full A/B (5 alternating rounds each, medians, the keep rules), reusing the
+   restart after FanCode. ~23 min (27 if a fresh restart is needed).
+4. **Key check** (row wrap, dock, Inputs, newspaper pill, Settings, grid), install, **merge to `main`**
+   (PR), Home, commit, push, report. ~7 min.
 
-Not in the 60 minutes: fix attempts for an app that still lags (AI super-resolution off in the menu,
-minimal post-processing for Home), about 12 min each. If one lags, report it; they are the next session.
-At a limit, the step stops where it is; nothing is extended.
+**Expected ~51 min; worst case ~69; hard stop at 70** — at the stop: put back the build the TV had,
+restart if Home lags, press Home, push what's committed, report where it stopped.
+Not included: fix attempts for an app that still lags (AI super-resolution off, minimal
+post-processing for Home), ~12 min each — reported for the next session.
 
 Start prompt:
 
 ```
-Start the plan in examples/xiaomi-mitv-moor2/NEXT.md, the 60-minute version, hard limits per step.
+Start the plan in examples/xiaomi-mitv-moor2/NEXT.md ("about an hour, hard stop at 70 minutes").
 Pull first. Follow CLAUDE.md's rules. Part 1 is decided, skip it.
 Update me at each milestone with an ETA. If the TV is in use, ask before touching it.
 At the end: TV on Home, everything committed and pushed, a short report of what got fixed and what didn't.
