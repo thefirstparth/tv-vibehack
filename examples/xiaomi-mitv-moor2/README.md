@@ -65,6 +65,30 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    ```
    The display's switch-off time is Settings > System > Power & energy > "When inactive" (Energy
    saver / "Turn off display" on some builds), the same value as `sleep_timeout` above.
+8. **System speed and memory (2026-10-18).** Each step was measured after a reboot and 3 minutes'
+   rest (cold open: `am force-stop`, then `am start -W`, 3 runs, median; Home return: the Home
+   intent with the app in front). Recorded before anything changed:
+   ```
+   settings get global window_animation_scale        # 0.5 (already; not set by this work)
+   settings get global transition_animation_scale    # 0.5 (already)
+   settings get global animator_duration_scale       # 0.5 (already)
+   cmd appops get <pkg> RUN_ANY_IN_BACKGROUND         # no override (allow) for all five below
+   dumpsys package dexopt                             # speed-profile for YouTube, Netflix, JioHotstar,
+                                                      # FanCode (bg-dexopt) and the launcher (install)
+   df /data                                           # 2474896K used, 1623024K free
+   ```
+   - **Kept: pre-compile.** `cmd package bg-dexopt-job`, then `cmd package compile -m speed-profile -f`
+     on `com.gathin.tvhome`, YouTube, Netflix, JioHotstar and FanCode. No measurable change (the apps
+     were already `speed-profile`), kept as harmless: +33 MB on /data after the reboot.
+   - **Tried and undone: `-m speed`.** Slower for every app (YouTube 720 → 815 ms, Netflix 603 → 712,
+     JioHotstar 1258 → 1512, FanCode 2057 → 2717) and +164 MB: this TV's storage is slow, and bigger
+     compiled files take longer to load. All five were put back with `-m speed-profile -f`.
+   - **Animations:** already 0.5 before this work; nothing changed.
+   - **Kept: background.** `cmd appops set <pkg> RUN_ANY_IN_BACKGROUND ignore` for
+     `in.startv.hotstar`, `com.fancode.tv`, `com.sonyliv`, `com.apple.atve.androidtv.appletv` and
+     `com.formulaone.production`. All five open; FanCode played live cricket. FanCode's open time with
+     and without it is the same (2008–2145 ms against 2118 ms).
+   - Not used: the "Background process limit" developer option.
 
 Check the live state any time:
 
@@ -89,6 +113,21 @@ The 1400 app (the moon pill hides itself when it is gone; then take `com.gathin.
 
 ```bash
 $T 'pm uninstall com.gathin.tv1400'
+```
+
+The system speed steps (Current state, item 8), back to how they were:
+
+```bash
+$T 'cmd appops set in.startv.hotstar RUN_ANY_IN_BACKGROUND default'
+$T 'cmd appops set com.fancode.tv RUN_ANY_IN_BACKGROUND default'
+$T 'cmd appops set com.sonyliv RUN_ANY_IN_BACKGROUND default'
+$T 'cmd appops set com.apple.atve.androidtv.appletv RUN_ANY_IN_BACKGROUND default'
+$T 'cmd appops set com.formulaone.production RUN_ANY_IN_BACKGROUND default'
+# the compile state was speed-profile before and after; the TV's own background job keeps it so.
+# The animation scales were 0.5 before this work; Android's default is 1:
+$T 'settings put global window_animation_scale 0.5'
+$T 'settings put global transition_animation_scale 0.5'
+$T 'settings put global animator_duration_scale 0.5'
 ```
 
 The screensaver settings, should anything ever change them, back to the values recorded above:
@@ -161,11 +200,10 @@ The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `
 
 Nothing here blocks using the TV. Pick up any of it later.
 
-- **System speed and memory tweaks:** pre-compiling the apps in the dock (`cmd package compile`),
-  0.5× system animations, and stopping rarely used apps running in the background
-  (`appops RUN_ANY_IN_BACKGROUND ignore`). They were planned with before/after measurements and undo
-  commands. If they aren't recorded under Current state, they haven't run yet. The "Background process
-  limit" developer option is deliberately not used: it closes the launcher too, so Home gets slower.
+- **System speed and memory tweaks:** done (Current state, item 8). Nothing over 20 MB that runs at
+  boot is safe to disable beyond what is kept on purpose; the Play Store (`com.android.vending`) was
+  the biggest surprise, up to 300 MB while updating apps. Turning off its auto-update would make that
+  rarer (not done).
 - **The remote's Settings key** is still broken (see Current state, item 6). An accessibility service
   that catches the key and opens Android TV Settings would fix it, but it would run all the time, so
   it was left out. The Settings pill works.
