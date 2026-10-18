@@ -57,6 +57,16 @@ public class WeekendTest {
     }
 
     @Test
+    public void theStateKeyIsOffOnWeekdaysAndPersonalDaysAndFollowsMoodAndSky() {
+        assertEquals(Weekend.OFF, Weekend.key(false, false, "MIDDAY", "CLEAR"));
+        assertEquals(Weekend.OFF, Weekend.key(true, true, "MIDDAY", "CLEAR"));
+        String midday = Weekend.key(true, false, "MIDDAY", "CLEAR");
+        assertFalse(midday.equals(Weekend.key(true, false, "SUNSET", "CLEAR")));
+        assertFalse(midday.equals(Weekend.key(true, false, "MIDDAY", "RAIN")));
+        assertEquals(midday, Weekend.key(true, false, "MIDDAY", "CLEAR"));
+    }
+
+    @Test
     public void hsvRoundTrips() {
         for (int c : new int[]{0xFFF5D58B, 0xFFF2A9BA, 0xFF46AACD, 0xFF102030, 0xFFFFFFFF}) {
             float[] h = Weekend.hsv(c);

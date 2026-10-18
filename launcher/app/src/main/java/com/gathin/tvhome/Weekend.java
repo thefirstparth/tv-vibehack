@@ -25,11 +25,6 @@ final class Weekend {
         this.heart = heart;
     }
 
-    /** The look's identity, to apply it only when it changes. */
-    String key() {
-        return tone1 + "|" + tone2 + "|" + tone3 + "|" + gold + "|" + heart;
-    }
-
     /** Saturday or Sunday by this calendar's own clock. */
     static boolean isWeekend(Calendar now) {
         int d = now.get(Calendar.DAY_OF_WEEK);
@@ -38,9 +33,21 @@ final class Weekend {
 
     /** The weekend look for now and this Horizon state, or null (a weekday, or a personal day). */
     static Weekend of(Calendar now, HorizonBackground.State s) {
+        if (!isWeekend(now) || s.day != null) return null;   // the cheap checks first: nothing else on a weekday
         HorizonBackground.Palette p = s.palette();
-        return of(isWeekend(now), s.day != null, s.sky != HorizonBackground.Sky.CLEAR, p.core, p.spot, p.band);
+        return of(true, false, s.sky != HorizonBackground.Sky.CLEAR, p.core, p.spot, p.band);
     }
+
+    /** What the look depends on, as Horizon's key: off, or on with the mood and the sky. */
+    static String key(Calendar now, HorizonBackground.State s) {
+        return key(isWeekend(now), s.day != null, s.mood, s.sky);
+    }
+
+    static String key(boolean weekend, boolean personalDay, Object mood, Object sky) {
+        return !weekend || personalDay ? OFF : "on|" + mood + "|" + sky;
+    }
+
+    static final String OFF = "off";
 
     static Weekend of(boolean weekend, boolean personalDay, boolean wet, int core, int spot, int band) {
         if (!weekend || personalDay) return null;

@@ -60,17 +60,6 @@ public final class SunLine {
         return line == null ? null : line.toUpperCase(Locale.ENGLISH);
     }
 
-    /** The sun's next turn alone ("SUNSET 5:59 PM"), for the launcher's weekend line; null while the clock is not set. */
-    public static String event(Calendar now, double lat, double lon) {
-        if (now.get(Calendar.YEAR) < 2025) return null;
-        double tz = now.getTimeZone().getOffset(now.getTimeInMillis()) / 3.6e6;
-        double[] rs = riseSet(now, 0, lat, lon, tz);
-        double minute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
-        boolean beforeSet = minute >= rs[0] && minute < rs[1];
-        double sun = minute < rs[0] ? rs[0] : beforeSet ? rs[1] : riseSet(now, 1, lat, lon, tz)[0];
-        return Double.isNaN(sun) ? null : ((beforeSet ? "Sunset " : "Sunrise ") + clock(sun)).toUpperCase(Locale.ENGLISH);
-    }
-
     /** Horizon's mood for a moment, at a place (the TV's own time zone). */
     public static Phase phaseAt(Calendar now, double lat, double lon) {
         double tz = now.getTimeZone().getOffset(now.getTimeInMillis()) / 3.6e6;

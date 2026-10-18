@@ -100,9 +100,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The window's background, by time of day; drawn once per look. */
     private final HorizonBackground horizon = new HorizonBackground();
     private DockDecoration dock;
-    /** The weekend look in use (null on weekdays and personal days), and what was last applied. */
-    private Weekend weekend;
-    private String weekendShown = "";
+    /**
+     * The weekend look: the state it was last worked out for (Weekend.key, as Horizon's claim), and its built pieces
+     * (null on weekdays and personal days). The line above the clock as last set, to set it only when it changes.
+     */
+    private String weekendKey = Weekend.OFF;
+    private WeekendLook weekend;
+    private CharSequence weekendLine;
+    private String weekendEvent;
+    private CharSequence greetingShown;
     /** The pills' usual icon colours (white, near-black when focused), put back when the weekend ends. */
     private android.content.res.ColorStateList pillTint;
     private WifiBars wifiBars;
@@ -389,15 +395,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!firstFrameDone) return;
         HorizonBackground.Sky sky = fakeSky != null ? fakeSky : homeLines != null ? homeLines.sky() : HorizonBackground.Sky.CLEAR;
         Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
-        HorizonBackground.State st = HorizonBackground.stateAt(lightTime(), sky, match, days);
+        Calendar now = lightTime();
+        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, match, days);
         if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
-        Weekend w = Weekend.of(lightTime(), st);
-        String wk = w == null ? "" : w.key();
-        if (!wk.equals(weekendShown)) {
-            weekendShown = wk;
-            weekend = w;
-            applyWeekend(st);
-        }
+        claimWeekend(now, st);
         if (!horizon.claim(st)) return;
         final HorizonBackground.State state = st;
         android.content.res.Resources res = getResources();
@@ -549,26 +550,49 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void updateGreeting() {
         Calendar now = lightTime();
         String line = SunLine.text(now, SunTimes.LAT, SunTimes.LON, greetings);
+        CharSequence text = line == null ? "" : line;
         if (line != null && weekend != null) {
-            // "WEEKEND ⚽ ♪ 🍸 ♥ · SUNSET 5:59 PM": the word in tone 1, four drawn symbols, then the sun time as now
-            String event = SunLine.event(now, SunTimes.LAT, SunTimes.LON);
-            android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder("WEEKEND");
-            b.setSpan(new android.text.style.ForegroundColorSpan(weekend.tone1), 0, b.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            int[] icons = {R.drawable.wk_football, R.drawable.wk_note, R.drawable.wk_cocktail, R.drawable.wk_heart};
-            int[] tints = {0, weekend.tone3, weekend.tone2, weekend.heart};
-            for (int i = 0; i < icons.length; i++) {
-                android.graphics.drawable.Drawable d = getDrawable(icons[i]).mutate();
-                if (tints[i] != 0) d.setTint(tints[i]);
-                int at = b.length();
-                b.append('\uFFFC');
-                b.setSpan(new GlyphSpan(d, (int) (13 * density), (int) ((i == 0 ? 6 : 5) * density)), at, at + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            // "WEEKEND ⚽ ♪ 🍸 ♥ · SUNSET 5:59 PM": the built lead, then the sun time from the line (the part after
+            // the mood; the whole line in the Sunset mood). Joined again only when the sun time changes.
+            int dot = line.indexOf(" · ");
+            String event = dot >= 0 ? line.substring(dot + 3) : line;
+            if (weekendLine == null || !event.equals(weekendEvent)) {
+                weekendLine = new android.text.SpannableStringBuilder(weekend.lead).append(" · ").append(event);
+                weekendEvent = event;
             }
-            if (event != null) b.append(" · ").append(event);
-            greeting.setText(b);
-        } else {
-            greeting.setText(line == null ? "" : line);
+            text = weekendLine;
+        }
+        boolean same = text instanceof String ? text.equals(greetingShown) : text == greetingShown;
+        if (!same) {
+            greeting.setText(text);
+            greetingShown = text;
         }
         greeting.setVisibility(line == null ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    /**
+     * The weekend look, worked out only when its state changes (as Horizon's claim): on a weekday that is one day
+     * check and nothing else. Turning on, its pieces are built once off the main thread and then only reused.
+     */
+    private void claimWeekend(Calendar now, HorizonBackground.State st) {
+        String key = Weekend.key(now, st);
+        if (key.equals(weekendKey)) return;
+        weekendKey = key;
+        if (Weekend.OFF.equals(key)) {
+            weekend = null;
+            applyWeekend(st);
+            return;
+        }
+        Weekend w = Weekend.of(now, st);
+        final HorizonBackground.State state = st;
+        painter.execute(() -> {
+            WeekendLook look = WeekendLook.build(this, w, density);
+            handler.post(() -> {
+                if (!key.equals(weekendKey)) return;   // the state moved on meanwhile
+                weekend = look;
+                applyWeekend(state);
+            });
+        });
     }
 
     /**
@@ -576,21 +600,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * gradient of the weekend colours, and the line above the clock. Only when the look changes.
      */
     private void applyWeekend(HorizonBackground.State state) {
-        int[][] states = {{android.R.attr.state_focused}, {}};
         View[] pills = {btnToday, findViewById(R.id.btnInputs), btnWifi, findViewById(R.id.btnSettings)};
-        int[] colours = weekend == null ? null : new int[]{weekend.tone1, weekend.tone2, weekend.tone3, weekend.gold};
         for (int i = 0; i < pills.length; i++) {
-            if (!(pills[i] instanceof TextView)) continue;
-            ((TextView) pills[i]).setCompoundDrawableTintList(colours == null ? pillTint
-                    : new android.content.res.ColorStateList(states, new int[]{0xFF111111, colours[i]}));
+            if (pills[i] instanceof TextView) ((TextView) pills[i]).setCompoundDrawableTintList(weekend == null ? pillTint : weekend.pillTints[i]);
         }
         if (weekend == null) {
             dock.setTopEdgeGradient(null);
             dock.setTopEdge(HorizonBackground.edge(state));
         } else {
-            int a = 0x99000000;   // about 60%
-            dock.setTopEdgeGradient(new int[]{(weekend.tone1 & 0xFFFFFF) | a, (weekend.gold & 0xFFFFFF) | a, (weekend.tone2 & 0xFFFFFF) | a, (weekend.tone3 & 0xFFFFFF) | a});
+            dock.setTopEdgeGradient(weekend.edge);
         }
+        weekendLine = null;
         grid.invalidate();
         updateGreeting();
     }
