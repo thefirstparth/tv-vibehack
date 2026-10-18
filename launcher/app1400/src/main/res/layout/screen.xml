@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1400 (Screen.java), Horizon V3. Sizes are the design's 1920 x 1080 pixels halved (the TV is 960 x 540 dp):
+     dp = px / 2, sp = px / 2. The paper's background is the window's; the halftone sun (@id/sun) stays put while
+     @id/content moves for burn-in. Fonts are set in code (Type.java); everything in the bands is filled in code. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/screenRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- the halftone sun and the double rule under it: y 850 to 944 -->
+    <ImageView
+        android:id="@+id/sun"
+        android:layout_width="match_parent"
+        android:layout_height="47dp"
+        android:layout_marginTop="425dp"
+        android:scaleType="fitXY"
+        android:importantForAccessibility="no" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- ================================================ Today -->
+        <FrameLayout
+            android:id="@+id/today"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- top left from (96, 64): clock, date, the mood and the sun -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:layout_marginTop="32dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="true">
+
+                    <TextClock
+                        android:id="@+id/bigClock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:format12Hour="h:mm"
+                        android:format24Hour="h:mm"
+                        android:includeFontPadding="false"
+                        android:letterSpacing="-0.03"
+                        android:textSize="86sp"
+                        android:tag="light" />
+
+                    <TextClock
+                        android:id="@+id/bigAmPm"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="7dp"
+                        android:format12Hour="a"
+                        android:format24Hour="a"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.09"
+                        android:textSize="13sp"
+                        android:tag="bold2" />
+                </LinearLayout>
+
+                <TextClock
+                    android:id="@+id/bigDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:format12Hour="EEEE d MMMM"
+                    android:format24Hour="EEEE d MMMM"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="10.5sp"
+                    android:tag="semi2" />
+
+                <TextView
+                    android:id="@+id/sunLine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="9sp"
+                    android:tag="bold3" />
+            </LinearLayout>
+
+            <!-- top right: the three cities, 760 wide -->
+            <LinearLayout
+                android:layout_width="380dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|top"
+                android:layout_marginEnd="48dp"
+                android:layout_marginTop="39dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/cities"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+
+                <TextView
+                    android:id="@+id/todayState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="7.5sp"
+                    android:tag="bold4"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- the band from y 400: its stops are added here in code -->
+            <FrameLayout
+                android:id="@+id/todayBand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:layout_marginEnd="48dp"
+                android:layout_marginTop="200dp" />
+        </FrameLayout>
+
+        <!-- ================================================ Sport -->
+        <FrameLayout
+            android:id="@+id/sportMode"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:visibility="invisible">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:layout_marginTop="28dp"
+                android:orientation="horizontal"
+                android:baselineAligned="true">
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="h:mm"
+                    android:format24Hour="h:mm"
+                    android:includeFontPadding="false"
+                    android:textSize="30sp"
+                    android:tag="light" />
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="9dp"
+                    android:format12Hour="a"
+                    android:format24Hour="a"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="9sp"
+                    android:tag="bold2" />
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:format12Hour="EEEE d MMMM"
+                    android:format24Hour="EEEE d MMMM"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="9sp"
+                    android:tag="semi3" />
+            </LinearLayout>
+
+            <!-- the SPORT tab top right, and the feed's state under it -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|top"
+                android:layout_marginEnd="48dp"
+                android:layout_marginTop="28dp"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/sportTab"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="5dp"
+                    android:text="Sport"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="8sp"
+                    android:tag="bold5" />
+
+                <TextView
+                    android:id="@+id/sportState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.09"
+                    android:textSize="7.5sp"
+                    android:tag="bold4"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- the headline from y 176 -->
+            <LinearLayout
+                android:id="@+id/hero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:layout_marginEnd="48dp"
+                android:layout_marginTop="88dp"
+                android:orientation="vertical" />
+
+            <!-- the band from y 470 -->
+            <FrameLayout
+                android:id="@+id/sportBand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:layout_marginEnd="48dp"
+                android:layout_marginTop="235dp" />
+        </FrameLayout>
+
+        <!-- ================================================ the foot, y 968: the nameplate and the stops as tabs -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_marginStart="48dp"
+            android:layout_marginEnd="48dp"
+            android:layout_marginTop="474dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|center_vertical"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:text="The"
+                    android:textSize="16sp"
+                    android:tag="fraktur" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="House of"
+                    android:textAllCaps="true"
+                    android:letterSpacing="0.32"
+                    android:textSize="7sp"
+                    android:tag="semi2" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:includeFontPadding="false"
+                    android:text="1400"
+                    android:textSize="21sp"
+                    android:tag="figure" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/tabs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|center_vertical"
+                android:orientation="horizontal" />
+        </FrameLayout>
+    </FrameLayout>
+</FrameLayout>
