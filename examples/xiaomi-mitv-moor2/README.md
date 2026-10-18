@@ -28,13 +28,17 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity
    pm disable-user --user 0 com.google.android.apps.tv.launcherx
    ```
-3. **Dock:** YouTube, Netflix, JioHotstar, FanCode (see `launcher/app/src/main/res/values/config.xml`).
+3. **Dock:** YouTube, Netflix, JioHotstar, FanCode. Grid below: Apple TV, Sony LIV, F1 TV, Spotify,
+   Play Store, then the rest A–Z. Media Player and Google Play Movies & TV are hidden. All set in
+   `launcher/app/src/main/res/values/config.xml` (`dock_apps`, `grid_order`, `hidden_apps`).
    The launcher is also listed in the TV's app list (it declares `LEANBACK_LAUNCHER`).
 4. **Kept on purpose:** firmware and Xiaomi update services, Google Assistant voice, Chromecast
    built-in, Netflix, Play Services, Play Store, Live TV, every media/DRM/Dolby package.
-5. **Planned, not done yet (all still installed at 06:15 on 2026-10-18):** uninstall ZEE5
-   (`com.graymatrix.did`), NBA (`com.nbaimd.gametime.nba2011`), MUBI (`com.mubi`), Tata Play
-   (`com.tataskymore.open.uat`) and DAZN (`com.dazn`), plus `pm trim-caches`.
+5. **Storage cleanup (2026-10-18, /data free 1.1G → 1.7G):** `pm trim-caches 999G`; `pm clear` on the
+   disabled `com.mitv.tvhome.atv`, `com.mitv.tvhome.mitvplus`, `com.mitv.tvhome.oemtab`,
+   `com.google.android.play.games`; uninstalled ZEE5 (`com.graymatrix.did`), NBA
+   (`com.nbaimd.gametime.nba2011`), MUBI (`com.mubi`), Tata Play (`com.tataskymore.open.uat`) and DAZN
+   (`com.dazn`). Reinstall any of them from the Play Store.
 6. **Tested after the switch and a reboot (2026-10-18):**
    - Home → new launcher, also after a reboot. Every dock app opens and Home returns to the dock.
    - YouTube search keyboard works (Gboard is the default IME).

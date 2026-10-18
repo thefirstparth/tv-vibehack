@@ -79,7 +79,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.ctx = ctx;
         this.listener = listener;
         this.dockSize = dockSize;
-        this.favourites = Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps));
+        // dock apps first, then grid_order; everything else sorts by name after them
+        this.favourites = new ArrayList<>(Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
+        this.favourites.addAll(Arrays.asList(ctx.getResources().getStringArray(R.array.grid_order)));
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
     }
 
