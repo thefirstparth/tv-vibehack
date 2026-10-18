@@ -90,6 +90,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
      `com.formulaone.production`. All five open; FanCode played live cricket. FanCode's open time with
      and without it is the same (2008–2145 ms against 2118 ms).
    - Not used: the "Background process limit" developer option.
+   - Nothing else over 20 MB that runs at boot is safe to disable beyond what is kept on purpose. The
+     Play Store (`com.android.vending`) uses up to 300 MB while it updates apps; turning off its
+     auto-update would make that rarer (not done).
 
 Check the live state any time:
 
@@ -201,10 +204,6 @@ The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `
 
 Nothing here blocks using the TV. Pick up any of it later.
 
-- **System speed and memory tweaks:** done (Current state, item 8). Nothing over 20 MB that runs at
-  boot is safe to disable beyond what is kept on purpose; the Play Store (`com.android.vending`) was
-  the biggest surprise, up to 300 MB while updating apps. Turning off its auto-update would make that
-  rarer (not done).
 - **The remote's Settings key** is still broken (see Current state, item 6). An accessibility service
   that catches the key and opens Android TV Settings would fix it, but it would run all the time, so
   it was left out. The Settings pill works.
