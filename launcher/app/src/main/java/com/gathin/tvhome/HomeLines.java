@@ -87,6 +87,8 @@ final class HomeLines {
         this.url = act.getString(R.string.tv_feed_url).trim();
         this.file = new File(act.getFilesDir(), "home_lines.json");
         lines = act.findViewById(R.id.lines);
+        // its texts never overlap: fading the block (setAway) fades each text alone, with no off-screen buffer
+        lines.forceHasOverlappingRendering(false);
         sport = act.findViewById(R.id.sport);
         weather = act.findViewById(R.id.weather);
         label = act.findViewById(R.id.sportLabel);
@@ -119,6 +121,38 @@ final class HomeLines {
             alignBaselines();
         });
         sport.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> alignBaselines());
+    }
+
+    private Runnable changed;
+
+    /** Called after each redraw of the lines (the Horizon light follows the weather word and a live match). */
+    void onChange(Runnable r) {
+        changed = r;
+    }
+
+    /** Bengaluru's sky for the Horizon light, from the feed's weather word or warning (clear without a feed). */
+    HorizonBackground.Sky sky() {
+        JSONArray wx = feed == null ? null : feed.optJSONArray("weather");
+        for (int i = 0; wx != null && i < wx.length(); i++) {
+            JSONObject c = wx.optJSONObject(i);
+            if (c != null && "Bengaluru".equals(c.optString("city"))) {
+                String word = c.optString("word", "");
+                // a warning sends its own wording: storm for any official warning
+                return HorizonBackground.Sky.of(c.optBoolean("warn") ? "" : word, c.optBoolean("warn"));
+            }
+        }
+        return HorizonBackground.Sky.CLEAR;
+    }
+
+    /** The competition's colour of a match live now (believed: under ten minutes old), or null. */
+    Integer liveAccent() {
+        JSONArray list = feed == null ? null : feed.optJSONArray("sport");
+        long now = System.currentTimeMillis();
+        for (int i = 0; list != null && i < list.length(); i++) {
+            JSONObject it = list.optJSONObject(i);
+            if (it != null && liveNow(it, now)) return accentOf(it);
+        }
+        return null;
     }
 
     /** The space to centre the lines in, from the activity's layout (the top bar and the dock band). */
@@ -266,6 +300,7 @@ final class HomeLines {
         sport.setVisibility(hasSport ? View.VISIBLE : View.GONE);
         weather.setVisibility(hasWeather ? View.VISIBLE : View.GONE);
         lines.setVisibility(hasSport || hasWeather ? View.VISIBLE : View.GONE);
+        if (changed != null) changed.run();
     }
 
     /** From a saved copy, a line whose start has passed is dropped, unless it is live and the copy under ten minutes old. */
@@ -629,7 +664,11 @@ final class HomeLines {
         if (list == null || list.length() == 0) return false;
         weatherCols.setVisibility(View.VISIBLE);
         LayoutInflater inf = act.getLayoutInflater();
-        while (weatherCols.getChildCount() < list.length()) inf.inflate(R.layout.item_city, weatherCols, true);
+        while (weatherCols.getChildCount() < list.length()) {
+            View col = inf.inflate(R.layout.item_city, weatherCols, false);
+            Fonts.apply(col);
+            weatherCols.addView(col);
+        }
         while (weatherCols.getChildCount() > list.length()) weatherCols.removeViewAt(weatherCols.getChildCount() - 1);
         String asOf = null;
         int widest = 0;

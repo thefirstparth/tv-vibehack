@@ -39,17 +39,29 @@ step with screenshots from the TV. If you'd rather do it by hand, the pieces are
 
 A small native Android TV home screen (`com.gathin.tvhome`), built for sets with 1 GB of RAM:
 
-- The "Horizon" background: a soft band of light behind the sport and weather lines that fades to
-  black well before the dock, in one of four colours by time of day (morning, day, evening, night),
-  with a faint edge of the same colour on top of the dock. It is drawn once into a small image and
-  used as the window's background, so the screen still draws one layer as with plain black; it
-  changes at most four times a day, never with focus, and never animates.
+- The "Horizon" background (v2): a soft light behind the sport and weather lines that fades to black
+  well before the dock. Its mood follows the sun: the TV works out sunrise and sunset for its city
+  itself (NOAA's formula, no network) and moves through late night, dawn, morning, midday, golden
+  hour, sunset, blue hour and night. A faint season (winter, summer, monsoon, post-monsoon) sits on
+  top; rain or a storm in the feed's weather word mutes it with a grey haze; while a match is live a
+  faint glow in the competition's colour sits under the sport lines; and personal days can have
+  their own light and greeting. It is drawn once per combination into a small image, off the main
+  thread after the first frame, and used as the window's background, so the screen still draws one
+  layer; it never reacts to focus and never animates. The dock's top edge takes the light's colour.
+
+  Personal days are private and live only in `launcher/local.properties` (not committed):
+
+  ```
+  tv.day.1=MM-DD|Greeting|core|spot|band|top
+  ```
+
+  with each colour as `r,g,b,a` (alpha 0 to 1). None set: no personal days.
 - A dock at the bottom in a lighter rounded band with the four apps you choose. Press Down and the
   dock slides up to reveal the rest of your apps in a grid. (The large app name above the dock and
   the colour glow behind it were removed: the tile already shows the name, and the full-screen glow
   was the GPU's heaviest job. Without them the home screen measured smoother than before.)
-- One translucent glass highlight springs from tile to tile. The focused tile lifts and shows its
-  name.
+- One highlight (a crisp rim and a soft glow around the tile, never over its logo) springs from tile
+  to tile. The focused tile lifts and shows its name; every tile stays in full colour.
 - Frosted pills top right: **Inputs** (a dropdown of HDMI ports, AV and Live TV), **Wi-Fi**
   (shows the network name) and **Settings**. Greeting, a large thin clock and the date top left,
   set in [Outfit](https://fonts.google.com/specimen/Outfit).

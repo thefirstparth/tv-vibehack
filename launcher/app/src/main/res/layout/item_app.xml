@@ -63,6 +63,6 @@
         android:textColor="#F2FFFFFF"
         android:textSize="14sp"
         android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 500"
+        android:tag="w500"
         android:letterSpacing="0.02" />
 </FrameLayout>

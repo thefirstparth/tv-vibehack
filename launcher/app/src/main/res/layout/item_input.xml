@@ -29,7 +29,7 @@
         android:duplicateParentState="true"
         android:textSize="15sp"
         android:fontFamily="@font/outfit"
-        android:fontVariationSettings="'wght' 500"
+        android:tag="w500"
         android:singleLine="true" />
 
     <!-- Pushes the status to the right edge; also the minimum gap between name and status. -->

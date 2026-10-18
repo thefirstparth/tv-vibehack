@@ -69,8 +69,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Set in onResume: once the window has focus again, put focus back on the last tile. */
     private boolean refocusPending;
     private float density;
-    /** Sports and weather above the dock (off when no feed address is set). */
+    /** Sports and weather above the dock: built after the first frame, and never when no feed address is set. */
     private HomeLines homeLines;
+    /** Where the lines go (top bar to dock band), known from the first layout. */
+    private int linesTop = -1, linesBottom = -1;
+    /** Set once the first frame is on screen: the work kept off the startup path may begin. */
+    private boolean firstFrameDone, resumed;
+    /** The Horizon image is drawn here, never on the main thread. */
+    private final java.util.concurrent.ExecutorService painter = java.util.concurrent.Executors.newSingleThreadExecutor();
     /** The window's background, by time of day; drawn once per look. */
     private final HorizonBackground horizon = new HorizonBackground();
     private DockDecoration dock;
@@ -80,8 +86,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Names for inputs (config input_names), by the port's label. */
     private final java.util.Map<String, String> inputNames = new java.util.HashMap<>();
     private static final java.util.regex.Pattern CONSOLE = java.util.regex.Pattern.compile("xbox|playstation|ps[45]|switch|nintendo", java.util.regex.Pattern.CASE_INSENSITIVE);
-    /** A look asked for in the launch intent ("--es look night"), for screenshots; any plain Home clears it. */
-    private HorizonBackground.Look forcedLook;
+    /** Personal days (launcher/local.properties, tv.day.N): a greeting and their own light. */
+    private java.util.List<HorizonBackground.Day> days;
+    /**
+     * For screenshots only, from the launch intent; any plain Home clears them: "at" (yyyy-MM-ddTHH:mm, the light's
+     * time and date), "mood", "sky" (clear, rain, storm), "match" (a colour, #RRGGBB).
+     */
+    private Calendar fakeAt;
+    private HorizonBackground.Mood fakeMood;
+    private HorizonBackground.Sky fakeSky;
+    private Integer fakeMatch;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable minuteTick = new Runnable() {
@@ -89,7 +103,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateWifiLabel();
-            homeLines.tick();
+            if (homeLines != null) homeLines.tick();
             updateHorizon();
             handler.postDelayed(this, MINUTE_MS);
         }
@@ -99,6 +113,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Fonts.apply(getWindow().getDecorView());
+        // startup ends at the first frame; the lines and the Horizon image are made just after it
+        getWindow().getDecorView().getViewTreeObserver().addOnDrawListener(new android.view.ViewTreeObserver.OnDrawListener() {
+            @Override
+            public void onDraw() {
+                if (firstFrameDone) return;
+                firstFrameDone = true;
+                handler.post(MainActivity.this::afterFirstFrame);
+            }
+        });
         density = getResources().getDisplayMetrics().density;
         COLUMNS = Math.max(1, getResources().getInteger(R.integer.columns));
         liveTvPkg = getString(R.string.live_tv_package).trim();
@@ -110,7 +134,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root = findViewById(R.id.root);
         glass = findViewById(R.id.glass);
         greeting = findViewById(R.id.greeting);
-        homeLines = new HomeLines(this, density);
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
@@ -119,8 +142,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setItemAnimator(null);
         dock = new DockDecoration(COLUMNS, density);
         grid.addItemDecoration(dock);
-        forcedLook = HorizonBackground.Look.named(getIntent().getStringExtra("look"));
-        updateHorizon();
+        days = HorizonBackground.Day.parse(getString(R.string.tv_days));
+        readFakes(getIntent());
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS);
@@ -138,7 +161,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             Rect top = new Rect(0, 0, 0, findViewById(R.id.leftBlock).getHeight()), g = new Rect(0, 0, 0, 0);
             root.offsetDescendantRectToMyCoords(findViewById(R.id.leftBlock), top);
             root.offsetDescendantRectToMyCoords(grid, g);
-            homeLines.frame(top.bottom, g.top + want);
+            linesTop = top.bottom;
+            linesBottom = g.top + want;
+            if (homeLines != null) homeLines.frame(linesTop, linesBottom);
         });
 
         // Keep the glass glued to its tile while the grid scrolls.
@@ -202,9 +227,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.scheduleLayoutAnimation();
         updateGreeting();
         updateWifiLabel();
+        resumed = true;
         updateHorizon();
-        homeLines.tick();      // the times worded for now, from the copy already here
-        homeLines.refresh();   // and one request for a fresh copy
+        if (homeLines != null) {
+            homeLines.tick();      // the times worded for now, from the copy already here
+            homeLines.refresh();   // and one request for a fresh copy
+        }
         handler.postDelayed(minuteTick, MINUTE_MS);
 
         // Return to the tile we left from, or the first one. The window restores its old focus (often a
@@ -216,16 +244,73 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        forcedLook = HorizonBackground.Look.named(intent.getStringExtra("look"));
+        readFakes(intent);
     }
 
     /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
-    private void updateHorizon() {
-        HorizonBackground.Look look = horizon.due(forcedLook);
-        if (look == null) return;
-        getWindow().setBackgroundDrawable(horizon.draw(getResources(), look));
-        dock.setTopEdge(HorizonBackground.edge(look));
-        grid.invalidate();
+    /** Just after the first frame: the sports and weather lines (when a feed is set) and the Horizon image. */
+    private void afterFirstFrame() {
+        if (!getString(R.string.tv_feed_url).trim().isEmpty() && homeLines == null) {
+            ((android.view.ViewStub) findViewById(R.id.linesStub)).inflate();
+            Fonts.apply(findViewById(R.id.lines));
+            homeLines = new HomeLines(this, density);
+            homeLines.onChange(this::updateHorizon);   // the light follows Bengaluru's weather word and a live match
+            if (linesTop >= 0) homeLines.frame(linesTop, linesBottom);
+            if (resumed) {
+                homeLines.tick();
+                homeLines.refresh();
+            }
+        }
+        updateHorizon();
+    }
+
+    private void readFakes(Intent i) {
+        fakeAt = null;
+        try {
+            String at = i.getStringExtra("at");
+            if (at != null) {
+                fakeAt = HorizonBackground.now();
+                fakeAt.setTime(new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm", java.util.Locale.ENGLISH).parse(at));
+            }
+        } catch (Exception ignored) {
+            fakeAt = null;
+        }
+        fakeMood = HorizonBackground.Mood.named(i.getStringExtra("mood"));
+        String sky = i.getStringExtra("sky");
+        fakeSky = sky == null ? null : "rain".equalsIgnoreCase(sky) ? HorizonBackground.Sky.RAIN : "storm".equalsIgnoreCase(sky) ? HorizonBackground.Sky.STORM : HorizonBackground.Sky.CLEAR;
+        String match = i.getStringExtra("match");
+        try {
+            fakeMatch = match == null ? null : android.graphics.Color.parseColor(match);
+        } catch (IllegalArgumentException e) {
+            fakeMatch = null;
+        }
+    }
+
+    private Calendar lightTime() {
+        return fakeAt != null ? fakeAt : HorizonBackground.now();
+    }
+
+    /**
+     * The Horizon image for now: the sun's mood, the season, Bengaluru's sky and a live match from the lines, and any
+     * personal day. A new image only when one of those changes; drawn off the main thread and swapped in whole.
+     */
+    void updateHorizon() {
+        if (!firstFrameDone) return;
+        HorizonBackground.Sky sky = fakeSky != null ? fakeSky : homeLines != null ? homeLines.sky() : HorizonBackground.Sky.CLEAR;
+        Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
+        HorizonBackground.State st = HorizonBackground.stateAt(lightTime(), sky, match, days);
+        if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
+        if (!horizon.claim(st)) return;
+        final HorizonBackground.State state = st;
+        android.content.res.Resources res = getResources();
+        painter.execute(() -> {
+            android.graphics.drawable.BitmapDrawable image = HorizonBackground.draw(res, state);
+            handler.post(() -> {
+                getWindow().setBackgroundDrawable(image);
+                dock.setTopEdge(HorizonBackground.edge(state));
+                grid.invalidate();
+            });
+        });
     }
 
     @Override
@@ -240,6 +325,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        resumed = false;
         handler.removeCallbacks(minuteTick);
     }
 
@@ -254,7 +340,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     public void onTileFocused(int position, View card) {
         lastFocused = position;
         if (position < COLUMNS) lastDockFocused = position;
-        homeLines.setAway(position >= COLUMNS);
+        if (homeLines != null) homeLines.setAway(position >= COLUMNS);
         // Tile rect in root coordinates, using layout positions (ignores the scale animation).
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
@@ -346,6 +432,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- top bar ---------------------------------------------------------------------------------
 
     private void updateGreeting() {
+        HorizonBackground.Day day = days == null ? null : HorizonBackground.dayOf(lightTime(), days);
+        if (day != null) {   // a personal day says its own greeting all day
+            greeting.setText(day.greeting);
+            return;
+        }
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         int res;
         if (hour < 5) res = R.string.good_night;
@@ -508,6 +599,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void addInputRow(LinearLayout rows, PopupWindow popup, int iconRes, String title, String port, String device,
                              int state, Runnable action) {
         View row = getLayoutInflater().inflate(R.layout.item_input, rows, false);
+        Fonts.apply(row);
         ((ImageView) row.findViewById(R.id.icon)).setImageResource(iconRes);
         ((TextView) row.findViewById(R.id.title)).setText(title);
         TextView status = row.findViewById(R.id.status);
