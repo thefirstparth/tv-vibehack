@@ -77,6 +77,8 @@ final class HomeLines {
     private long fetchedAt;      // when that copy was fetched
     private boolean saved;       // showing the saved copy: the last request failed
     private boolean loading;
+    /** An address is set, a request has failed and no good copy was ever received: say so instead of a blank. */
+    private boolean neverAnswered;
 
     HomeLines(Activity act, float density) {
         this.act = act;
@@ -175,6 +177,7 @@ final class HomeLines {
                 feed = v;
                 fetchedAt = a;
                 saved = s;
+                neverAnswered = v == null;
                 render();
             });
         });
@@ -218,13 +221,30 @@ final class HomeLines {
 
     private void render() {
         if (!enabled() || feed == null) {
-            lines.setVisibility(View.GONE);
+            // feature off, or the first request not back yet: nothing; never had an answer: one amber line
+            if (enabled() && neverAnswered) {
+                sport.setVisibility(View.GONE);
+                weatherCols.setVisibility(View.GONE);
+                weatherAsOf.setText(R.string.feed_not_answering);
+                weatherAsOf.setVisibility(View.VISIBLE);
+                weather.setVisibility(View.VISIBLE);
+                lines.setVisibility(View.VISIBLE);
+            } else {
+                lines.setVisibility(View.GONE);
+            }
             return;
         }
         long now = System.currentTimeMillis();
         List<JSONObject> items = usable(feed.optJSONArray("sport"), now);
         boolean hasSport = renderSport(items, now);
         boolean hasWeather = renderWeather(feed.optJSONArray("weather"));
+        if (!hasWeather && saved) {
+            // the saved copy's time still goes in its place under the weather, even with no weather to show
+            weatherCols.setVisibility(View.GONE);
+            weatherAsOf.setText("as of " + clock(fetchedAt));
+            weatherAsOf.setVisibility(View.VISIBLE);
+            hasWeather = true;
+        }
         sport.setVisibility(hasSport ? View.VISIBLE : View.GONE);
         weather.setVisibility(hasWeather ? View.VISIBLE : View.GONE);
         lines.setVisibility(hasSport || hasWeather ? View.VISIBLE : View.GONE);
@@ -352,11 +372,6 @@ final class HomeLines {
             int at = b.length();
             b.append(countdown.toUpperCase(Locale.ENGLISH));
             b.setSpan(accent != null ? new PillSpan(accent, ON_ACCENT, 6 * density) : new ForegroundColorSpan(WHITE), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        }
-        if (saved) {
-            int at = b.length();
-            b.append("   as of ").append(clock(fetchedAt));
-            b.setSpan(new ForegroundColorSpan(AMBER), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         label.setText(b);
         label.setTextColor(colour);
@@ -529,7 +544,6 @@ final class HomeLines {
     /** The first form that fits the room (the label's countdown counted in); the last one if none does. */
     private String pickFits(TextView v, String[] forms, String extra, int room) {
         float more = extra == null ? 0 : width(v, "   " + extra.toUpperCase(Locale.ENGLISH)) + 12 * density;
-        if (saved) more += width(v, "   as of " + clock(fetchedAt));
         for (String f : forms) if (!f.isEmpty() && width(v, f.toUpperCase(Locale.ENGLISH)) + more <= room) return f;
         return forms[forms.length - 1];
     }
@@ -620,6 +634,7 @@ final class HomeLines {
 
     private boolean renderWeather(JSONArray list) {
         if (list == null || list.length() == 0) return false;
+        weatherCols.setVisibility(View.VISIBLE);
         LayoutInflater inf = act.getLayoutInflater();
         while (weatherCols.getChildCount() < list.length()) inf.inflate(R.layout.item_city, weatherCols, true);
         while (weatherCols.getChildCount() > list.length()) weatherCols.removeViewAt(weatherCols.getChildCount() - 1);
