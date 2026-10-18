@@ -1,14 +1,18 @@
 package com.gathin.tvhome;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 
 /**
  * A translucent glass slab: soft sheen fill, bright top specular, crisp rim and a faint outer glow.
@@ -21,9 +25,15 @@ public class GlassView extends View {
     private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
-    private final Path clip = new Path();
     private final float density;
     private float radius;
+
+    // Sheen: a diagonal band of light that crosses the glass once (see sweep()).
+    private final Paint sheenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Matrix sheenMatrix = new Matrix();
+    private float sheenBand;
+    private float sheenProgress = -1f;   // < 0: not sweeping
+    private ValueAnimator sheenAnim;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -45,6 +55,38 @@ public class GlassView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         fill.setShader(new LinearGradient(0, 0, 0, h, 0x3DFFFFFF, 0x12FFFFFF, Shader.TileMode.CLAMP));
         specular.setShader(new LinearGradient(0, 0, 0, h * 0.45f, 0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+        sheenBand = w * 0.32f;
+        sheenPaint.setShader(new LinearGradient(0, 0, sheenBand, sheenBand * 0.6f,
+                new int[]{0x00FFFFFF, 0x38FFFFFF, 0x00FFFFFF}, null, Shader.TileMode.CLAMP));
+    }
+
+    /** One pass of light across the glass. Finishes on its own; nothing keeps running. */
+    void sweep() {
+        cancelSweep();
+        sheenAnim = ValueAnimator.ofFloat(0f, 1f);
+        sheenAnim.setDuration(620);
+        sheenAnim.setInterpolator(new DecelerateInterpolator(1.4f));
+        sheenAnim.addUpdateListener(a -> {
+            sheenProgress = (float) a.getAnimatedValue();
+            invalidate();
+        });
+        sheenAnim.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                sheenProgress = -1f;
+                invalidate();
+            }
+        });
+        sheenAnim.start();
+    }
+
+    void cancelSweep() {
+        if (sheenAnim != null) sheenAnim.cancel();
+        sheenAnim = null;
+        if (sheenProgress >= 0f) {
+            sheenProgress = -1f;
+            invalidate();
+        }
     }
 
     @Override
@@ -62,12 +104,16 @@ public class GlassView extends View {
 
         canvas.drawRoundRect(rect, radius, radius, fill);
 
-        clip.reset();
-        clip.addRoundRect(rect, radius, radius, Path.Direction.CW);
-        canvas.save();
-        canvas.clipPath(clip);
-        canvas.drawRect(rect.left, rect.top, rect.right, rect.top + rect.height() * 0.45f, specular);
-        canvas.restore();
+        // Rounded shapes with fading shaders instead of a clip path: path clips are slow on this GPU.
+        // The specular gradient is transparent below 45% of the height (CLAMP), so it stays at the top.
+        canvas.drawRoundRect(rect, radius, radius, specular);
+        if (sheenProgress >= 0f) {
+            // Travels from fully left of the glass to fully right of it.
+            float x = -sheenBand + sheenProgress * (getWidth() + sheenBand);
+            sheenMatrix.setTranslate(x, 0);
+            sheenPaint.getShader().setLocalMatrix(sheenMatrix);
+            canvas.drawRoundRect(rect, radius, radius, sheenPaint);
+        }
 
         canvas.drawRoundRect(rect, radius, radius, rim);
     }

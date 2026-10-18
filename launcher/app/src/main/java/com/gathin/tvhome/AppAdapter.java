@@ -1,5 +1,6 @@
 package com.gathin.tvhome;
 
+import android.animation.ValueAnimator;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
@@ -19,12 +20,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.view.animation.OvershootInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -45,6 +48,9 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
         /** Called for D-pad Up/Down on a tile. Return true when handled. */
         boolean onTileVerticalKey(int position, int keyCode);
+
+        /** Left/Right pressed at the end of a row (direction -1 or 1); focus stays put. */
+        void onTileEdge(int direction);
     }
 
     static final class Entry {
@@ -65,6 +71,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     }
 
     static final float FOCUS_SCALE = 1.10f;
+    /** Tile corner radius at rest and when focused (the focused tile's corners morph rounder). */
+    static final float REST_RADIUS_DP = 16f, FOCUS_RADIUS_DP = 22f;
 
     private final Context ctx;
     private final TileListener listener;
@@ -127,8 +135,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.name.setText(e.label);
         h.name.setVisibility(position < dockSize ? View.INVISIBLE : View.VISIBLE);   // the dock has no labels
         h.name.setAlpha(0f);
-        h.card.setScaleX(1f);
-        h.card.setScaleY(1f);
+        h.reset();
         if (e.banner != null) {
             h.banner.setImageDrawable(e.banner);
             h.banner.setVisibility(View.VISIBLE);
@@ -232,6 +239,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final TextView label;
         final TextView name;
 
+        private final float density;
+        private final float restRadius, focusRadius;
+        /** Current corner radius; the outline provider reads it, the morph animates it. */
+        private float cornerRadius;
+        private ValueAnimator morph;
+        // Spatial springs (position, size) may bounce a little; nothing here runs once it settles.
+        private final SpringAnimation scaleX, scaleY, nudge;
+
         Holder(View v, TileListener listener) {
             super(v);
             card = v.findViewById(R.id.card);
@@ -240,29 +255,53 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             label = v.findViewById(R.id.label);
             name = v.findViewById(R.id.name);
 
-            final float density = v.getResources().getDisplayMetrics().density;
-            final float radius = density * 16f;
+            density = v.getResources().getDisplayMetrics().density;
+            restRadius = density * REST_RADIUS_DP;
+            focusRadius = density * FOCUS_RADIUS_DP;
+            cornerRadius = restRadius;
             card.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius);
                 }
             });
             card.setClipToOutline(true);
 
+            scaleX = spring(DynamicAnimation.SCALE_X, 1f);
+            scaleY = spring(DynamicAnimation.SCALE_Y, 1f);
+            nudge = spring(DynamicAnimation.TRANSLATION_X, 0f);
+            nudge.getSpring().setStiffness(700f).setDampingRatio(0.35f);
+
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
-                if (keyCode != KeyEvent.KEYCODE_DPAD_UP && keyCode != KeyEvent.KEYCODE_DPAD_DOWN) return false;
                 int pos = getBindingAdapterPosition();
-                return listener != null && pos != RecyclerView.NO_POSITION && listener.onTileVerticalKey(pos, keyCode);
+                if (listener == null || pos == RecyclerView.NO_POSITION) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    return listener.onTileVerticalKey(pos, keyCode);
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    // Row ends: bump instead of letting focus wrap to another row.
+                    RecyclerView.Adapter<?> a = getBindingAdapter();
+                    int count = a == null ? 0 : a.getItemCount();
+                    int col = pos % MainActivity.COLUMNS;
+                    boolean left = keyCode == KeyEvent.KEYCODE_DPAD_LEFT;
+                    boolean edge = left ? col == 0 : (col == MainActivity.COLUMNS - 1 || pos == count - 1);
+                    if (!edge) return false;
+                    bump(left ? -1 : 1);
+                    listener.onTileEdge(left ? -1 : 1);
+                    return true;
+                }
+                return false;
             });
 
             card.setOnFocusChangeListener((view, focused) -> {
+                // Grow with a slight bounce; shrink back without one.
                 float s = focused ? FOCUS_SCALE : 1.0f;
-                view.animate().scaleX(s).scaleY(s)
-                        .setDuration(focused ? 260 : 180)
-                        .setInterpolator(new OvershootInterpolator(focused ? 1.6f : 0f))
-                        .start();
+                for (SpringAnimation sp : new SpringAnimation[]{scaleX, scaleY}) {
+                    sp.getSpring().setStiffness(focused ? 420f : 600f).setDampingRatio(focused ? 0.6f : 1f);
+                    sp.animateToFinalPosition(s);
+                }
+                morphCorners(focused ? focusRadius : restRadius);
                 name.animate().alpha(focused ? 1f : 0f)
                         .translationY(focused ? density * 4f : -density * 6f)
                         .setDuration(220).start();
@@ -271,6 +310,45 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     listener.onTileFocused(pos, view);
                 }
             });
+        }
+
+        private SpringAnimation spring(DynamicAnimation.ViewProperty property, float rest) {
+            SpringAnimation s = new SpringAnimation(card, property, rest);
+            s.getSpring().setStiffness(500f).setDampingRatio(1f);
+            return s;
+        }
+
+        /** Rebound view: drop any half-finished motion from the tile it showed before. */
+        void reset() {
+            for (SpringAnimation s : new SpringAnimation[]{scaleX, scaleY, nudge}) s.cancel();
+            if (morph != null) morph.cancel();
+            card.setScaleX(1f);
+            card.setScaleY(1f);
+            card.setTranslationX(0f);
+            cornerRadius = restRadius;
+            card.invalidateOutline();
+        }
+
+        /** Material-style shape morph: the focused tile's corners round out, then settle. */
+        private void morphCorners(float target) {
+            if (morph != null) morph.cancel();
+            if (cornerRadius == target) return;
+            morph = ValueAnimator.ofFloat(cornerRadius, target);
+            morph.setDuration(240);
+            morph.setInterpolator(new DecelerateInterpolator(1.5f));
+            morph.addUpdateListener(a -> {
+                cornerRadius = (float) a.getAnimatedValue();
+                card.invalidateOutline();
+            });
+            morph.start();
+        }
+
+        /** Nothing further this way: a short sideways bounce. */
+        private void bump(int direction) {
+            nudge.cancel();
+            nudge.setStartValue(0f);
+            nudge.setStartVelocity(direction * 900f * density);
+            nudge.animateToFinalPosition(0f);
         }
     }
 }

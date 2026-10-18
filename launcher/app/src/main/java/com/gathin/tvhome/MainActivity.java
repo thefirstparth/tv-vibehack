@@ -77,6 +77,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float density;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    /** One gloss sweep across the glass once it has settled on a tile. */
+    private final Runnable sheen = () -> glass.sweep();
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
@@ -234,8 +236,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             lp.width = (int) w;
             lp.height = (int) h;
             glass.setLayoutParams(lp);
-            glass.setRadius(16f * density * AppAdapter.FOCUS_SCALE + pad);
+            glass.setRadius(AppAdapter.FOCUS_RADIUS_DP * density * AppAdapter.FOCUS_SCALE + pad);
         }
+        glass.cancelSweep();
+        handler.removeCallbacks(sheen);
+        handler.postDelayed(sheen, 260);   // only once focus rests, so fast scrolling never sweeps
         glassTargetX = x;
         glassTargetY = y;
         if (!glassShown) {
@@ -312,9 +317,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     private void hideGlass() {
+        handler.removeCallbacks(sheen);
+        glass.cancelSweep();
         if (!glassShown) return;
         glassShown = false;
         glass.animate().alpha(0f).setDuration(160).start();
+    }
+
+    @Override
+    public void onTileEdge(int direction) {
+        // The glass bumps with its tile, then springs back.
+        if (!glassShown) return;
+        springX.animateToFinalPosition(glassTargetX + direction * 10f * density);
+        handler.postDelayed(() -> springX.animateToFinalPosition(glassTargetX), 70);
     }
 
     // ---- navigation ------------------------------------------------------------------------------
