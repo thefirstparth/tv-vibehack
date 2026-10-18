@@ -40,20 +40,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * The 1400 app's screen, in Horizon V3. Two modes: Today (a big clock, the three cities' weather and a band turning
- * through sport, the day in a minute and Money) and Sport (the next event in big type, then this week, results and
- * where you stand). Sport takes over from an hour before any followed event until 30 minutes after it (the feed's
- * windows, kept by the TV's own clock), or while anything is live.
+ * The 1400 app's screen, in Horizon V3. One row of sections, named as tabs in the foot: Sport, The day in a minute and
+ * Money (under a big clock and the three cities' weather), then This week, Results and Where you stand (under the next
+ * event in big type). It opens on Sport; Left and Right go along the tabs, Up and Down turn the pages of a section that
+ * has more than one (its tab says "2 / 3"). Nothing moves by itself.
  *
  * The feed is /api/live/tv?saver=1 (Feed, shared with the home screen, with its rules for what is still believable and
  * Words for how times and moments are said): fetched when the app opens, then every 15 minutes while it is open (every
  * minute while anything is live, or after the site's old cached copy), never once it closes. Nothing animates
- * continuously: a 1-second cross-fade every 25 seconds, and once a minute, with the clock, the content jumps to the next
- * of nine positions (burn-in). The halftone sun is a still image, drawn once per look.
+ * continuously: a short cross-fade on a key press, and once a minute, with the clock, the content jumps to the next of
+ * nine positions (burn-in). The halftone sun is a still image, drawn once per look.
  */
 final class Screen {
 
-    private static final long MIN = Feed.MIN, STOP_MS = 25_000L, FADE_MS = 1000L;
+    private static final long MIN = Feed.MIN, FADE_MS = 250L;
     private static final long FETCH_MS = 15 * MIN, FETCH_LIVE_MS = MIN;
     /** Burn-in: nine positions, as steps of SHIFT_PX (so within about 10 px end to end). */
     private static final int[][] SHIFTS = {{0, 0}, {1, -1}, {-1, 1}, {1, 1}, {-1, -1}, {0, 1}, {1, 0}, {0, -1}, {-1, 0}};
@@ -93,17 +93,15 @@ final class Screen {
     private final Stop sportStop, money, week, results, standings;
     private final List<Stop> minutePages = new ArrayList<>();
 
+    /** Which top shows: the section's (Today's clock and weather, or Sport's headline). */
     private Mode mode = Mode.TODAY;
-    /** Set by Left/Right: the mode no longer follows the feed's windows. */
-    private boolean manual;
     private boolean running;
     private int shift;
     private long nextFetchAt;
     private String sunKey;
 
-    /** The band's turn: the stops of the current mode, the one showing, and the distinct stops (the tabs). */
-    private final List<Stop> cycle = new ArrayList<>(), tabStops = new ArrayList<>();
-    private int at = -1;
+    /** The pages with something to show, in the tabs' order (the day in a minute once a page), and the one showing. */
+    private final List<Stop> order = new ArrayList<>();
     private Stop showing;
     /** The event the Sport mode's headline shows (left out of This week). */
     private JSONObject heroItem;
@@ -159,7 +157,6 @@ final class Screen {
         fetch.run();
         onFeed();
         scheduleMinute();
-        handler.postDelayed(turn, STOP_MS);
     }
 
     void stop() {
@@ -167,18 +164,45 @@ final class Screen {
         handler.removeCallbacksAndMessages(null);
     }
 
-    /** Left or Right: the other mode, and it stays until the app closes. */
-    void switchMode() {
-        manual = true;
-        setMode(mode == Mode.TODAY ? Mode.SPORT : Mode.TODAY);
+    /** Left or Right: the previous or next section (its first page); at either end it stays. */
+    void side(int dir) {
+        if (!running || showing == null) return;
+        show(order.get(sideOf(tabNames(), order.indexOf(showing), dir)));
     }
 
-    /** Up or Down: the previous or next stop; the 25-second turn carries on from there. */
-    void step(int dir) {
-        if (!running || cycle.isEmpty()) return;
-        show(Math.floorMod((at < 0 ? 0 : at) + dir, cycle.size()), true);
-        handler.removeCallbacks(turn);
-        handler.postDelayed(turn, STOP_MS);
+    /** Up or Down: the previous or next page of this section; past its first or last page it stays. */
+    void page(int dir) {
+        if (!running || showing == null) return;
+        show(order.get(pageOf(tabNames(), order.indexOf(showing), dir)));
+    }
+
+    private List<String> tabNames() {
+        List<String> n = new ArrayList<>();
+        for (Stop s : order) n.add(s.tab);
+        return n;
+    }
+
+    /** From page at of tabs (one name a page, a section's pages together): the first page of the section dir away, or at. */
+    static int sideOf(List<String> tabs, int at, int dir) {
+        int i = at;
+        while (i >= 0 && i < tabs.size() && tabs.get(i).equals(tabs.get(at))) i += dir;
+        if (i < 0 || i >= tabs.size()) return at;
+        while (i > 0 && tabs.get(i - 1).equals(tabs.get(i))) i--;
+        return i;
+    }
+
+    /** The page dir away within the same section, or at. */
+    static int pageOf(List<String> tabs, int at, int dir) {
+        int i = at + dir;
+        return i >= 0 && i < tabs.size() && tabs.get(i).equals(tabs.get(at)) ? i : at;
+    }
+
+    /** "2 / 3" for a section with more than one page, else null. */
+    static String pageMark(List<String> tabs, int at) {
+        int first = at, n = 0;
+        while (first > 0 && tabs.get(first - 1).equals(tabs.get(at))) first--;
+        for (int i = first; i < tabs.size() && tabs.get(i).equals(tabs.get(at)); i++) n++;
+        return n > 1 ? (at - first + 1) + " / " + n : null;
     }
 
     private final Runnable fetch = new Runnable() {
@@ -198,7 +222,7 @@ final class Screen {
         handler.postDelayed(minute, MIN - now % MIN + 200);
     }
 
-    /** Once a minute, at the clock's tick: times worded again, the mode window, the light, and the burn-in jump. */
+    /** Once a minute, at the clock's tick: times worded again, the light, and the burn-in jump. */
     private final Runnable minute = new Runnable() {
         @Override
         public void run() {
@@ -208,16 +232,6 @@ final class Screen {
             content.setTranslationY(SHIFTS[shift][1] * SHIFT_PX);
             onFeed();
             scheduleMinute();
-        }
-    };
-
-    /** Every 25 seconds: the next stop of the band, with a one-second cross-fade. */
-    private final Runnable turn = new Runnable() {
-        @Override
-        public void run() {
-            if (!running) return;
-            if (!cycle.isEmpty()) show((at + 1) % cycle.size(), true);
-            handler.postDelayed(this, STOP_MS);
         }
     };
 
@@ -252,8 +266,7 @@ final class Screen {
         fillList(week, "This week", "Next 5 · within 15 days", weekRows(more, now));
         fillList(results, "Results", "The latest of each · last 10 days", resultRows(more));
         fillList(standings, "Where you stand", null, standRows(more));
-        if (!manual) setMode(sportWanted(f, now) ? Mode.SPORT : Mode.TODAY);
-        else rebuildCycle();
+        rebuild();
         updateSun(cal);
     }
 
@@ -271,99 +284,46 @@ final class Screen {
         return h != null && feed.liveNow(h, now);
     }
 
-    /** Sport mode: inside one of the feed's windows by this TV's clock. */
-    static boolean inWindow(JSONObject f, long now) {
-        JSONArray w = f == null ? null : f.optJSONArray("sport_windows");
-        if (w == null) return f != null && f.optBoolean("sport_mode");
-        for (int i = 0; i < w.length(); i++) {
-            JSONObject x = w.optJSONObject(i);
-            try {
-                if (x != null && Instant.parse(x.optString("from")).toEpochMilli() <= now && now <= Instant.parse(x.optString("to")).toEpochMilli()) return true;
-            } catch (Exception ignored) {
-            }
-        }
-        return false;
-    }
-
-    private boolean sportWanted(JSONObject f, long now) {
-        return f != null && (inWindow(f, now) || anyLive());
-    }
-
     // ---- modes, the band and the tabs ----------------------------------------------------------------------------
 
-    private void setMode(Mode m) {
-        boolean changed = m != mode;
-        mode = m;
-        if (changed) {
-            View in = m == Mode.SPORT ? sportMode : today, out = m == Mode.SPORT ? today : sportMode;
-            fade(out, false);
-            fade(in, true);
-            at = -1;
-            showing = null;
-            for (Stop s : all()) s.view.setAlpha(0f);
-        }
-        rebuildCycle();
-    }
-
     private List<Stop> all() {
-        List<Stop> a = new ArrayList<>(List.of(sportStop, money, week, results, standings));
+        List<Stop> a = new ArrayList<>(List.of(sportStop));
         a.addAll(minutePages);
+        a.addAll(List.of(money, week, results, standings));
         return a;
     }
 
     /**
-     * The stops for this mode, those with something to show. Today: sport, the day in a minute (as many pages as it
-     * takes), Money; while a match is live, sport again after every other stop. Sport: this week, results, standings.
+     * The pages with something to show, after each answer and each minute. The page showing stays; if it has emptied,
+     * the nearest earlier page that has not; before anything has shown, Sport (or the first section there is).
      */
-    private void rebuildCycle() {
-        List<Stop> base = new ArrayList<>();
-        if (mode == Mode.TODAY) {
-            if (sportStop.view.getChildCount() > 0) base.add(sportStop);
-            for (Stop p : minutePages) if (p.view.getChildCount() > 0) base.add(p);
-            if (money.view.getChildCount() > 0) base.add(money);
-        } else {
-            for (Stop s : new Stop[]{week, results, standings}) if (s.view.getChildCount() > 0) base.add(s);
-        }
-        List<Stop> c = new ArrayList<>();
-        boolean live = mode == Mode.TODAY && anyLive() && base.contains(sportStop) && base.size() > 1;
-        for (Stop s : base) {
-            if (live && s == sportStop) continue;
-            if (live) c.add(sportStop);
-            c.add(s);
-        }
-        if (!live) c = base;
-        boolean same = c.equals(cycle);
-        cycle.clear();
-        cycle.addAll(c);
-        tabStops.clear();
-        tabStops.addAll(base);
-        if (!same || showing == null || !cycle.contains(showing)) {
-            int keep = showing == null ? -1 : cycle.indexOf(showing);
-            show(keep >= 0 ? keep : 0, showing != null && keep < 0);
-        } else {
-            at = cycle.indexOf(showing);
-            paintTabs();
-        }
+    private void rebuild() {
+        List<Stop> a = all();
+        order.clear();
+        for (Stop s : a) if (s.view.getChildCount() > 0) order.add(s);
+        Stop next = null;
+        if (showing != null) for (int i = a.indexOf(showing); i >= 0 && next == null; i--) if (order.contains(a.get(i))) next = a.get(i);
+        if (next == null && !order.isEmpty()) next = order.contains(sportStop) ? sportStop : order.get(0);
+        show(next);
     }
 
-    private void show(int index, boolean fadeOld) {
-        if (cycle.isEmpty()) {
-            if (showing != null) fade(showing.view, false);
-            showing = null;
-            at = -1;
-            paintTabs();
-            return;
-        }
-        Stop next = cycle.get(index);
+    private static Mode modeOf(Stop s, Stop week, Stop results, Stop standings) {
+        return s == week || s == results || s == standings ? Mode.SPORT : Mode.TODAY;
+    }
+
+    /** A page in its section's top (the tops cross-fade when the section changes), and the tabs. */
+    private void show(Stop next) {
         if (next != showing) {
-            if (showing != null) {
-                if (fadeOld) fade(showing.view, false);
-                else showing.view.setAlpha(0f);
+            Mode m = next == null ? mode : modeOf(next, week, results, standings);
+            if (m != mode) {
+                mode = m;
+                fade(m == Mode.SPORT ? today : sportMode, false);
+                fade(m == Mode.SPORT ? sportMode : today, true);
             }
-            fade(next.view, true);
+            if (showing != null) fade(showing.view, false);
+            if (next != null) fade(next.view, true);
+            showing = next;
         }
-        showing = next;
-        at = index;
         paintTabs();
     }
 
@@ -380,20 +340,23 @@ final class Screen {
     }
 
     /**
-     * The stops as the paper's section tabs in the foot, in place of dots: caps under a 4px rule in each stop's colour
-     * (the day in a minute's pages share one tab); the current one in cream, the others muted.
+     * The sections as the paper's tabs in the foot: caps under a rule in each section's colour (the day in a minute's
+     * pages share one tab); the one showing in cream under a 6px rule, with "2 / 3" when it has pages, the others dimmed.
      */
     private void paintTabs() {
         List<String> names = new ArrayList<>();
         List<Integer> rules = new ArrayList<>();
-        for (Stop s : tabStops) if (!names.contains(s.tab)) { names.add(s.tab); rules.add(s.rule); }
+        for (Stop s : order) if (!names.contains(s.tab)) { names.add(s.tab); rules.add(s.rule); }
         if (names.size() < 2) names.clear();
+        String mark = showing == null ? null : pageMark(tabNames(), order.indexOf(showing));
         tabs.removeAllViews();
         for (int i = 0; i < names.size(); i++) {
-            TextView t = Type.text(ctx, Type.BOLD, 15, showing != null && names.get(i).equals(showing.tab) ? Type.INK : Type.MUTED, true);
-            t.setText(names.get(i));
+            boolean on = showing != null && names.get(i).equals(showing.tab);
+            TextView t = Type.text(ctx, Type.BOLD, 15, on ? Type.INK : Type.MUTED, true);
+            t.setText(on && mark != null ? names.get(i) + "  " + mark : names.get(i));
             t.setPadding(0, dp(5), 0, 0);
-            t.setBackground(new TopRule(rules.get(i), dp(2)));
+            t.setBackground(new TopRule(rules.get(i), dp(on ? 3 : 2)));
+            t.setAlpha(on ? 1f : 0.45f);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             if (i > 0) lp.setMarginStart(dp(18));
             tabs.addView(t, lp);

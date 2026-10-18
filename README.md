@@ -123,11 +123,12 @@ Needs JDK 17 and the Android SDK (platform 34, build-tools 34.0.0). On macOS:
 
 `launcher/app1400` (`com.gathin.tv1400`) is a separate app in the same Gradle project: the companion
 paper on the TV, in its night look (Horizon V3: the paper's fonts, flat, a halftone sun in the mood's
-inks above a double rule, the nameplate and the stops as section tabs in the foot). Two modes:
-**Today** (clock, the three cities, and a band turning every 25 seconds through sport, the day in a
-minute and Money) and **Sport** (the next event in big type, then this week, results and where you
-stand). It opens in Sport mode from an hour before a followed event until 30 minutes after it, or
-while anything is live. Left and Right switch mode, Up and Down step the band, Back closes it.
+inks above a double rule, the nameplate and the sections as tabs in the foot). One row of sections:
+**Sport**, **The day in a minute** and **Money** (under the clock and the three cities), then **This
+week**, **Results** and **Where you stand** (under the next event in big type). It opens on Sport.
+Left and Right go along the tabs (the one showing is bright, the rest dimmed), Up and Down turn the
+pages of a section that has more than one (its tab says "2 / 3"), Back closes it. Nothing moves by
+itself.
 
 It reads `/api/live/tv?saver=1` from the same `tv.feedUrl`, only while it is open (when it opens, then
 every 15 minutes, every minute while live), keeps the screen on, and closes itself after 3 hours

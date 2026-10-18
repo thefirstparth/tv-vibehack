@@ -1,10 +1,13 @@
 package com.gathin.tv1400;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
-/** The 1400 app's Money figures, as the TV prints them. */
+import java.util.List;
+
+/** The 1400 app's Money figures, as the TV prints them, and how the keys move along its tabs and pages. */
 public class ScreenTest {
 
     @Test
@@ -27,5 +30,34 @@ public class ScreenTest {
         assertEquals("0", Screen.signed(0, "index"));
         assertEquals("+0.56%", Screen.signedPct(0.56));
         assertEquals("−10.47%", Screen.signedPct(-10.47));
+    }
+
+    private static final List<String> TABS = List.of("Sport", "Minute", "Minute", "Minute", "Money", "This week", "Results");
+
+    @Test
+    public void leftAndRightGoToTheFirstPageOfTheNextSectionAndStopAtTheEnds() {
+        assertEquals(1, Screen.sideOf(TABS, 0, 1));
+        assertEquals(4, Screen.sideOf(TABS, 2, 1));
+        assertEquals(0, Screen.sideOf(TABS, 3, -1));
+        assertEquals(1, Screen.sideOf(TABS, 4, -1));
+        assertEquals(0, Screen.sideOf(TABS, 0, -1));
+        assertEquals(6, Screen.sideOf(TABS, 6, 1));
+    }
+
+    @Test
+    public void upAndDownStayInsideTheSection() {
+        assertEquals(2, Screen.pageOf(TABS, 1, 1));
+        assertEquals(3, Screen.pageOf(TABS, 3, 1));
+        assertEquals(1, Screen.pageOf(TABS, 1, -1));
+        assertEquals(0, Screen.pageOf(TABS, 0, 1));
+        assertEquals(4, Screen.pageOf(TABS, 4, -1));
+    }
+
+    @Test
+    public void onlyASectionWithPagesSaysWhichPage() {
+        assertEquals("1 / 3", Screen.pageMark(TABS, 1));
+        assertEquals("3 / 3", Screen.pageMark(TABS, 3));
+        assertNull(Screen.pageMark(TABS, 0));
+        assertNull(Screen.pageMark(TABS, 6));
     }
 }

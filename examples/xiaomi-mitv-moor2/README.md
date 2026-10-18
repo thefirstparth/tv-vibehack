@@ -53,7 +53,7 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
      goes to the dock).
 
 7. **1400 app (2026-10-18):** `com.gathin.tv1400` (launcher/app1400) is installed beside the launcher:
-   the paper on the TV (Today and Sport modes), opened from its tile (first in the grid) or the moon
+   the paper on the TV (sections as tabs; Left and Right move between them), opened from its tile (first in the grid) or the moon
    pill at the start of the top bar. It reads `/api/live/tv?saver=1` only while it is open and closes
    itself after 3 hours without a button press. It is an app, not the TV's screensaver: the screensaver
    settings were recorded and **not changed** (Google's Backdrop stays):

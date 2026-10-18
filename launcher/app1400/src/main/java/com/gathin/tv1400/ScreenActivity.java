@@ -13,9 +13,9 @@ import com.gathin.tvshared.SunLine;
 import com.gathin.tvshared.SunTimes;
 
 /**
- * 1400: the paper on the TV, opened from its tile or the home screen's moon pill. Opens in Sport mode from an hour
- * before a followed event until 30 minutes after it (or while anything is live), otherwise Today. Left and Right switch
- * mode, Up and Down go to the previous or next stop, Back closes it (and the home screen puts focus back where it was).
+ * 1400: the paper on the TV, opened from its tile or the home screen's moon pill. Opens on Sport. Left and Right go
+ * along the tabs in the foot, Up and Down turn the pages of a section that has more than one, Back closes it (and the
+ * home screen puts focus back where it was).
  * The screen stays on while it is open; after three hours without a button press it closes itself. Nothing runs once
  * it is closed.
  */
@@ -85,14 +85,16 @@ public class ScreenActivity extends Activity {
         if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
             switch (e.getKeyCode()) {
                 case KeyEvent.KEYCODE_DPAD_LEFT:
+                    screen.side(-1);
+                    return true;
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
-                    screen.switchMode();
+                    screen.side(1);
                     return true;
                 case KeyEvent.KEYCODE_DPAD_UP:
-                    screen.step(-1);
+                    screen.page(-1);
                     return true;
                 case KeyEvent.KEYCODE_DPAD_DOWN:
-                    screen.step(1);
+                    screen.page(1);
                     return true;
                 default:
                     break;
