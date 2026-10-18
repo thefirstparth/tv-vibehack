@@ -42,6 +42,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.gathin.tvshared.Fonts;
 import com.gathin.tvshared.HomeLines;
 import com.gathin.tvshared.HorizonBackground;
+import com.gathin.tvshared.SunLine;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -92,6 +93,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final java.util.regex.Pattern CONSOLE = java.util.regex.Pattern.compile("xbox|playstation|ps[45]|switch|nintendo", java.util.regex.Pattern.CASE_INSENSITIVE);
     /** Personal days (launcher/local.properties, tv.day.N): a greeting and their own light. */
     private java.util.List<HorizonBackground.Day> days;
+    /** The same days' greetings, for the line above the clock. */
+    private java.util.List<SunLine.Greeting> greetings;
     /**
      * For screenshots only, from the launch intent; any plain Home clears them: "at" (yyyy-MM-ddTHH:mm, the light's
      * time and date), "mood", "sky" (clear, rain, storm), "match" (a colour, #RRGGBB).
@@ -149,6 +152,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         HorizonBackground.locate(getResources());
         String dayText = getString(com.gathin.tvshared.R.string.tv_days);
         days = HorizonBackground.Day.parse(dayText);
+        greetings = SunLine.greetings(dayText);
         readFakes(getIntent());
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
@@ -437,20 +441,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     // ---- top bar ---------------------------------------------------------------------------------
 
+    /**
+     * Above the clock: Horizon's mood and the sun's next turn ("MIDDAY · SUNSET 5:59 PM"), or a personal day's greeting
+     * with the sun time; hidden while the clock is not set. On the minute tick and when Home appears.
+     */
     private void updateGreeting() {
-        HorizonBackground.Day day = days == null ? null : HorizonBackground.dayOf(lightTime(), days);
-        if (day != null) {   // a personal day says its own greeting all day
-            greeting.setText(day.greeting);
-            return;
-        }
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int res;
-        if (hour < 5) res = R.string.good_night;
-        else if (hour < 12) res = R.string.good_morning;
-        else if (hour < 17) res = R.string.good_afternoon;
-        else if (hour < 22) res = R.string.good_evening;
-        else res = R.string.good_night;
-        greeting.setText(res);
+        Calendar now = lightTime();
+        String line = SunLine.text(now, HorizonBackground.LAT, HorizonBackground.LON, greetings);
+        greeting.setText(line == null ? "" : line);
+        greeting.setVisibility(line == null ? View.INVISIBLE : View.VISIBLE);
     }
 
     /**

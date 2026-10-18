@@ -83,16 +83,9 @@ public final class HorizonBackground {
             this.spotX = spotX;
         }
 
-        /** By the minute of the local day, with sunrise and sunset (minutes) for that date . */
+        /** By the minute of the local day, with sunrise and sunset (minutes) for that date (SunLine.Phase's timing). */
         public static Mood at(double minute, double rise, double set) {
-            if (minute < rise - 60) return LATE_NIGHT;
-            if (minute < rise) return DAWN;
-            if (minute < rise + 180) return MORNING;
-            if (minute < set - 90) return MIDDAY;
-            if (minute < set - 20) return GOLDEN_HOUR;
-            if (minute < set + 25) return SUNSET;
-            if (minute < set + 90) return BLUE_HOUR;
-            return NIGHT;
+            return valueOf(SunLine.Phase.at(minute, rise, set).name());
         }
 
         public static Mood named(String name) {
