@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weekend symbol: a martini glass with an olive (tinted tone 2 in MainActivity). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="13dp" android:height="13dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M3.5,3.5h17L13,12.2v6.3h4.2v2.2H6.8v-2.2H11v-6.3z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M17.5,0.8a2.2,2.2 0 1,0 0.01,0z" />
+</vector>

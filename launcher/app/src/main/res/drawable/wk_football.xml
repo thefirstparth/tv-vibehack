@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Weekend symbol: a football. Off-white body (88% white) with dark panels in the background's near-black;
+     never tinted (MainActivity tints the other three). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="13dp" android:height="13dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFE0E0E0" android:pathData="M12,2a10,10 0 1,0 0.01,0Z" />
+    <group>
+        <clip-path android:pathData="M12,2a10,10 0 1,0 0.01,0Z" />
+        <path android:fillColor="#FF111114" android:pathData="M12.00,7.90 L15.90,10.73 L14.41,15.32 L9.59,15.32 L8.10,10.73Z" />
+        <path android:fillColor="#FF111114" android:pathData="M12.00,5.10 L8.48,2.54 L9.83,-1.59 L14.17,-1.59 L15.52,2.54Z M18.56,9.87 L19.91,5.73 L24.26,5.73 L25.60,9.87 L22.08,12.42Z M16.06,17.58 L20.41,17.58 L21.75,21.72 L18.23,24.28 L14.71,21.72Z M7.94,17.58 L9.29,21.72 L5.77,24.28 L2.25,21.72 L3.59,17.58Z M5.44,9.87 L1.92,12.42 L-1.60,9.87 L-0.26,5.73 L4.09,5.73Z" />
+        <path android:strokeColor="#FF111114" android:strokeWidth="0.9" android:pathData="M12.00,7.90 L12.00,5.10 M15.90,10.73 L18.56,9.87 M14.41,15.32 L16.06,17.58 M9.59,15.32 L7.94,17.58 M8.10,10.73 L5.44,9.87" />
+    </group>
+</vector>

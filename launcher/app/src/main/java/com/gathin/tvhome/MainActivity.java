@@ -100,6 +100,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The window's background, by time of day; drawn once per look. */
     private final HorizonBackground horizon = new HorizonBackground();
     private DockDecoration dock;
+    /** The weekend look in use (null on weekdays and personal days), and what was last applied. */
+    private Weekend weekend;
+    private String weekendShown = "";
+    /** The pills' usual icon colours (white, near-black when focused), put back when the weekend ends. */
+    private android.content.res.ColorStateList pillTint;
     private WifiBars wifiBars;
     private String wifiName = "";
     private boolean wifiIconOnly;
@@ -156,6 +161,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root = findViewById(R.id.root);
         glass = findViewById(R.id.glass);
         greeting = findViewById(R.id.greeting);
+        greeting.setAllCaps(false);   // the line is upper case already; caps here would drop the weekend's symbols
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
@@ -238,6 +244,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setCompoundDrawablesRelative(bars, null, null, null);
         btnWifi.setOnFocusChangeListener((v, focused) -> showWifi(focused));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
+        pillTint = btnSettings instanceof TextView ? ((TextView) btnSettings).getCompoundDrawableTintList() : null;
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction. Down always goes to the dock.
@@ -384,6 +391,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
         HorizonBackground.State st = HorizonBackground.stateAt(lightTime(), sky, match, days);
         if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
+        Weekend w = Weekend.of(lightTime(), st);
+        String wk = w == null ? "" : w.key();
+        if (!wk.equals(weekendShown)) {
+            weekendShown = wk;
+            weekend = w;
+            applyWeekend(st);
+        }
         if (!horizon.claim(st)) return;
         final HorizonBackground.State state = st;
         android.content.res.Resources res = getResources();
@@ -391,7 +405,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             android.graphics.drawable.BitmapDrawable image = HorizonBackground.draw(res, state);
             handler.post(() -> {
                 getWindow().setBackgroundDrawable(image);
-                dock.setTopEdge(HorizonBackground.edge(state));
+                if (weekend == null) dock.setTopEdge(HorizonBackground.edge(state));
                 grid.invalidate();
             });
         });
@@ -535,8 +549,50 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void updateGreeting() {
         Calendar now = lightTime();
         String line = SunLine.text(now, SunTimes.LAT, SunTimes.LON, greetings);
-        greeting.setText(line == null ? "" : line);
+        if (line != null && weekend != null) {
+            // "WEEKEND ⚽ ♪ 🍸 ♥ · SUNSET 5:59 PM": the word in tone 1, four drawn symbols, then the sun time as now
+            String event = SunLine.event(now, SunTimes.LAT, SunTimes.LON);
+            android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder("WEEKEND");
+            b.setSpan(new android.text.style.ForegroundColorSpan(weekend.tone1), 0, b.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            int[] icons = {R.drawable.wk_football, R.drawable.wk_note, R.drawable.wk_cocktail, R.drawable.wk_heart};
+            int[] tints = {0, weekend.tone3, weekend.tone2, weekend.heart};
+            for (int i = 0; i < icons.length; i++) {
+                android.graphics.drawable.Drawable d = getDrawable(icons[i]).mutate();
+                if (tints[i] != 0) d.setTint(tints[i]);
+                int at = b.length();
+                b.append('\uFFFC');
+                b.setSpan(new GlyphSpan(d, (int) (13 * density), (int) ((i == 0 ? 6 : 5) * density)), at, at + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            if (event != null) b.append(" · ").append(event);
+            greeting.setText(b);
+        } else {
+            greeting.setText(line == null ? "" : line);
+        }
         greeting.setVisibility(line == null ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    /**
+     * The weekend look on or off: the pills' icons tinted (a focused pill as always), the dock's top edge as a
+     * gradient of the weekend colours, and the line above the clock. Only when the look changes.
+     */
+    private void applyWeekend(HorizonBackground.State state) {
+        int[][] states = {{android.R.attr.state_focused}, {}};
+        View[] pills = {btnToday, findViewById(R.id.btnInputs), btnWifi, findViewById(R.id.btnSettings)};
+        int[] colours = weekend == null ? null : new int[]{weekend.tone1, weekend.tone2, weekend.tone3, weekend.gold};
+        for (int i = 0; i < pills.length; i++) {
+            if (!(pills[i] instanceof TextView)) continue;
+            ((TextView) pills[i]).setCompoundDrawableTintList(colours == null ? pillTint
+                    : new android.content.res.ColorStateList(states, new int[]{0xFF111111, colours[i]}));
+        }
+        if (weekend == null) {
+            dock.setTopEdgeGradient(null);
+            dock.setTopEdge(HorizonBackground.edge(state));
+        } else {
+            int a = 0x99000000;   // about 60%
+            dock.setTopEdgeGradient(new int[]{(weekend.tone1 & 0xFFFFFF) | a, (weekend.gold & 0xFFFFFF) | a, (weekend.tone2 & 0xFFFFFF) | a, (weekend.tone3 & 0xFFFFFF) | a});
+        }
+        grid.invalidate();
+        updateGreeting();
     }
 
     /**
