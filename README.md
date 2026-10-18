@@ -116,6 +116,12 @@ dock order, hidden apps, Live TV package and columns. Build and install with
 TV_HOST=192.168.1.50 launcher/build-and-install.sh
 ```
 
+It installs the **release** build (`app/build/outputs/apk/release/app-release.apk`): shrunk by R8 with
+unused resources removed (`launcher/app/proguard-rules.pro`, `res/raw/keep.xml`), not debuggable, and
+signed with the same `~/.android/debug.keystore` as debug builds, so `pm install -r` replaces an
+installed debug build in place and the Home setup stays. `./gradlew :app:assembleDebug` still builds
+the debug APK for testing.
+
 Needs JDK 17 and the Android SDK (platform 34, build-tools 34.0.0). On macOS:
 `brew install openjdk@17 android-commandlinetools && sdkmanager "platforms;android-34" "build-tools;34.0.0"`.
 

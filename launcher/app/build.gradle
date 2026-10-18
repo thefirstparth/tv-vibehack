@@ -24,9 +24,20 @@ android {
     }
 
     buildTypes {
+        // Release: shrunk (R8) and resources trimmed, not debuggable, and signed with the same key as the debug
+        // builds (~/.android/debug.keystore) so pm install -r updates the installed launcher in place.
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+            crunchPngs false   // banner.png and ic_launcher.png are JPEG data; packed as they are, as in debug
         }
+    }
+
+    // targetSdk 29 is on purpose (a home screen for one TV, never on Play): release lint must not fail on it
+    lint {
+        disable 'ExpiredTargetSdkVersion'
     }
 
     compileOptions {
