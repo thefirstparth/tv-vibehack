@@ -2,17 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
-// The home screen's sports and weather lines read one feed (README: "Sports and weather"). Its address is private, so it
-// is never committed: tv.feedUrl in launcher/local.properties (gitignored). Empty or missing: the feature is off and
-// the launcher stays fully offline.
+// The feed address and the personal days are built into :shared from launcher/local.properties (README: "Sports and
+// weather"); here only whether the feed is plain http (a computer on the home network, for testing).
 def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
 if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
 def feedUrl = (localProps.getProperty('tv.feedUrl') ?: '').trim()
-// Personal days for Horizon (tv.day.1, tv.day.2, ...): "MM-DD|greeting|core|spot|band|top", colours "r,g,b,a".
-// Private like the feed address: only in local.properties. None set: no personal days.
-def days = localProps.stringPropertyNames().findAll { it ==~ /tv\.day\.\d+/ }.sort { it.substring(7) as int }
-        .collect { localProps.getProperty(it).trim().replace("'", "\\'").replace('"', '\\"') }.join('\\n')
 
 android {
     namespace 'com.gathin.tvhome'
@@ -24,8 +19,6 @@ android {
         targetSdk 29
         versionCode 2
         versionName '2.0'
-        resValue 'string', 'tv_feed_url', feedUrl
-        resValue 'string', 'tv_days', days
         // plain http only when the configured feed is http (a computer on the home network, for testing)
         manifestPlaceholders = [cleartext: feedUrl.startsWith('http://') ? 'true' : 'false']
     }
@@ -43,6 +36,7 @@ android {
 }
 
 dependencies {
+    implementation project(':shared')
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     testImplementation 'junit:junit:4.13.2'   // unit tests on the computer only, not in the app

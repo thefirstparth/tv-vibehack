@@ -1,19 +1,19 @@
-package com.gathin.tvhome;
+package com.gathin.tvshared;
 
 /**
  * Sunrise and sunset on the TV itself (no network): NOAA's solar calculator (the equations behind
  * gml.noaa.gov/grad/solcalc), with the sun's centre at zenith 90.833 degrees (refraction and the sun's radius). Used for
  * Horizon's sun-timed moods in Bengaluru. Plain Java, so it is unit-tested on the computer.
  */
-final class SunTimes {
+public final class SunTimes {
 
-    static final double ZENITH = 90.833;
+    public static final double ZENITH = 90.833;
 
     private SunTimes() {
     }
 
     /** Minutes after local midnight of sunrise and sunset ({rise, set}); NaN when the sun does not rise or set. */
-    static double[] riseSet(int year, int month, int day, double lat, double lon, double tzHours) {
+    public static double[] riseSet(int year, int month, int day, double lat, double lon, double tzHours) {
         double jd = julianDay(year, month, day);
         return new double[]{local(true, jd, lat, lon, tzHours), local(false, jd, lat, lon, tzHours)};
     }
@@ -32,7 +32,7 @@ final class SunTimes {
         return 720 - 4 * (lon + Math.toDegrees(ha)) - equationOfTime(t);
     }
 
-    static double julianDay(int y, int m, int d) {
+    public static double julianDay(int y, int m, int d) {
         if (m <= 2) {
             y -= 1;
             m += 12;

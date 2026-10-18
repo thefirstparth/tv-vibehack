@@ -1,4 +1,4 @@
-package com.gathin.tvhome;
+package com.gathin.tvshared;
 
 import static org.junit.Assert.assertEquals;
 

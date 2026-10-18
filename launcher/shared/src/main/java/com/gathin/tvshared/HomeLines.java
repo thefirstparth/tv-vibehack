@@ -1,6 +1,7 @@
-package com.gathin.tvhome;
+package com.gathin.tvshared;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
@@ -43,18 +44,58 @@ import java.util.concurrent.Executors;
  * when a request fails, that copy is shown with its time. Every minute, with the clock, the times are worded again from
  * what is already here (no network). The feed decides what to show; this class only words times and draws.
  */
-final class HomeLines {
+public final class HomeLines {
 
     private static final TimeZone IST = TimeZone.getTimeZone("Asia/Kolkata");
-    private static final long MIN = 60_000L, HOUR = 60 * MIN, DAY = 24 * HOUR;
+    public static final long MIN = 60_000L, HOUR = 60 * MIN, DAY = 24 * HOUR;
     /** A copy of a live line is believed for ten minutes after it was fetched, as on the site. */
-    private static final long LIVE_FOR = 10 * MIN;
+    public static final long LIVE_FOR = 10 * MIN;
     private static final int TIMEOUT_MS = 5000;
-    private static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF;
-    /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to 31 sp. */
-    private static final float HEAD_SP = 44f;
+    public static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF;
 
-    private final Activity act;
+    /**
+     * How a set of lines looks and where its feed is kept: the home screen's (the default), or the screensaver's
+     * (larger, its own feed address and copy, laid out in its own places).
+     */
+    public static final class Look {
+        public String url, file = "home_lines.json";
+        /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to minHeadSp. */
+        public float headSp = 44f, minHeadSp = 31f;
+        public int cityLayout = R.layout.item_city, cityGap = 42;
+        /** The home screen: centred between the top bar and the dock, the weather beside the sport, baselines shared. */
+        public boolean home = true;
+        /** The brightest text colour (the countdown when its competition has no colour). */
+        public int bright = WHITE;
+    }
+
+    /** The views one sport block draws into: the label, the headline's parts and the THEN and LATER rows. */
+    public static final class SportViews {
+        final TextView label, hA, hScoreA, hV, hScoreB, hB, hLoc;
+        final View[] rows;
+        /** THEN and LATER rows: label, time, match, competition (columns lined up across the two rows). */
+        final TextView[][] cells;
+        final float headSp, minHeadSp;
+
+        SportViews(View root, float headSp, float minHeadSp) {
+            label = root.findViewById(R.id.sportLabel);
+            hA = root.findViewById(R.id.hA);
+            hScoreA = root.findViewById(R.id.hScoreA);
+            hV = root.findViewById(R.id.hV);
+            hScoreB = root.findViewById(R.id.hScoreB);
+            hB = root.findViewById(R.id.hB);
+            hLoc = root.findViewById(R.id.hLoc);
+            View t1 = root.findViewById(R.id.then1), t2 = root.findViewById(R.id.then2);
+            rows = t1 == null ? new View[0] : new View[]{t1, t2};
+            cells = t1 == null ? new TextView[0][] : new TextView[][]{
+                    {root.findViewById(R.id.then1Label), root.findViewById(R.id.then1Time), root.findViewById(R.id.then1Match), root.findViewById(R.id.then1Comp)},
+                    {root.findViewById(R.id.then2Label), root.findViewById(R.id.then2Time), root.findViewById(R.id.then2Match), root.findViewById(R.id.then2Comp)}};
+            this.headSp = headSp;
+            this.minHeadSp = minHeadSp;
+        }
+    }
+
+    private final Context act;
+    private final Look look;
     private final String url;
     private final float density;
     private final File file;
@@ -62,10 +103,8 @@ final class HomeLines {
     private final Handler main = new Handler(Looper.getMainLooper());
 
     private final View lines, sport, weather;
-    private final TextView label, hA, hScoreA, hV, hScoreB, hB, hLoc, weatherAsOf;
-    private final View then1, then2;
-    /** THEN and LATER rows: label, time, match, competition (columns lined up across the two rows). */
-    private final TextView[][] thenCells;
+    private final TextView weatherAsOf;
+    private final SportViews sv;
     private final LinearLayout weatherCols;
     private final Drawable dot;
 
@@ -76,35 +115,39 @@ final class HomeLines {
 
     private JSONObject feed;     // the feed's value: { sport: [...], weather: [...] }
     private long fetchedAt;      // when that copy was fetched
-    private boolean saved;       // showing the saved copy: the last request failed
+    private boolean saved;       // showing the saved copy: the last request failed, or the answer was an old copy
+    private boolean old;         // the last answer was the site's cached copy, over OLD_AFTER old (it refreshes behind it)
+    /** An answer older than this (the feed's own as_of) is shown as a saved copy, with its time. */
+    static final long OLD_AFTER = 20 * MIN;
     private boolean loading;
     /** An address is set, a request has failed and no good copy was ever received: say so instead of a blank. */
     private boolean neverAnswered;
 
-    HomeLines(Activity act, float density) {
+    public HomeLines(Activity act, float density) {
+        this(act, act.getWindow().getDecorView(), density, homeLook(act));
+    }
+
+    private static Look homeLook(Context c) {
+        Look l = new Look();
+        l.url = c.getString(R.string.tv_feed_url).trim();
+        return l;
+    }
+
+    /** Lines drawn into root's views (the ids of layout/home_lines.xml), with their look and feed. */
+    public HomeLines(Context act, View root, float density, Look look) {
         this.act = act;
+        this.look = look;
         this.density = density;
-        this.url = act.getString(R.string.tv_feed_url).trim();
-        this.file = new File(act.getFilesDir(), "home_lines.json");
-        lines = act.findViewById(R.id.lines);
+        this.url = look.url;
+        this.file = new File(act.getFilesDir(), look.file);
+        lines = root.findViewById(R.id.lines);
         // its texts never overlap: fading the block (setAway) fades each text alone, with no off-screen buffer
         lines.forceHasOverlappingRendering(false);
-        sport = act.findViewById(R.id.sport);
-        weather = act.findViewById(R.id.weather);
-        label = act.findViewById(R.id.sportLabel);
-        hA = act.findViewById(R.id.hA);
-        hScoreA = act.findViewById(R.id.hScoreA);
-        hV = act.findViewById(R.id.hV);
-        hScoreB = act.findViewById(R.id.hScoreB);
-        hB = act.findViewById(R.id.hB);
-        hLoc = act.findViewById(R.id.hLoc);
-        then1 = act.findViewById(R.id.then1);
-        then2 = act.findViewById(R.id.then2);
-        thenCells = new TextView[][]{
-                {act.findViewById(R.id.then1Label), act.findViewById(R.id.then1Time), act.findViewById(R.id.then1Match), act.findViewById(R.id.then1Comp)},
-                {act.findViewById(R.id.then2Label), act.findViewById(R.id.then2Time), act.findViewById(R.id.then2Match), act.findViewById(R.id.then2Comp)}};
-        weatherAsOf = act.findViewById(R.id.weatherAsOf);
-        weatherCols = act.findViewById(R.id.weatherCols);
+        sport = root.findViewById(R.id.sport);
+        weather = root.findViewById(R.id.weather);
+        sv = new SportViews(root, look.headSp, look.minHeadSp);
+        weatherAsOf = root.findViewById(R.id.weatherAsOf);
+        weatherCols = root.findViewById(R.id.weatherCols);
         for (String pair : act.getResources().getStringArray(R.array.accent_colours)) {
             String[] kv = pair.split("\\|");
             if (kv.length == 2) accents.put(kv[0].trim().toLowerCase(Locale.ENGLISH), android.graphics.Color.parseColor(kv[1].trim()));
@@ -117,21 +160,64 @@ final class HomeLines {
             place();
         });
         weather.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            if (r - l != or - ol) v.post(this::render);
+            if (r - l != or - ol && look.home) v.post(this::render);
             alignBaselines();
         });
         sport.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> alignBaselines());
     }
 
+    // ---- for the screensaver: the feed as it stands ---------------------------------------------------------------
+
+    /** The feed's value as last received (or the saved copy), or null. */
+    public JSONObject feed() {
+        return feed;
+    }
+
+    public long fetchedAt() {
+        return fetchedAt;
+    }
+
+    /** Showing the saved copy: the last request failed. */
+    public boolean saved() {
+        return saved;
+    }
+
+    /** The last answer was an old cached copy (shown with its time): worth asking again soon. */
+    public boolean old() {
+        return old;
+    }
+
+    /** An address is set, a request has failed and no good copy was ever received. */
+    public boolean neverAnswered() {
+        return neverAnswered;
+    }
+
+    /** The sport side has something on screen (after the last render). */
+    public boolean hasSport() {
+        return sport.getVisibility() == View.VISIBLE;
+    }
+
+    /** The views of another sport block (the screensaver's Sport mode), drawn with these lines' rules. */
+    public SportViews viewsIn(View root, float headSp, float minHeadSp) {
+        return new SportViews(root, headSp, minHeadSp);
+    }
+
+    /** One event as a headline in another block: the label and the big line, as on the home screen. */
+    public void paintHeadline(SportViews v, JSONObject it, int room) {
+        long now = System.currentTimeMillis();
+        headline(v, it, now, room);
+        labelLine(v, it, now, room);
+    }
+
     private Runnable changed;
 
     /** Called after each redraw of the lines (the Horizon light follows the weather word and a live match). */
-    void onChange(Runnable r) {
+    public void onChange(Runnable r) {
         changed = r;
     }
 
     /** Bengaluru's sky for the Horizon light, from the feed's weather word or warning (clear without a feed). */
-    HorizonBackground.Sky sky() {
+    public HorizonBackground.Sky sky() {
         JSONArray wx = feed == null ? null : feed.optJSONArray("weather");
         for (int i = 0; wx != null && i < wx.length(); i++) {
             JSONObject c = wx.optJSONObject(i);
@@ -145,7 +231,7 @@ final class HomeLines {
     }
 
     /** The competition's colour of a match live now (believed: under ten minutes old), or null. */
-    Integer liveAccent() {
+    public Integer liveAccent() {
         JSONArray list = feed == null ? null : feed.optJSONArray("sport");
         long now = System.currentTimeMillis();
         for (int i = 0; list != null && i < list.length(); i++) {
@@ -156,7 +242,7 @@ final class HomeLines {
     }
 
     /** The space to centre the lines in, from the activity's layout (the top bar and the dock band). */
-    void frame(int top, int bottom) {
+    public void frame(int top, int bottom) {
         frameTop = top;
         frameBottom = bottom;
         place();
@@ -170,9 +256,10 @@ final class HomeLines {
 
     /** The headline sits on the same baseline as the big temperatures: the weather side moves to meet it. */
     private void alignBaselines() {
+        if (!look.home) return;
         View temp = weatherCols.getChildCount() > 0 ? weatherCols.getChildAt(0).findViewById(R.id.temp) : null;
         boolean both = sport.getVisibility() == View.VISIBLE && weatherCols.getVisibility() == View.VISIBLE && temp != null && temp.getVisibility() == View.VISIBLE;
-        weather.setTranslationY(both ? baselineIn(hA) - baselineIn(temp) : 0);
+        weather.setTranslationY(both ? baselineIn(sv.hA) - baselineIn(temp) : 0);
     }
 
     private int baselineIn(View v) {
@@ -181,7 +268,7 @@ final class HomeLines {
         return y;
     }
 
-    private Integer accentOf(JSONObject it) {
+    public Integer accentOf(JSONObject it) {
         for (String k : new String[]{it.optString("comp"), it.optString("comp_short"), it.optString("sp")}) {
             Integer c = k.isEmpty() ? null : accents.get(k.toLowerCase(Locale.ENGLISH));
             if (c != null) return c;
@@ -190,25 +277,32 @@ final class HomeLines {
     }
 
     /** No feed address set (launcher/local.properties): the feature is off and nothing is ever requested. */
-    boolean enabled() {
+    public boolean enabled() {
         return !url.isEmpty();
     }
 
     // ---- loading -------------------------------------------------------------------------------------------------
 
     /** Each time the home screen appears: one request, on a background thread. */
-    void refresh() {
+    public void refresh() {
         if (!enabled() || loading) return;
         loading = true;
         io.execute(() -> {
             JSONObject value = null;
             long at = System.currentTimeMillis();
-            boolean fromSaved = false;
+            boolean fromSaved = false, fromOld = false;
             try {
                 String body = get(url);
                 JSONObject j = new JSONObject(body);
                 value = j.optBoolean("ok") ? j.optJSONObject("value") : null;
                 if (value == null) throw new IllegalStateException("no value");
+                // the site's edge may answer with its cached copy while it makes a fresh one: an old copy is said as such
+                long sent = 0;
+                try { sent = Instant.parse(j.optString("as_of")).toEpochMilli(); } catch (Exception ignored) { }
+                if (sent > 0 && at - sent > OLD_AFTER) {
+                    at = sent;
+                    fromOld = true;
+                }
                 JSONObject keep = new JSONObject().put("at", at).put("value", value);
                 try (FileOutputStream out = new FileOutputStream(file)) { out.write(keep.toString().getBytes(StandardCharsets.UTF_8)); }
             } catch (Exception e) {
@@ -223,12 +317,13 @@ final class HomeLines {
             }
             final JSONObject v = value;
             final long a = at;
-            final boolean s = fromSaved;
+            final boolean s = fromSaved || fromOld, o = fromOld;
             main.post(() -> {
                 loading = false;
                 feed = v;
                 fetchedAt = a;
                 saved = s;
+                old = o;
                 neverAnswered = v == null;
                 render();
             });
@@ -259,12 +354,12 @@ final class HomeLines {
     }
 
     /** Every minute, with the clock: the times worded again from what is already here. */
-    void tick() {
+    public void tick() {
         render();
     }
 
     /** Out of the way while the grid below the dock is in use (it scrolls up into this space). */
-    void setAway(boolean away) {
+    public void setAway(boolean away) {
         if (!enabled()) return;
         lines.animate().alpha(away ? 0f : 1f).setDuration(away ? 120 : 200).start();
     }
@@ -304,7 +399,7 @@ final class HomeLines {
     }
 
     /** From a saved copy, a line whose start has passed is dropped, unless it is live and the copy under ten minutes old. */
-    private List<JSONObject> usable(JSONArray list, long now) {
+    public List<JSONObject> usable(JSONArray list, long now) {
         List<JSONObject> out = new ArrayList<>();
         if (list == null) return out;
         for (int i = 0; i < list.length(); i++) {
@@ -317,7 +412,7 @@ final class HomeLines {
         return out;
     }
 
-    private static long startOf(JSONObject it) {
+    public static long startOf(JSONObject it) {
         try {
             return it == null ? 0 : Instant.parse(it.optString("start")).toEpochMilli();
         } catch (Exception e) {
@@ -325,17 +420,17 @@ final class HomeLines {
         }
     }
 
-    private static boolean isLive(JSONObject it) {
+    public static boolean isLive(JSONObject it) {
         return "live".equals(it.optString("state"));
     }
 
     /** Live and believable now: said live by the feed, and that word is under ten minutes old. */
-    private boolean liveNow(JSONObject it, long now) {
+    public boolean liveNow(JSONObject it, long now) {
         return isLive(it) && now - fetchedAt < LIVE_FOR;
     }
 
     /** A start that has passed with no live word from the feed to go on: "Started" (no red dot, no score). */
-    private boolean started(JSONObject it, long now) {
+    public boolean started(JSONObject it, long now) {
         String st = it.optString("state");
         if ("live".equals(st)) return !liveNow(it, now);
         return "next".equals(st) && startOf(it) <= now && !it.optBoolean("starting") && !it.optBoolean("late");
@@ -345,37 +440,41 @@ final class HomeLines {
 
     private boolean renderSport(List<JSONObject> items, long now) {
         if (items.isEmpty()) return false;
+        SportViews v = sv;
         int room = room();
         JSONObject h = items.get(0);
-        headline(h, now, room);
-        labelLine(h, now, room);
-        View[] rowViews = {then1, then2};
-        boolean[] shown = new boolean[2];
-        for (int i = 0; i < 2; i++) {
+        headline(v, h, now, room);
+        labelLine(v, h, now, room);
+        View[] rowViews = v.rows;
+        TextView[][] thenCells = v.cells;
+        boolean[] shown = new boolean[rowViews.length];
+        for (int i = 0; i < rowViews.length; i++) {
             JSONObject it = i + 1 < items.size() ? items.get(i + 1) : null;
             shown[i] = it != null && thenLine(it, i, thenCells[i], now, room);
             rowViews[i].setVisibility(shown[i] ? View.VISIBLE : View.GONE);
         }
         // line the columns up: each column as wide as its widest cell in the rows shown (a gap after each)
         float[] gaps = {12 * density, 14 * density, 18 * density, 0};
-        for (int c = 0; c < 4; c++) {
+        for (int c = 0; c < 4 && rowViews.length > 0; c++) {
             int w = 0;
-            for (int i = 0; i < 2; i++) if (shown[i]) w = Math.max(w, Math.round(width(thenCells[i][c], thenCells[i][c].getText().toString()) + gaps[c]));
-            for (int i = 0; i < 2; i++) thenCells[i][c].setMinWidth(c == 3 ? 0 : w);
+            for (int i = 0; i < rowViews.length; i++) if (shown[i]) w = Math.max(w, Math.round(width(thenCells[i][c], thenCells[i][c].getText().toString()) + gaps[c]));
+            for (int i = 0; i < rowViews.length; i++) thenCells[i][c].setMinWidth(c == 3 ? 0 : w);
         }
         return true;
     }
 
-    /** Width the sport side may use: what the weather side leaves, with a gap. */
+    /** Width the sport side may use: what the weather side leaves, with a gap (the screensaver's band: all of it). */
     private int room() {
         int all = lines.getWidth();
         if (all <= 0) all = (int) (840 * density);
+        if (!look.home) return all;
         int wx = weather.getVisibility() == View.VISIBLE ? weather.getWidth() : 0;
         return all - wx - (int) (40 * density);
     }
 
     // The label over the headline: what kind of moment this is, in caps
-    private void labelLine(JSONObject it, long now, int room) {
+    private void labelLine(SportViews v, JSONObject it, long now, int room) {
+        TextView label = v.label;
         String sp = it.optString("sp");
         boolean f1 = "f1".equals(sp);
         String st = it.optString("state");
@@ -412,16 +511,16 @@ final class HomeLines {
             countdown = it.optBoolean("tbc") ? null : hoursLeft(start, now);
             String[] forms = {join(comps[0], when), join(comps[1], when), when};
             String text = pickFits(label, forms, countdown, room);
-            setLabel(text, countdown, colour, false, accentOf(it), text.equals(forms[0]) ? comps[0] : text.equals(forms[1]) ? comps[1] : null);
+            setLabel(label, text, countdown, colour, false, accentOf(it), text.equals(forms[0]) ? comps[0] : text.equals(forms[1]) ? comps[1] : null);
             return;
         }
         String[] forms = {join(lead, comps[0]), join(lead, comps[1]), lead};
         String text = pickFits(label, forms, null, room);
-        setLabel(text, null, colour, showDot, accentOf(it), text.equals(forms[0]) ? comps[0] : text.equals(forms[1]) ? comps[1] : null);
+        setLabel(label, text, null, colour, showDot, accentOf(it), text.equals(forms[0]) ? comps[0] : text.equals(forms[1]) ? comps[1] : null);
     }
 
     /** The competition's name and the countdown in its colour (plain text); the rest as the state says. */
-    private void setLabel(String text, String countdown, int colour, boolean showDot, Integer accent, String comp) {
+    private void setLabel(TextView label, String text, String countdown, int colour, boolean showDot, Integer accent, String comp) {
         SpannableStringBuilder b = new SpannableStringBuilder(text.toUpperCase(Locale.ENGLISH));
         if (accent != null && comp != null && !comp.isEmpty()) {
             int at = b.toString().indexOf(comp.toUpperCase(Locale.ENGLISH));
@@ -431,7 +530,7 @@ final class HomeLines {
             b.append("   ");
             int at = b.length();
             b.append(countdown.toUpperCase(Locale.ENGLISH));
-            b.setSpan(new ForegroundColorSpan(accent != null ? accent : WHITE), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            b.setSpan(new ForegroundColorSpan(accent != null ? accent : look.bright), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         label.setText(b);
         label.setTextColor(colour);
@@ -439,7 +538,8 @@ final class HomeLines {
     }
 
     // The big line: "Real Madrid v Sevilla", "Real Madrid 2–1 Sevilla", "United States GP  Austin", "VER · NOR · LEC"
-    private void headline(JSONObject it, long now, int room) {
+    private void headline(SportViews v, JSONObject it, long now, int room) {
+        TextView hA = v.hA, hB = v.hB, hV = v.hV, hScoreA = v.hScoreA, hScoreB = v.hScoreB, hLoc = v.hLoc;
         boolean scores = (liveNow(it, now) || "done".equals(it.optString("state"))) && !started(it, now);
         hScoreA.setVisibility(View.GONE);
         hScoreB.setVisibility(View.GONE);
@@ -465,7 +565,7 @@ final class HomeLines {
         String sa = scores ? it.optString("sa", "") : "", sb = scores ? it.optString("sb", "") : "";
         boolean oneScore = !cricket && !sa.isEmpty() && !sb.isEmpty();   // "2–1" between the names
         String[][] names = nameForms(it);
-        setHeadSize(HEAD_SP);
+        setHeadSize(v, v.headSp);
         // try the full form first, then shorter names, then (cricket) scores without their overs; never cut a word
         String[] scoreForms = cricket ? new String[]{sa, noOvers(sa)} : new String[]{sa};
         String[] scoreFormsB = cricket ? new String[]{sb, noOvers(sb)} : new String[]{sb};
@@ -477,7 +577,7 @@ final class HomeLines {
                         + (scB.isEmpty() ? 0 : width(hScoreB, scB) + 34 * density) + (oneScore || b.isEmpty() ? 0 : width(hV, "V") + 28 * density);
                 boolean last = s == scoreForms.length - 1 && n == names[names.length - 1];
                 // no shorter form left and still too wide: the names get smaller (down to 31 sp), never cut
-                if (last && w > room) setHeadSize(Math.max(31f, HEAD_SP * room / w * 0.97f));
+                if (last && w > room) setHeadSize(v, Math.max(v.minHeadSp, v.headSp * room / w * 0.97f));
                 if (w <= room || last) {
                     hA.setText(a);
                     hB.setText(b);
@@ -497,8 +597,8 @@ final class HomeLines {
         }
     }
 
-    private void setHeadSize(float sp) {
-        for (TextView v : new TextView[]{hA, hB, hScoreA, hScoreB}) if (v.getTextSize() != sp * act.getResources().getDisplayMetrics().scaledDensity) v.setTextSize(sp);
+    private void setHeadSize(SportViews s, float sp) {
+        for (TextView v : new TextView[]{s.hA, s.hB, s.hScoreA, s.hScoreB}) if (v.getTextSize() != sp * act.getResources().getDisplayMetrics().scaledDensity) v.setTextSize(sp);
     }
 
     private static String noOvers(String s) {
@@ -546,7 +646,7 @@ final class HomeLines {
         return false; // no form fits: the line is left out rather than cut
     }
 
-    private static String sides(JSONObject it, String a, String b, boolean scores) {
+    public static String sides(JSONObject it, String a, String b, boolean scores) {
         String sa = scores ? it.optString("sa", "") : "", sb = scores ? it.optString("sb", "") : "";
         if (b.isEmpty()) return a;
         if ("cricket".equals(it.optString("sp"))) return (a + (sa.isEmpty() ? "" : " " + sa)) + " v " + (b + (sb.isEmpty() ? "" : " " + sb));
@@ -555,7 +655,7 @@ final class HomeLines {
     }
 
     /** Name pairs from longest to shortest: as sent, then each side's short form where the feed gives one. */
-    private static String[][] nameForms(JSONObject it) {
+    public static String[][] nameForms(JSONObject it) {
         String a = it.optString("a", ""), b = it.optString("b", "");
         String as = it.optString("a_short", a), bs = it.optString("b_short", b);
         List<String[]> out = new ArrayList<>();
@@ -566,13 +666,13 @@ final class HomeLines {
         return out.toArray(new String[0][]);
     }
 
-    private static String[] compForms(JSONObject it) {
+    public static String[] compForms(JSONObject it) {
         String c = it.optString("comp", "");
         return new String[]{c, it.optString("comp_short", c)};
     }
 
     /** The result in the label: FULL TIME, FINAL, INDIA WON BY 14 RUNS, ALCARAZ WON. */
-    private static String resultWord(JSONObject it) {
+    public static String resultWord(JSONObject it) {
         if (it.has("result")) return it.optString("result");
         switch (it.optString("sp")) {
             case "nba": return "Final";
@@ -583,7 +683,7 @@ final class HomeLines {
     }
 
     /** A live line the feed lost sight of: when it was last seen live, from the feed's own time. */
-    private static String seenWord(JSONObject it) {
+    public static String seenWord(JSONObject it) {
         try {
             return "Last seen live " + clock(Instant.parse(it.optString("seen")).toEpochMilli());
         } catch (Exception e) {
@@ -591,11 +691,11 @@ final class HomeLines {
         }
     }
 
-    private static String pauseWord(String p) {
+    public static String pauseWord(String p) {
         return "HT".equalsIgnoreCase(p) ? "Half-time" : p;
     }
 
-    private static String join(String a, String b) {
+    public static String join(String a, String b) {
         return a == null || a.isEmpty() ? b : b == null || b.isEmpty() ? a : a + " · " + b;
     }
 
@@ -606,13 +706,13 @@ final class HomeLines {
         return forms[forms.length - 1];
     }
 
-    private static float width(TextView v, String s) {
+    public static float width(TextView v, String s) {
         return v.getPaint().measureText(s);
     }
 
     // ---- times, in IST -------------------------------------------------------------------------------------------
 
-    private static long istDay(long ms) {
+    public static long istDay(long ms) {
         return Math.floorDiv(ms + IST.getOffset(ms), DAY);
     }
 
@@ -620,14 +720,14 @@ final class HomeLines {
         return (int) (Math.floorMod(ms + IST.getOffset(ms), DAY) / HOUR);
     }
 
-    private static String fmt(String pattern, long ms) {
+    public static String fmt(String pattern, long ms) {
         SimpleDateFormat f = new SimpleDateFormat(pattern, Locale.ENGLISH);
         f.setTimeZone(IST);
         return f.format(new Date(ms));
     }
 
     /** "12:30 am": 12-hour, lowercase am/pm, always the minutes. */
-    static String clock(long ms) {
+    public static String clock(long ms) {
         return fmt("h:mm a", ms).replace("AM", "am").replace("PM", "pm");
     }
 
@@ -635,7 +735,7 @@ final class HomeLines {
      * Within a day: "Today 12:30 pm", "Tonight 12:30 am" (a start after midnight counts as tonight), "Tomorrow 7:30 am".
      * One to six days: "Thu 12:30 am". Seven to fifteen: "Sat 31 Oct, 1:30 am".
      */
-    static String timeLabel(long start, long now) {
+    public static String timeLabel(long start, long now) {
         long d = istDay(start) - istDay(now);
         if (start > now && start - now <= DAY) {
             String w = istHour(start) < 5 && (d == 1 || istHour(now) < 5) ? "Tonight" : d == 0 ? "Today" : "Tomorrow";
@@ -646,13 +746,13 @@ final class HomeLines {
     }
 
     /** The day alone, for a time not yet announced. */
-    static String dayWord(long start, long now) {
+    public static String dayWord(long start, long now) {
         long d = istDay(start) - istDay(now);
         return d == 0 ? "Today" : d == 1 ? "Tomorrow" : d <= 6 ? fmt("EEE", start) : fmt("EEE d MMM", start);
     }
 
     /** "in 17h", "in under 1h" (whole hours, rounded down), within a day only. */
-    static String hoursLeft(long start, long now) {
+    public static String hoursLeft(long start, long now) {
         long left = start - now;
         if (left <= 0 || left > DAY) return null;
         return left < HOUR ? "in under 1h" : "in " + (left / HOUR) + "h";
@@ -663,9 +763,9 @@ final class HomeLines {
     private boolean renderWeather(JSONArray list) {
         if (list == null || list.length() == 0) return false;
         weatherCols.setVisibility(View.VISIBLE);
-        LayoutInflater inf = act.getLayoutInflater();
+        LayoutInflater inf = LayoutInflater.from(act);
         while (weatherCols.getChildCount() < list.length()) {
-            View col = inf.inflate(R.layout.item_city, weatherCols, false);
+            View col = inf.inflate(look.cityLayout, weatherCols, false);
             Fonts.apply(col);
             weatherCols.addView(col);
         }
@@ -675,7 +775,7 @@ final class HomeLines {
         for (int i = 0; i < list.length(); i++) {
             JSONObject c = list.optJSONObject(i);
             View col = weatherCols.getChildAt(i);
-            ((ViewGroup.MarginLayoutParams) col.getLayoutParams()).setMarginStart(i == 0 ? 0 : (int) (42 * density));
+            ((ViewGroup.MarginLayoutParams) col.getLayoutParams()).setMarginStart(i == 0 ? 0 : (int) (look.cityGap * density));
             ((TextView) col.findViewById(R.id.city)).setText(c.optString("city").toUpperCase(Locale.ENGLISH));
             TextView temp = col.findViewById(R.id.temp), feels = col.findViewById(R.id.feels), hilo = col.findViewById(R.id.hilo), word = col.findViewById(R.id.word);
             temp.setText(c.has("now") ? degrees(c.optInt("now")) : "");

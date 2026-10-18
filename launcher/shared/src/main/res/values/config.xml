@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings shared by the launcher and the Today app. Edit, then build and install both. -->
+<resources>
+
+    <!-- The one accent on the home screen and in the Today app: a competition's colour on its name in the sport label and on the countdown
+         pill. Matched by the competition's name (as the feed sends it, full or short), then by sport; else white. -->
+    <string-array name="accent_colours">
+        <item>La Liga|#FF8A5C</item>
+        <item>Champions League|#8FB4FF</item>
+        <item>UCL|#8FB4FF</item>
+        <item>Copa del Rey|#FFB27A</item>
+        <item>football|#FF8A5C</item>
+        <item>f1|#FF6B6B</item>
+        <item>cricket|#6FB8FF</item>
+        <item>nba|#FFC94D</item>
+        <item>tennis|#CDE86A</item>
+        <item>intl|#4FD1A5</item>
+    </string-array>
+
+    <!-- Where the Horizon light's sun is worked out for (degrees, north and east positive): sunrise, sunset and the
+         line above the clock. -->
+    <string name="horizon_lat" translatable="false">12.9716</string>
+    <string name="horizon_lon" translatable="false">77.5946</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The views HomeLines draws into: any layout that gives these ids (the home screen's, the Today app's). -->
+<resources>
+    <item name="lines" type="id" />
+    <item name="sport" type="id" />
+    <item name="weather" type="id" />
+    <item name="sportLabel" type="id" />
+    <item name="hA" type="id" />
+    <item name="hScoreA" type="id" />
+    <item name="hV" type="id" />
+    <item name="hScoreB" type="id" />
+    <item name="hB" type="id" />
+    <item name="hLoc" type="id" />
+    <item name="then1" type="id" />
+    <item name="then2" type="id" />
+    <item name="then1Label" type="id" />
+    <item name="then1Time" type="id" />
+    <item name="then1Match" type="id" />
+    <item name="then1Comp" type="id" />
+    <item name="then2Label" type="id" />
+    <item name="then2Time" type="id" />
+    <item name="then2Match" type="id" />
+    <item name="then2Comp" type="id" />
+    <item name="weatherAsOf" type="id" />
+    <item name="weatherCols" type="id" />
+    <item name="city" type="id" />
+    <item name="temp" type="id" />
+    <item name="feels" type="id" />
+    <item name="hilo" type="id" />
+    <item name="word" type="id" />
+</resources>

@@ -39,6 +39,10 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.gathin.tvshared.Fonts;
+import com.gathin.tvshared.HomeLines;
+import com.gathin.tvshared.HorizonBackground;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -142,7 +146,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setItemAnimator(null);
         dock = new DockDecoration(COLUMNS, density);
         grid.addItemDecoration(dock);
-        days = HorizonBackground.Day.parse(getString(R.string.tv_days));
+        HorizonBackground.locate(getResources());
+        String dayText = getString(com.gathin.tvshared.R.string.tv_days);
+        days = HorizonBackground.Day.parse(dayText);
         readFakes(getIntent());
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
@@ -250,7 +256,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
     /** Just after the first frame: the sports and weather lines (when a feed is set) and the Horizon image. */
     private void afterFirstFrame() {
-        if (!getString(R.string.tv_feed_url).trim().isEmpty() && homeLines == null) {
+        if (!getString(com.gathin.tvshared.R.string.tv_feed_url).trim().isEmpty() && homeLines == null) {
             ((android.view.ViewStub) findViewById(R.id.linesStub)).inflate();
             Fonts.apply(findViewById(R.id.lines));
             homeLines = new HomeLines(this, density);
