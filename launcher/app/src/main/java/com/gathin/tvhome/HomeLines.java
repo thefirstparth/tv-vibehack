@@ -397,6 +397,9 @@ final class HomeLines {
             String hl = c.has("hi") && c.has("lo") ? "H " + c.optInt("hi") + "° · L " + c.optInt("lo") + "°" : c.has("hi") ? "H " + c.optInt("hi") + "°" : c.has("lo") ? "L " + c.optInt("lo") + "°" : "";
             hilo.setText(hl);
             hilo.setVisibility(hl.isEmpty() ? View.GONE : View.VISIBLE);
+            TextView hum = col.findViewById(R.id.hum);
+            hum.setText(c.has("hum") ? "Humidity " + c.optInt("hum") + "%" : "");
+            hum.setVisibility(c.has("hum") ? View.VISIBLE : View.GONE);
             // measured without the word: an invisible view still takes its width, and a long word ("Storms likely
             // tomorrow") left from the last update would widen all three columns
             word.setText("");
