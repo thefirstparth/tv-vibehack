@@ -218,6 +218,9 @@ Nothing here blocks using the TV. Pick up any of it later.
 
 ## Lessons from this TV
 
+The lessons for everyone (speed, design, safety) are in [LESSONS.md](../../LESSONS.md); these are
+the ones specific to this TV.
+
 - **It's Google TV, not Android TV.** Disabling `launcherx` alone makes `setupwraith`'s
   `RecoveryActivity` take over Home with a black screen, whatever `set-home-activity` says.
 - **Disabling only that component fails over ADB** (`SecurityException: Shell cannot change

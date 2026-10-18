@@ -1,202 +1,163 @@
 # tv-vibehack
 
-**Your TV, minus the ads.** Debloat any Android TV / Google TV over ADB and give it a clean,
-tvOS-inspired launcher. Hand the prompt to Claude Code or any coding assistant, answer a few
-questions about which apps you use, and it does the rest on the real TV.
+**Your TV, minus the ads, and faster.** Turn an Android TV or Google TV into a clean, quick home
+screen: switch off the bloat over ADB, replace the ad-filled launcher with a small Apple TV-style
+one, and (optionally) put live sport, weather and the day's news on it.
+
+You don't need to be an Android developer. Hand [`PROMPT.md`](PROMPT.md) to Claude Code (or another
+coding assistant that can run commands), answer a few questions about the apps you use, and it does
+the work on your real TV, checking each step with a screenshot.
 
 | Stock home screen | After |
 |---|---|
 | ![Stock Google TV home with a sponsored ad](docs/stock-home.jpg) | ![tvOS-style launcher](docs/new-home.jpg) |
 
-Everything is reversible: packages are disabled, never uninstalled, and a restore script puts the
-stock launcher back.
+*(The "after" photo shows the first version of the launcher; the current one adds the sport and
+weather lines and a light that follows the time of day.)*
+
+**Everything is reversible.** Apps are disabled, never uninstalled; every setting that gets changed
+is written down first, with the command that puts it back.
 
 ## Quick start
 
-1. On the TV: Settings → Device Preferences → About → press OK on **Build** seven times → back →
-   Developer options → turn on **USB debugging** (and Network/ADB debugging if your TV shows it).
-   Keep the TV on and on the same Wi-Fi as your computer.
-2. Open Claude Code (or your assistant of choice) on your computer and paste the prompt from
-   [`PROMPT.md`](PROMPT.md), filling in your TV model.
-3. Accept the "Allow USB debugging?" prompt on the TV when told to, then answer the checklist
-   questions (which apps you use, which four go in the dock).
+1. **On the TV:** Settings → Device Preferences → About → press OK on **Build** seven times → back
+   → Developer options → turn on **USB debugging** (and Network/ADB debugging if you see it). Keep
+   the TV on and on the same Wi-Fi as your computer.
+2. **On your computer:** open Claude Code in a copy of this repo and paste the prompt from
+   [`PROMPT.md`](PROMPT.md), with your TV model filled in.
+3. **When asked:** accept "Allow USB debugging?" on the TV, then say which apps you use and which
+   four go in the dock.
 
-That's it. The assistant backs up, debloats, builds and installs the launcher, and verifies each
-step with screenshots from the TV. If you'd rather do it by hand, the pieces are below.
+The assistant backs up the TV, switches off the bloat, builds and installs the launcher, and shows
+you a screenshot after each step.
+
+## What you get
+
+**The home screen** (`launcher/app`, about 240 KB, made for TVs with 1–2 GB of RAM)
+
+- A dock with your four main apps; press Down for the rest in a grid, in the order you choose.
+- A big clock and the date. Above it, the time of day and the sun's next turn ("MIDDAY · SUNSET
+  5:59 PM"), worked out on the TV itself.
+- **Inputs** (your HDMI ports by name, e.g. "Xbox"), **Wi-Fi** and **Settings** buttons.
+- A soft light behind the screen that follows the sun: dawn, golden hour, night. It greys out
+  when rain is forecast. It's drawn once into a small image, so it costs nothing while you move.
+- No ads, no autoplaying video, nothing running in the background.
+
+**Optional: sport and weather** (needs a small feed you host; off unless you set one)
+
+- What's live, just finished or next for the teams you follow, and the weather in three cities.
+- One quick request each time you come back to Home. Never on a timer, never while you watch.
+- If the feed is down, the last good copy shows with "as of 4:10 pm".
+
+**Optional: the 1400 app** (`launcher/app1400`)
+
+- A full-screen "paper" for the TV: sport, the day's news in a minute, and markets, as tabs.
+  Left/Right move between tabs, Up/Down turn pages. It only runs while open.
+
+The details for all three are in [`launcher/README.md`](launcher/README.md).
+
+## How much faster
+
+Measured on a Xiaomi MiTV-MOOR2 (Google TV, 2 GB RAM). Each figure is the median of 5 runs, with
+the old and new builds taking turns, after a reboot:
+
+| | Before | After |
+|---|---|---|
+| Opening the home screen from cold | 1479 ms | **612 ms** |
+| Getting back to Home from YouTube | 792 ms | **403 ms** |
+| Stutter while scrolling the apps (janky frames) | 0.74% | **0%** |
+| Memory used by the home screen | 78.5 MB | **66.8 MB** |
+| Size of the app | 1.7 MB | **0.24 MB** |
+| Free storage on the TV (after the clean-up) | 1.1 GB | **1.5–1.7 GB** |
+
+## What changed from the original project
+
+The original tv-vibehack (by Gathin23, 17 October 2026) was a prompt, a pure-Python ADB tool, a
+debloat list for the Mi TV 4A, and a black tvOS-style launcher. It worked. On 18 October we used
+it on a newer Google TV set and kept going. In short:
+
+| Area | Original | Now |
+|---|---|---|
+| TVs covered | Mi TV 4A (Android TV 10) | + MiTV-MOOR2 (Google TV), which needs an extra step to replace its home screen ([how](examples/xiaomi-mitv-moor2/README.md)) |
+| Home screen | Black background, app name and colour glow over the dock | The sun-following light, sport and weather lines, the line above the clock, named inputs, a moon button for the 1400 app; the heavy glow removed |
+| Grid | A–Z after the dock | Your own order (`grid_order`) |
+| Speed | Debug build, reloaded every app on each return to Home | Shrunk release build, loads apps once and refreshes only when one is installed or removed (table above) |
+| New apps | — | The 1400 app; a shared module both apps use |
+| TV tuning | — | Measured system tweaks, kept only where they helped, each with its undo command |
+| Records | A gotchas list | A full record of the TV's state with undo steps, and [LESSONS.md](LESSONS.md) |
+
+What didn't work, and what we'd do differently, is in [LESSONS.md](LESSONS.md).
+
+## What we learned (the short version)
+
+The full list, with the story behind each, is in **[LESSONS.md](LESSONS.md)**. The ten that matter
+most:
+
+1. **Measure on the real TV, before and after, taking turns.** One run on each build fooled us
+   once; two "nicer" animations that looked fine made the screen stutter and were removed.
+2. **Reboot before you measure.** This TV slowly gets into a state where *everything* stutters.
+   We nearly blamed a good build for it.
+3. **The release build is the cheapest speed-up there is.** Switching from the debug build to a
+   shrunk release build halved the start time without touching a line of the app.
+4. **Don't redo work on every return to Home.** The launcher reloaded every app and replayed its
+   entrance each time; stopping that, together with the release build, halved the return to Home.
+5. **Faster-sounding isn't faster.** Fully pre-compiling apps (`-m speed`) made every one *slower*:
+   bigger files to read from slow storage. The TV's own nightly compile was already right.
+6. **On Google TV, replacing the home screen takes three steps**, in a set order, or the Home button
+   gives a black screen.
+7. **Write down every setting before you change it, with the command that puts it back.**
+8. **Keep a copy of the build that's on the TV** before installing a new one, and install with
+   `pm install -r` only (never uninstall the launcher: you lose the Home setup).
+9. **On a TV, nothing should move by itself and everything should say where you are.** The first
+   1400 app turned pages on its own and hid two modes behind the arrows; it was hard to use.
+10. **A forecast isn't the weather.** "Rain likely" is about the whole day; it can be raining with
+    the screen saying "likely", or dry with it saying rain.
 
 ## What's in the repo
 
 | Path | What it is |
 |---|---|
-| [`PROMPT.md`](PROMPT.md) | The prompt. Brand-neutral; the assistant discovers your TV's bloat. |
-| [`launcher/`](launcher/) | The tvOS-style launcher. Edit `app/src/main/res/values/config.xml` for your dock, hidden apps and Live TV package, then run `build-and-install.sh`. |
-| [`tools/tv.py`](tools/tv.py) | Pure-Python ADB client (shell, batch, push, pull). Works where the stock `adb` is blocked. |
-| [`tools/b64push.py`](tools/b64push.py) | Uploads larger files (APKs) as base64 chunks with an md5 check. |
-| [`tools/disable.sh`](tools/disable.sh), [`tools/restore.sh`](tools/restore.sh) | Apply or undo a debloat list. |
-| [`examples/`](examples/) | Per-TV debloat lists. Add yours, see [CONTRIBUTING.md](CONTRIBUTING.md). |
+| [`PROMPT.md`](PROMPT.md) | The prompt to give your assistant |
+| [`LESSONS.md`](LESSONS.md) | Everything we learned, including what went wrong |
+| [`launcher/`](launcher/) | The home screen and the 1400 app ([details](launcher/README.md)). Your dock, grid order and hidden apps are in `launcher/app/src/main/res/values/config.xml` |
+| [`tools/tv.py`](tools/tv.py) | A small ADB client in Python. Works where the usual `adb` is blocked (macOS) |
+| [`tools/b64push.py`](tools/b64push.py) | Sends an app file (APK) to the TV in pieces and checks it arrived whole |
+| [`tools/disable.sh`](tools/disable.sh), [`tools/restore.sh`](tools/restore.sh) | Switch a debloat list off, or put it all back |
+| [`examples/`](examples/) | One folder per TV: what to disable, and (for the MOOR2) the full record and undo steps |
 
-## The launcher
-
-A small native Android TV home screen (`com.gathin.tvhome`), built for sets with 1 GB of RAM:
-
-- The "Horizon" background (v2): a soft light behind the sport and weather lines that fades to black
-  well before the dock. Its mood follows the sun: the TV works out sunrise and sunset for its city
-  itself (NOAA's formula, no network) and moves through late night, dawn, morning, midday, golden
-  hour, sunset, blue hour and night. A faint season (winter, summer, monsoon, post-monsoon) sits on
-  top; rain or a storm in the feed's weather word mutes it with a grey haze; while a match is live a
-  faint glow in the competition's colour sits under the sport lines; and personal days can have
-  their own light and greeting. It is drawn once per combination into a small image, off the main
-  thread after the first frame, and used as the window's background, so the screen still draws one
-  layer; it never reacts to focus and never animates. The dock's top edge takes the light's colour.
-
-  Personal days are private and live only in `launcher/local.properties` (not committed):
-
-  ```
-  tv.day.1=MM-DD|Greeting|core|spot|band|top
-  ```
-
-  with each colour as `r,g,b,a` (alpha 0 to 1). None set: no personal days.
-- A dock at the bottom in a lighter rounded band with the four apps you choose. Press Down and the
-  dock slides up to reveal the rest of your apps in a grid. (The large app name above the dock and
-  the colour glow behind it were removed: the tile already shows the name, and the full-screen glow
-  was the GPU's heaviest job. Without them the home screen measured smoother than before.)
-- One highlight (a crisp rim and a soft glow around the tile, never over its logo) springs from tile
-  to tile. The focused tile lifts and shows its name; every tile stays in full colour.
-- Above the clock, the light's mood and the sun's next turn, worked out on the TV for the place in
-  `launcher/shared/src/main/res/values/config.xml` (`horizon_lat`, `horizon_lon`): "MIDDAY · SUNSET
-  5:59 PM", "NIGHT · SUNRISE 6:10 AM"; in the Sunset mood the time alone; on a personal day its
-  greeting in the mood's place.
-- A small moon pill at the start of the top bar opens the **1400** app (below); it hides itself when
-  the app is not installed.
-- Frosted pills top right: **Inputs** (a dropdown of HDMI ports, AV and Live TV), **Wi-Fi**
-  (shows the network name) and **Settings**. A large thin clock and the date top left,
-  set in [Outfit](https://fonts.google.com/specimen/Outfit).
-- Deterministic D-pad navigation, last focused tile remembered, staggered entrance animation.
-  Down from the top bar goes to the dock tile you were last on; pressing Home brings focus back
-  to the last tile even if you left from a top-bar button. The Inputs menu sizes itself to its
-  rows and shows a device found over HDMI-CEC (for example "Living room TV") on its port's row.
-- No blur, no video, no background services, and no network, with one opt-in exception below.
-
-### Sports and weather (optional)
-
-Above the dock, on plain black: what is live, just finished or next among the teams and players
-you follow (left, under the clock), and now, feels-like, high and low with at most one word or
-warning for three cities (right). The launcher reads it from a single feed of your own (the
-companion site's `/api/live/tv`), which decides what to show; the TV only words the times and
-draws the lines.
-
-- **Off unless you set it.** Put the feed's address in `launcher/local.properties` (not committed,
-  as the address may be private):
-
-  ```
-  tv.feedUrl=https://your-site.example/api/live/tv
-  ```
-
-  Empty or missing, the launcher never touches the network and looks exactly as before.
-- **One request each time the home screen appears** (TV on, Home, back from an app), on a
-  background thread with a 5 second timeout and no retries. Never on a timer, never while you
-  watch: no services, no WorkManager. Every minute, with the clock, the times are worded again from
-  what is already on screen ("Tonight 12:30 am   IN 17H", then "Started"), without a request.
-- **When the site does not answer,** the last good copy is shown with "as of h:mm am" in amber, and
-  anything whose start has passed is dropped unless it was live less than ten minutes before.
-- Lines never end in "…": a long line steps down to shorter names, then the competition's short
-  form, then without it.
-- One accent: the competition's colour on its name and on the countdown
-  (`accent_colours` in `config.xml`). Everything else is white or grey. THEN and LATER line up
-  in three columns (time, match, competition), and the headline shares its baseline with the
-  big temperatures. The Wi-Fi pill shows signal bars, and the network's name while focused.
-
-The Inputs menu can name a port: `input_names` in `config.xml` (`HDMI 2|Xbox`) shows "Xbox" with
-"HDMI 2" beside it, and a games console gets a controller icon.
-
-Configure it in [`launcher/app/src/main/res/values/config.xml`](launcher/app/src/main/res/values/config.xml):
-dock order, hidden apps, Live TV package and columns. Build and install with
-
-```bash
-TV_HOST=192.168.1.50 launcher/build-and-install.sh
-```
-
-It installs the **release** build (`app/build/outputs/apk/release/app-release.apk`): shrunk by R8 with
-unused resources removed (`launcher/app/proguard-rules.pro`, `res/raw/keep.xml`), not debuggable, and
-signed with the same `~/.android/debug.keystore` as debug builds, so `pm install -r` replaces an
-installed debug build in place and the Home setup stays. `./gradlew :app:assembleDebug` still builds
-the debug APK for testing.
-
-Measured on the TV (MiTV-MOOR2, 2026-10-18; the old debug build against this release build, alternating, 5 rounds
-each, medians): cold start 1479 → 612 ms, return to Home from YouTube 792 → 403 ms, janky frames while scrolling
-the grid 0.74% → 0%, memory (PSS) 78.5 → 66.8 MB. The return to Home is faster also because the app list is no
-longer reloaded and the tiles' entrance is no longer replayed on every return (only on a package change and a
-real start).
+## Build and install the launcher yourself
 
 Needs JDK 17 and the Android SDK (platform 34, build-tools 34.0.0). On macOS:
 `brew install openjdk@17 android-commandlinetools && sdkmanager "platforms;android-34" "build-tools;34.0.0"`.
 
-### The 1400 app (optional)
+```bash
+TV_HOST=192.168.1.50 launcher/build-and-install.sh      # your TV's IP
+```
 
-`launcher/app1400` (`com.gathin.tv1400`) is a separate app in the same Gradle project: the companion
-paper on the TV, in its night look (Horizon V3: the paper's fonts, flat, a halftone sun in the mood's
-inks above a double rule, the nameplate and the sections as tabs in the foot). One row of sections:
-**Sport**, **The day in a minute** and **Money** (under the clock and the three cities), then **This
-week**, **Results** and **Where you stand** (under the next event in big type). It opens on Sport.
-Left and Right go along the tabs (the one showing is bright, the rest dimmed), Up and Down turn the
-pages of a section that has more than one (its tab says "2 / 3"), Back closes it. Nothing moves by
-itself.
-
-It reads `/api/live/tv?saver=1` from the same `tv.feedUrl`, only while it is open (when it opens, then
-every 15 minutes, every minute while live), keeps the screen on, and closes itself after 3 hours
-without a button press. Nothing runs when it is closed. Once a minute the content moves a few pixels
-(burn-in). Its fonts are subsets of Newsreader, Libre Franklin, Source Serif 4, Titillium Web,
-Playfair Display and UnifrakturMaguntia, all under the OFL (`launcher/app1400/FONT-LICENSES-OFL.txt`).
-
-`launcher/shared` holds what both apps need and nothing else: the sun's times and the mood, the line
-above the clock, the feed and how it is worded, and the personal days.
-
-Build and install both: `./gradlew assembleDebug` in `launcher/`, then install
-`app/build/outputs/apk/debug/app-debug.apk` and `app1400/build/outputs/apk/debug/app1400-debug.apk`
-with `pm install -r`. Undo: `pm uninstall com.gathin.tv1400` (the moon hides itself) and take it out
-of `grid_order`.
-
-## Talking to the TV by hand
+It builds the release version and installs it as the Home app. To talk to the TV by hand:
 
 ```bash
 python3 -m venv tools/venv && tools/venv/bin/pip install -r tools/requirements.txt
-export TV_HOST=192.168.1.50                                   # your TV's IP
+export TV_HOST=192.168.1.50
 tools/venv/bin/python -I tools/tv.py --probe                 # model, Android version, firmware
-tools/venv/bin/python -I tools/tv.py 'pm list packages'      # one command
-printf 'cmd1\ncmd2\n' | tools/venv/bin/python -I tools/tv.py --batch
+tools/venv/bin/python -I tools/tv.py 'pm list packages'      # any one command
 tools/disable.sh examples/xiaomi-mi-tv-4a/debloat.txt        # apply a list
-tools/restore.sh examples/xiaomi-mi-tv-4a/debloat.txt        # undo it, restore stock launcher
+tools/restore.sh examples/xiaomi-mi-tv-4a/debloat.txt        # undo it, stock launcher back
 ```
-
-### Gotchas we hit
-
-- **macOS: `adb connect` says "No route to host"** while the port is clearly open. Recent macOS
-  treats the Google-signed `adb` as its own app under Local Network privacy and silently blocks it.
-  `tools/tv.py` avoids the binary entirely.
-- **No "wireless debugging" toggle** on some TVs (Xiaomi among them). USB debugging alone opens
-  network ADB on port 5555.
-- **Chained `pm` commands** (`pm disable a; pm disable b`) may silently stop after the first. Run
-  one per shell call; `--batch` does this.
-- **Large pushes hang** through the Python client. Use `tools/b64push.py` for APKs.
-- **Disable the stock launcher only after the new one is installed**, or the Home button lands on
-  a factory test app.
-- **Third-party launchers** often charge for basics like a custom wallpaper. Hence `launcher/`.
-- **No on-screen keyboard** after switching launchers (seen on Xiaomi): the default input method
-  pointed at a Baidu IME that isn't installed. Fix with
-  `tools/tv.py 'ime set com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME'`.
 
 ## Supported TVs
 
 Anything running Android TV or Google TV: Xiaomi/Redmi, TCL, Hisense, Sony, OnePlus, Realme,
-Nvidia Shield and most others. Not Samsung Tizen, LG webOS or Amazon Fire TV (different OS, no ADB
-launcher replacement). Tested so far on the models in [`examples/`](examples/).
+Nvidia Shield and most others. Not Samsung (Tizen), LG (webOS) or Amazon Fire TV. Tested on the
+models in [`examples/`](examples/).
 
 ## Contributing
 
-Add your TV's debloat list, improve the launcher, or sharpen the prompt. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+Add your TV's debloat list, improve the launcher or sharpen the prompt: see
+[CONTRIBUTING.md](CONTRIBUTING.md). If you learn something the hard way, add it to
+[LESSONS.md](LESSONS.md).
 
 ## Licence
 
-MIT, see [`LICENSE`](LICENSE). The Outfit typeface is under the SIL Open Font License, see
-`launcher/FONT-LICENSE-OFL.txt`.
+MIT, see [`LICENSE`](LICENSE). The fonts are under the SIL Open Font License:
+`launcher/FONT-LICENSE-OFL.txt` (Outfit) and `launcher/app1400/FONT-LICENSES-OFL.txt` (the 1400 app's).
