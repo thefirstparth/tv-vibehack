@@ -13,14 +13,18 @@
         <item>com.fancode.tv</item>                 <!-- FanCode -->
     </string-array>
 
-    <!-- Grid tiles shown first, right after the dock, in this order. Everything else follows A–Z. -->
+    <!-- Grid tiles shown first, right after the dock, in this order (4 a row). Everything else follows A–Z.
+         Row 2, watched most after the dock: the other streaming apps and music. Row 3: the paper, F1, and the
+         two utilities. -->
     <string-array name="grid_order">
-        <item>com.gathin.tv1400</item>                  <!-- 1400 (launcher/app1400) -->
-        <item>com.apple.atve.androidtv.appletv</item>   <!-- Apple TV -->
+        <item>com.amazon.amazonvideo.livingroom</item>  <!-- Prime Video -->
         <item>com.sonyliv</item>                        <!-- Sony LIV -->
-        <item>com.formulaone.production</item>          <!-- F1 TV -->
+        <item>com.apple.atve.androidtv.appletv</item>   <!-- Apple TV -->
         <item>com.spotify.tv.android</item>             <!-- Spotify -->
+        <item>com.gathin.tv1400</item>                  <!-- 1400 (launcher/app1400) -->
+        <item>com.formulaone.production</item>          <!-- F1 TV -->
         <item>com.android.vending</item>                <!-- Play Store -->
+        <item>com.android.tv.settings</item>            <!-- Settings -->
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->

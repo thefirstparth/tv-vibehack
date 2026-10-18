@@ -28,8 +28,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity
    pm disable-user --user 0 com.google.android.apps.tv.launcherx
    ```
-3. **Dock:** YouTube, Netflix, JioHotstar, FanCode. Grid below: Apple TV, Sony LIV, F1 TV, Spotify,
-   Play Store, then the rest A–Z. Media Player and Google Play Movies & TV are hidden. All set in
+3. **Dock:** YouTube, Netflix, JioHotstar, FanCode. Grid below, 4 a row: Prime Video, Sony LIV,
+   Apple TV, Spotify (row 2, the most used after the dock); 1400, F1 TV, Play Store, Settings (row 3);
+   then the rest A–Z. Media Player and Google Play Movies & TV are hidden. All set in
    `launcher/app/src/main/res/values/config.xml` (`dock_apps`, `grid_order`, `hidden_apps`).
    The launcher is also listed in the TV's app list (it declares `LEANBACK_LAUNCHER`).
 4. **Kept on purpose:** firmware and Xiaomi update services, Google Assistant voice, Chromecast
