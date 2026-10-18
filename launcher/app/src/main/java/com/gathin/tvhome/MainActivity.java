@@ -253,10 +253,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         glass.setAlpha(0f);
         adapter.reload();
         grid.scheduleLayoutAnimation();
-        updateGreeting();
         updateWifiLabel();
-        btnToday.setVisibility(todayIntent() != null ? View.VISIBLE : View.GONE);
-        if (btnToday.getVisibility() != View.VISIBLE) focusMoon = false;
+        // the line above the clock and the moon pill (a package query) are kept off the startup path: on a cold
+        // start they come just after the first frame (afterFirstFrame), on every later return straight away
+        if (firstFrameDone) {
+            updateGreeting();
+            showMoon();
+        }
         resumed = true;
         updateHorizon();
         if (homeLines != null) {
@@ -277,6 +280,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         else focusTile(lastFocused);
     }
 
+    /** The moon pill only while the 1400 app is installed. */
+    private void showMoon() {
+        btnToday.setVisibility(todayIntent() != null ? View.VISIBLE : View.GONE);
+        if (btnToday.getVisibility() != View.VISIBLE) focusMoon = false;
+    }
+
     private Intent todayIntent() {
         return getPackageManager().getLeanbackLaunchIntentForPackage(TODAY_APP);
     }
@@ -290,6 +299,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
     /** Just after the first frame: the sports and weather lines (when a feed is set) and the Horizon image. */
     private void afterFirstFrame() {
+        updateGreeting();
+        showMoon();
         if (!getString(com.gathin.tvshared.R.string.tv_feed_url).trim().isEmpty() && homeLines == null) {
             ((android.view.ViewStub) findViewById(R.id.linesStub)).inflate();
             Fonts.apply(findViewById(R.id.lines));
