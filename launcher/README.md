@@ -67,6 +67,8 @@ unit-tested) whenever the Horizon state is checked: the existing minute tick and
 no new timers, no animation.
 Not on the MOOR2 yet: its A/B (2026-10-19) was even on cold start, stutter and memory but 6 ms slower
 on Home return (370 → 376 ms, inside the runs' spread), which the keep rule doesn't allow.
+The cheaper version (key/claim, nothing on weekdays, built off the main thread) was 16 ms slower on a
+weekday's Home return in its A/B (380 → 396 ms) although traces show its Home return doing no more work.
 
 ## Sports and weather (optional)
 

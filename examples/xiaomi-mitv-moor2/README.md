@@ -98,8 +98,12 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    **The weekend look is built but not installed** (2026-10-19): in the full A/B (5 alternating rounds,
    medians, after a restart) cold start was 592 → 593 ms, janky 0% → 0%, memory 66.4 → 66.1 MB, but
    Home return 370 → 376 ms, and the rule is "no slower", so `tvhome-on-tv-before-weekend.apk` was put
-   back. The build is `backup/launcher-builds/tvhome-release-weekend.apk` (details in
-   [launcher/README.md](../../launcher/README.md)).
+   back. A cheaper version (worked out only when its state changes, nothing on weekdays, built off the
+   main thread: `tvhome-release-weekend2.apk`) also failed on a weekday: cold start 587 → 572 ms, janky
+   0% → 0%, memory 66.8 → 66.3 MB, Home return 380 → 396 ms. Traces of 3 Home returns per build showed
+   no extra launcher work (launch window 121 → 105 ms, onResume 24.0 → 17.8 ms, main-thread CPU 26.7 →
+   26.4 ms; the frame after resume, 35–60 ms in both, varies run to run). Not installed; the Saturday
+   A/B was not run (details in [launcher/README.md](../../launcher/README.md)).
 
 Check the live state any time:
 
