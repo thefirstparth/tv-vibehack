@@ -2,6 +2,26 @@
 
 Three parts, in this order (Part 1 is already decided). Times are caps, not estimates to stretch.
 
+## The 45-minute version (Parth, 2026-10-19): hard limits, these override the times below
+
+| Step | Hard limit | Ends by | Cut to fit |
+|---|---|---|---|
+| 1b: Right at a row's end (code, unit test, emulator, build) | 10 min | 0:10 | emulator check on rows 1–2 only |
+| 2: QA (A/B, key check, merge to `main`) | 12 min | 0:22 | A/B 2 alternating rounds each, not 5; evening word check skipped |
+| 3: Video lag | 20 min | 0:42 | one restart, then JioHotstar → Netflix → FanCode back to back, measuring Home after each (one run each); restart again only if an app causes lag; runs 4 and 5 (AI super-resolution, minimal post-processing) dropped |
+| Wrap-up: restart if needed, Home, commit, report | 3 min | 0:45 | |
+
+At a limit, the step stops where it is; unused time carries forward, nothing is extended.
+
+Start prompt:
+
+```
+Start the plan in examples/xiaomi-mitv-moor2/NEXT.md, the 45-minute version, hard limits per step.
+Pull first. Follow CLAUDE.md's rules. Run Parts 1b, 2 and 3 in order; Part 1 is decided, skip it.
+Update me at each milestone with an ETA. If the TV is in use, ask before touching it.
+At the end: TV on Home, everything committed and pushed, a short report of what got fixed and what didn't.
+```
+
 ## Part 1: Humidity — decided, no change needed
 
 Parth chose (2026-10-19) the layout that is already on the TV: "Humidity 94%" on its own grey line
