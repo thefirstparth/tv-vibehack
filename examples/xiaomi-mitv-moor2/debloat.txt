@@ -36,13 +36,26 @@ com.google.android.feedback
 com.xiaomi.mitv.manualhelp
 fusion.android.tv.demo                 # retail store demo
 
-# Stock Google TV launcher, replaced by launcher/. Install launcher/ and run
-# `cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity` first.
-# setupwraith must go too: its RecoveryActivity (HOME priority 1) otherwise wins over launcher/ and
-# Home shows a black screen, and the shell cannot disable just that component. It is the Google TV
-# setup app, so re-enable it before a factory reset or account setup.
+# Stock Google TV launcher, replaced by launcher/.
+# What worked on this TV (verified after a reboot on 2026-10-18). Install launcher/ by hand first
+# (NOT build-and-install.sh, which disables launcherx straight away), then run these one command
+# per call and stop at the first error:
+#   pm disable-user --user 0 com.google.android.tungsten.setupwraith
+#   cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity
+#   pm disable-user --user 0 com.google.android.apps.tv.launcherx
+# Disable the whole setupwraith package, not its RecoveryActivity component: the shell is refused
+# ("Shell cannot change component state"), and while RecoveryActivity is enabled it takes Home
+# (priority 1) and shows a black screen. setupwraith is the Google TV setup app, so re-enable it
+# before a factory reset or account setup.
 # Side effect: the remote's Settings key stops working (Xiaomi's GlobalKeyReceiver in
 # com.xiaomi.android.tvsetup.partnercustomizer always opens launcherx's dashboard); use the
 # launcher's Settings pill instead.
+#
+# Undo, one command per call (back to the stock Google TV home, debloat kept):
+#   pm enable com.google.android.tungsten.setupwraith
+#   pm enable com.google.android.apps.tv.launcherx
+#   cmd package set-home-activity --user 0 com.google.android.apps.tv.launcherx/.home.HomeActivity
+# Full undo (everything in this file): the three lines above, then
+#   TV_HOST=<tv ip> tools/restore.sh examples/xiaomi-mitv-moor2/debloat.txt com.google.android.apps.tv.launcherx
 com.google.android.tungsten.setupwraith
 com.google.android.apps.tv.launcherx
