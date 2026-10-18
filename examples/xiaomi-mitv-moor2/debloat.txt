@@ -36,10 +36,13 @@ com.google.android.feedback
 com.xiaomi.mitv.manualhelp
 fusion.android.tv.demo                 # retail store demo
 
-# Stock Google TV launcher, replaced by launcher/ (apply only after installing it).
-# Left commented out: on this Google TV firmware, disabling launcherx makes setupwraith's
-# RecoveryActivity (HOME priority 1) win over any set-home-activity choice, and Home shows a black
-# screen. Disabling just that component over ADB fails ("Shell cannot change component state"), so
-# launcherx can only go if the whole com.google.android.tungsten.setupwraith package is disabled too.
-# Until then, open the new launcher from the app list (it declares LEANBACK_LAUNCHER).
-# com.google.android.apps.tv.launcherx
+# Stock Google TV launcher, replaced by launcher/. Install launcher/ and run
+# `cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity` first.
+# setupwraith must go too: its RecoveryActivity (HOME priority 1) otherwise wins over launcher/ and
+# Home shows a black screen, and the shell cannot disable just that component. It is the Google TV
+# setup app, so re-enable it before a factory reset or account setup.
+# Side effect: the remote's Settings key stops working (Xiaomi's GlobalKeyReceiver in
+# com.xiaomi.android.tvsetup.partnercustomizer always opens launcherx's dashboard); use the
+# launcher's Settings pill instead.
+com.google.android.tungsten.setupwraith
+com.google.android.apps.tv.launcherx
