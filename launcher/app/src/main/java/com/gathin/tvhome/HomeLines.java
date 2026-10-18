@@ -397,14 +397,18 @@ final class HomeLines {
             String hl = c.has("hi") && c.has("lo") ? "H " + c.optInt("hi") + "° · L " + c.optInt("lo") + "°" : c.has("hi") ? "H " + c.optInt("hi") + "°" : c.has("lo") ? "L " + c.optInt("lo") + "°" : "";
             hilo.setText(hl);
             hilo.setVisibility(hl.isEmpty() ? View.GONE : View.VISIBLE);
-            word.setVisibility(View.INVISIBLE);
+            // measured without the word: an invisible view still takes its width, and a long word ("Storms likely
+            // tomorrow") left from the last update would widen all three columns
+            word.setText("");
+            word.setVisibility(View.GONE);
             if (c.has("as_of")) asOf = c.optString("as_of");
             col.setMinimumWidth(0);
             col.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
             widest = Math.max(widest, col.getMeasuredWidth());
         }
-        // three equal columns; a word wider than its column steps down to its short form ("Orange alert"). Every
-        // column keeps the word's slot (as many lines as the longest word), so all three are the same height.
+        // three equal columns; a word wider than its column steps down to its short form ("Orange alert"), or else
+        // wraps onto two lines inside it, never widening it. Every column keeps the word's slot (as many lines as the
+        // longest word), so all three are the same height.
         int slot = 1;
         for (int i = 0; i < list.length(); i++) {
             JSONObject c = list.optJSONObject(i);
@@ -420,13 +424,15 @@ final class HomeLines {
             String ws = c.optString("word_short", w);
             float limit = widest + 36 * density;
             int cut = w.indexOf(" · ");
-            word.setSingleLine(false);
-            word.setMaxLines(2);
-            if (width(word, w) <= limit || ws.equals(w)) word.setText(w);
-            else if (cut > 0 && width(word, w.substring(0, cut)) <= limit && width(word, w.substring(cut + 3)) <= limit) word.setText(w.substring(0, cut) + "\n" + w.substring(cut + 3));
-            else word.setText(ws);
+            word.setMaxWidth((int) limit);
+            String shown;
+            if (width(word, w) <= limit) shown = w;
+            else if (cut > 0 && width(word, w.substring(0, cut)) <= limit && width(word, w.substring(cut + 3)) <= limit) shown = w.substring(0, cut) + "\n" + w.substring(cut + 3);
+            else if (!ws.equals(w)) shown = ws;
+            else shown = w;   // wraps at a space within the column ("Storms likely" / "tomorrow")
+            word.setText(shown);
             word.setVisibility(View.VISIBLE);
-            if (word.getText().toString().contains("\n")) slot = 2;
+            if (shown.contains("\n") || width(word, shown) > limit) slot = 2;
         }
         for (int i = 0; i < list.length(); i++) ((TextView) weatherCols.getChildAt(i).findViewById(R.id.word)).setMinLines(slot);
         String note = data.saved() ? "as of " + Words.clock(data.fetchedAt()) : asOf != null ? asOfClock(asOf) : null;
