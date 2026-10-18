@@ -477,9 +477,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- navigation ------------------------------------------------------------------------------
 
     @Override
-    public boolean onTileVerticalKey(int position, int keyCode) {
+    public boolean onTileKey(int position, int keyCode) {
         int count = adapter.getItemCount();
         int target;
+        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            // along the tiles in reading order: past a row's end to the next row's first tile, never up to the top bar
+            target = sideTarget(position, count, keyCode == KeyEvent.KEYCODE_DPAD_RIGHT);
+            if (target != position) focusTile(target);
+            return true;
+        }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
             if (position < COLUMNS) return false;          // dock row: let focus move to the top bar
             target = position - COLUMNS;
@@ -490,6 +496,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         focusTile(target);
         return true;
+    }
+
+    /** Left or Right from a tile: the tile before or after it in reading order; the first and last tiles stay put. */
+    static int sideTarget(int position, int count, boolean right) {
+        int t = position + (right ? 1 : -1);
+        return t < 0 || t >= count ? position : t;
     }
 
     private void focusTile(int position) {

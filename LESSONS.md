@@ -25,6 +25,14 @@ stutter, and they were removed.
 **Throw away the first run after an install.** Android compiles the app as it runs, so the first run
 is always slow.
 
+**One app's video player leaves this TV slow until a restart.** After FanCode's player runs, Home
+goes from 0% to 60–70% janky frames, for any launcher (the original too), and stays that way after
+closing the app, standby and power on, opening Live TV, or turning motion smoothing off. YouTube,
+Netflix and JioHotstar video didn't do it. Test one app at a time from a clean restart, and prove the
+video is really playing (an audio player "started", the player on screen): two of our runs "played"
+nothing at first.
+If a TV "feels laggy", play nothing, restart, and measure again before blaming the code.
+
 **Reboot and rest before measuring.** After hours of use this TV gets into a state where every
 build stutters (70–80% janky frames) and the load average sits around 60. We nearly blamed a good
 build for it; re-running the *old* build showed the TV, not the app, was slow. A reboot fixes it.
