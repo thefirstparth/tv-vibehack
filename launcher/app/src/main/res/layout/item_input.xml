@@ -6,7 +6,6 @@
     android:gravity="center_vertical"
     android:paddingStart="12dp"
     android:paddingEnd="12dp"
-    android:background="@drawable/input_row_bg"
     android:focusable="true"
     android:clickable="true">
 

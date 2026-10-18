@@ -50,6 +50,13 @@ public class GlassView extends View {
         invalidate();
     }
 
+    /** Rim colour, from the focused app's palette. */
+    void setRimTint(int color) {
+        if (rim.getColor() == color) return;
+        rim.setColor(color);
+        invalidate();
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);

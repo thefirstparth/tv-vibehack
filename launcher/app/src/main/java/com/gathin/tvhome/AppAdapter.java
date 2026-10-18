@@ -5,6 +5,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
@@ -59,14 +60,17 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
-        int ambient;
+        /** The installed APK's path; it changes when the app updates, which invalidates its saved colour. */
+        final String sourceDir;
+        Palette palette;
 
-        Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
+        Entry(String label, ComponentName component, Drawable banner, Drawable icon, String sourceDir) {
             this.label = label;
             this.component = component;
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
+            this.sourceDir = sourceDir;
         }
     }
 
@@ -82,6 +86,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final List<Entry> items = new ArrayList<>();
+    /** Each app's seed colour, worked out once: "<sourceDir>|<colour>" by package name. */
+    private final SharedPreferences colours;
 
     AppAdapter(Context ctx, TileListener listener, int dockSize) {
         this.ctx = ctx;
@@ -91,6 +97,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.favourites = new ArrayList<>(Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
         this.favourites.addAll(Arrays.asList(ctx.getResources().getStringArray(R.array.grid_order)));
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
+        this.colours = ctx.getSharedPreferences("app_colours", Context.MODE_PRIVATE);
     }
 
     void reload() {
@@ -106,7 +113,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (banner == null) banner = ri.activityInfo.applicationInfo.loadBanner(pm);
             Drawable icon = ri.loadIcon(pm);
             String label = String.valueOf(ri.loadLabel(pm));
-            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon));
+            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon,
+                    String.valueOf(ri.activityInfo.applicationInfo.sourceDir)));
         }
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
@@ -182,12 +190,28 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return position >= 0 && position < items.size() ? items.get(position).label : "";
     }
 
-    /** A vivid colour sampled from the app's banner (or icon), cached per entry. */
-    int ambientColorAt(int position) {
-        if (position < 0 || position >= items.size()) return 0xFF444444;
+    /** The app's tonal palette, from a seed colour sampled from its banner (or icon) once and saved. */
+    Palette paletteAt(int position) {
+        if (position < 0 || position >= items.size()) return Palette.NEUTRAL;
         Entry e = items.get(position);
-        if (e.ambient == 0) e.ambient = vividColor(e.banner != null ? e.banner : e.icon);
-        return e.ambient;
+        if (e.palette == null) e.palette = new Palette(seedColour(e));
+        return e.palette;
+    }
+
+    private int seedColour(Entry e) {
+        String saved = colours.getString(e.pkg, null);
+        if (saved != null) {
+            int bar = saved.lastIndexOf('|');
+            if (bar > 0 && saved.substring(0, bar).equals(e.sourceDir)) {
+                try {
+                    return Integer.parseInt(saved.substring(bar + 1));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+        int seed = vividColor(e.banner != null ? e.banner : e.icon);
+        colours.edit().putString(e.pkg, e.sourceDir + "|" + seed).apply();
+        return seed;
     }
 
     private static int vividColor(Drawable live) {
