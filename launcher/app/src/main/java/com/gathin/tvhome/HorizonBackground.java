@@ -1,4 +1,4 @@
-package com.gathin.tvshared;
+package com.gathin.tvhome;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -11,6 +11,10 @@ import android.graphics.RadialGradient;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 
+import com.gathin.tvshared.PersonalDays;
+import com.gathin.tvshared.SunLine;
+import com.gathin.tvshared.SunTimes;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -18,30 +22,20 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Horizon v2: the home screen's light. Eight moods timed by Bengaluru's sun (worked out on the TV, SunTimes), a faint
+ * Horizon v2: the home screen's light. Eight moods timed by the sun at the place in config.xml (worked out on the TV:
+ * SunTimes, with SunLine's timing, the same as the line above the clock), a faint
  * season, the sky of Bengaluru's weather word (rain, storm), a glow in the competition's colour while a match is live,
  * and personal days. Everything is decided on the TV with no network; the feed only lends its weather word and
  * live state. Drawn once per combination into a small image (soft gradients look the same scaled up) used as the
  * window's background, so the screen still draws one layer as with plain black. It never reacts to focus and is never
  * animated: a new image replaces the old one whole when the combination changes.
  */
-public final class HorizonBackground {
+final class HorizonBackground {
 
-    /** Where the sun is worked out for: config.xml horizon_lat and horizon_lon (read by locate; Bengaluru until then). */
-    public static double LAT = 12.9716, LON = 77.5946;
-
-    /** Reads the place from config.xml (horizon_lat, horizon_lon); a value that does not read stays as it was. */
-    public static void locate(Resources res) {
-        try {
-            LAT = Double.parseDouble(res.getString(R.string.horizon_lat).trim());
-            LON = Double.parseDouble(res.getString(R.string.horizon_lon).trim());
-        } catch (RuntimeException ignored) {
-        }
-    }
     private static final int W = 480, H = 270;
 
     /** The four colours of a look: the top tint, the band, the core glow and the spot. */
-    public static final class Palette {
+    static final class Palette {
         final int top, band, core, spot;
 
         Palette(int top, int band, int core, int spot) {
@@ -63,7 +57,7 @@ public final class HorizonBackground {
         }
     }
 
-    public enum Mood {
+    enum Mood {
         // top / band / core / spot, the core's x and the spot's x (fractions of the width): the design's values
         LATE_NIGHT(rgba(14, 18, 48, .55), rgba(40, 50, 140, .22), rgba(70, 60, 170, .26), rgba(30, 90, 120, .16), .42f, .56f),
         DAWN(rgba(40, 24, 70, .50), rgba(120, 60, 140, .24), rgba(232, 120, 96, .32), rgba(255, 186, 128, .24), .22f, .30f),
@@ -74,8 +68,8 @@ public final class HorizonBackground {
         BLUE_HOUR(rgba(20, 22, 70, .55), rgba(80, 62, 170, .26), rgba(62, 112, 206, .28), rgba(206, 92, 144, .18), .80f, .66f),
         NIGHT(rgba(10, 16, 52, .55), rgba(40, 60, 160, .24), rgba(72, 82, 204, .28), rgba(92, 52, 154, .20), .50f, .62f);
 
-        public final Palette palette;
-        public final float x, spotX;
+        final Palette palette;
+        final float x, spotX;
 
         Mood(int top, int band, int core, int spot, float x, float spotX) {
             this.palette = new Palette(top, band, core, spot);
@@ -83,18 +77,18 @@ public final class HorizonBackground {
             this.spotX = spotX;
         }
 
-        /** By the minute of the local day, with sunrise and sunset (minutes) for that date (SunLine.Phase's timing). */
-        public static Mood at(double minute, double rise, double set) {
-            return valueOf(SunLine.Phase.at(minute, rise, set).name());
+        /** The mood for a moment: SunLine.Phase's timing, shared with the line above the clock and the 1400 app. */
+        static Mood at(Calendar now) {
+            return valueOf(SunLine.phaseAt(now, SunTimes.LAT, SunTimes.LON).name());
         }
 
-        public static Mood named(String name) {
+        static Mood named(String name) {
             for (Mood m : values()) if (m.name().equalsIgnoreCase(name)) return m;
             return null;
         }
     }
 
-    public enum Season {
+    enum Season {
         WINTER(rgba(120, 170, 255, .07)), SUMMER(rgba(255, 170, 90, .08)), MONSOON(rgba(80, 190, 170, .08)), POST_MONSOON(rgba(255, 200, 120, .05));
 
         final int colour;
@@ -110,10 +104,10 @@ public final class HorizonBackground {
     }
 
     /** Bengaluru's sky from the feed's weather word: clear unless it says rain, or a storm or a warning. */
-    public enum Sky {
+    enum Sky {
         CLEAR, RAIN, STORM;
 
-        public static Sky of(String word, boolean warning) {
+        static Sky of(String word, boolean warning) {
             if (warning || "Storms likely".equals(word)) return STORM;
             if ("Rain likely".equals(word) || "Heavy rain".equals(word) || "Very heavy rain".equals(word)) return RAIN;
             return CLEAR;
@@ -121,10 +115,10 @@ public final class HorizonBackground {
     }
 
     /** A personal day (launcher/local.properties): its date, greeting and four colours. */
-    public static final class Day {
-        public final int month, day;
-        public final String greeting;
-        public final Palette palette;
+    static final class Day {
+        final int month, day;
+        final String greeting;
+        final Palette palette;
 
         Day(int month, int day, String greeting, Palette palette) {
             this.month = month;
@@ -133,39 +127,23 @@ public final class HorizonBackground {
             this.palette = palette;
         }
 
-        /**
-         * One per line, as built from tv.day.N in local.properties: "MM-DD|greeting|core|spot|band|top", each colour
-         * "r,g,b,a" (a from 0 to 1). A line that does not read cleanly is skipped.
-         */
-        public static List<Day> parse(String text) {
+        /** The personal days (local.properties tv.day.N, read by PersonalDays) with their light. */
+        static List<Day> parse(String text) {
             List<Day> out = new ArrayList<>();
-            for (String line : text.split("\n")) {
-                String[] f = line.trim().split("\\|");
-                if (f.length != 6) continue;
-                try {
-                    String[] md = f[0].trim().split("-");
-                    int[] c = new int[4];
-                    for (int i = 0; i < 4; i++) {
-                        String[] v = f[2 + i].trim().split(",");
-                        c[i] = rgba(Integer.parseInt(v[0].trim()), Integer.parseInt(v[1].trim()), Integer.parseInt(v[2].trim()), Double.parseDouble(v[3].trim()));
-                    }
-                    out.add(new Day(Integer.parseInt(md[0]), Integer.parseInt(md[1]), f[1].trim(), new Palette(c[3], c[2], c[0], c[1])));
-                } catch (RuntimeException ignored) {
-                }
-            }
+            for (PersonalDays.Day d : PersonalDays.parse(text)) out.add(new Day(d.month, d.day, d.greeting, new Palette(d.top, d.band, d.core, d.spot)));
             return out;
         }
     }
 
     /** Everything the image depends on; a new image only when this changes. */
-    public static final class State {
-        public final Mood mood;
-        public final Season season;
-        public final Sky sky;
-        public final Integer matchAccent;   // the live competition's colour, or null
-        public final Day day;               // today's personal day, or null
+    static final class State {
+        final Mood mood;
+        final Season season;
+        final Sky sky;
+        final Integer matchAccent;   // the live competition's colour, or null
+        final Day day;               // today's personal day, or null
 
-        public State(Mood mood, Season season, Sky sky, Integer matchAccent, Day day) {
+        State(Mood mood, Season season, Sky sky, Integer matchAccent, Day day) {
             this.mood = mood;
             this.season = season;
             this.sky = sky;
@@ -173,7 +151,7 @@ public final class HorizonBackground {
             this.day = day;
         }
 
-        public String key() {
+        String key() {
             return mood + "|" + season + "|" + sky + "|" + matchAccent + "|" + (day == null ? "" : day.month + "-" + day.day);
         }
 
@@ -185,53 +163,32 @@ public final class HorizonBackground {
     }
 
     /** The state for a moment (the TV's local time), the feed's sky and live colour, and the personal days. */
-    public static State stateAt(Calendar now, Sky sky, Integer matchAccent, List<Day> days) {
-        int y = now.get(Calendar.YEAR), m = now.get(Calendar.MONTH) + 1, d = now.get(Calendar.DAY_OF_MONTH);
-        double tz = now.getTimeZone().getOffset(now.getTimeInMillis()) / 3.6e6;
-        double[] rs = SunTimes.riseSet(y, m, d, LAT, LON, tz);
-        double minute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE);
-        return new State(Mood.at(minute, rs[0], rs[1]), Season.of(m), sky, matchAccent, dayOf(now, days));
+    static State stateAt(Calendar now, Sky sky, Integer matchAccent, List<Day> days) {
+        return new State(Mood.at(now), Season.of(now.get(Calendar.MONTH) + 1), sky, matchAccent, dayOf(now, days));
     }
 
     /** Today's personal day, if any (the whole day, local time). */
-    public static Day dayOf(Calendar now, List<Day> days) {
+    static Day dayOf(Calendar now, List<Day> days) {
         int m = now.get(Calendar.MONTH) + 1, d = now.get(Calendar.DAY_OF_MONTH);
         for (Day x : days) if (x.month == m && x.day == d) return x;
         return null;
     }
 
-    public static Calendar now() {
+    static Calendar now() {
         return Calendar.getInstance(TimeZone.getDefault(), Locale.ENGLISH);
     }
 
     private String shown;
 
     /** True when this state needs a new image (and marks it as on its way; call on the main thread). */
-    public boolean claim(State s) {
-        return claim(s.key());
-    }
-
-    /** The same for a state drawn somewhere else too (the screensaver's light, centred on its own information). */
-    public boolean claim(String key) {
-        if (key.equals(shown)) return false;
-        shown = key;
+    boolean claim(State s) {
+        if (s.key().equals(shown)) return false;
+        shown = s.key();
         return true;
     }
 
-    /** The home screen's light: the core glow at 60% of the height. */
-    public static final float HOME_CENTRE = 0.60f;
-
     /** Draws a state's image; safe off the main thread (touches nothing shared). */
-    public static BitmapDrawable draw(Resources res, State s) {
-        return draw(res, s, HOME_CENTRE);
-    }
-
-    /**
-     * The same light with its glow centred at another height (the screensaver: on its band of information): the
-     * band, season, haze, core, spot and match glow all move with it; the top tint stays at the top.
-     */
-    public static BitmapDrawable draw(Resources res, State s, float centre) {
-        float dy = centre - HOME_CENTRE;
+    static BitmapDrawable draw(Resources res, State s) {
         Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(b);
         c.drawColor(Color.BLACK);
@@ -240,17 +197,17 @@ public final class HorizonBackground {
         // a) the top tint: the colour at the top, clear by 32% of the height
         vertical(c, p, new int[]{pal.top, clear(pal.top), clear(pal.top)}, new float[]{0f, 0.32f, 1f});
         // b) the band: clear at 18%, the colour at 44%, clear at 64%
-        band(c, p, pal.band, 0.18f + dy, 0.44f + dy, 0.64f + dy);
+        band(c, p, pal.band, 0.18f, 0.44f, 0.64f);
         // the season, faint, on top of the mood: clear at 10%, the colour at 48%, clear at 72%
-        band(c, p, s.season.colour, 0.10f + dy, 0.48f + dy, 0.72f + dy);
+        band(c, p, s.season.colour, 0.10f, 0.48f, 0.72f);
         // rain or a storm: a grey haze at 46%, gone by 12% and 70%
-        if (s.sky != Sky.CLEAR) band(c, p, rgba(120, 140, 165, s.sky == Sky.STORM ? .14 : .11), 0.12f + dy, 0.46f + dy, 0.70f + dy);
+        if (s.sky != Sky.CLEAR) band(c, p, rgba(120, 140, 165, s.sky == Sky.STORM ? .14 : .11), 0.12f, 0.46f, 0.70f);
         // c) the core: an ellipse at (x, 60%), radii 72% x 32%, clear at 70%
-        glow(c, p, pal.core, s.mood.x, 0.60f + dy, 0.72f, 0.32f);
+        glow(c, p, pal.core, s.mood.x, 0.60f, 0.72f, 0.32f);
         // d) the spot: at (spot x, 55%), radii 30% x 20%, clear at 70%
-        glow(c, p, pal.spot, s.mood.spotX, 0.55f + dy, 0.30f, 0.20f);
+        glow(c, p, pal.spot, s.mood.spotX, 0.55f, 0.30f, 0.20f);
         // a match on: a faint glow in the competition's colour under the sport lines
-        if (s.matchAccent != null) glow(c, p, (s.matchAccent & 0x00FFFFFF) | (41 << 24), 0.24f, 0.63f + dy, 0.26f, 0.20f);
+        if (s.matchAccent != null) glow(c, p, (s.matchAccent & 0x00FFFFFF) | (41 << 24), 0.24f, 0.63f, 0.26f, 0.20f);
         BitmapDrawable d = new BitmapDrawable(res, b);
         d.setFilterBitmap(true);   // stretched to the screen, smoothly
         d.setDither(true);
@@ -258,7 +215,7 @@ public final class HorizonBackground {
     }
 
     /** The dock band's top edge: the core's colour at about 28%. */
-    public static int edge(State s) {
+    static int edge(State s) {
         return (s.palette().core & 0x00FFFFFF) | (71 << 24);
     }
 
@@ -269,9 +226,6 @@ public final class HorizonBackground {
 
     private static void band(Canvas c, Paint p, int colour, float from, float at, float to) {
         int none = clear(colour);
-        from = Math.max(0.001f, from);   // stops must stay in order inside 0..1 when the band moves up or down
-        at = Math.max(from + 0.001f, at);
-        to = Math.min(0.999f, Math.max(at + 0.001f, to));
         vertical(c, p, new int[]{none, none, colour, none, none}, new float[]{0f, from, at, to, 1f});
     }
 
@@ -290,7 +244,7 @@ public final class HorizonBackground {
         return c & 0x00FFFFFF;
     }
 
-    public static int rgba(int r, int g, int b, double a) {
+    static int rgba(int r, int g, int b, double a) {
         return Color.argb((int) Math.round(a * 255), r, g, b);
     }
 }

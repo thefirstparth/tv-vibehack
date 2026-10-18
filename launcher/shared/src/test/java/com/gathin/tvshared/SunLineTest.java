@@ -17,8 +17,8 @@ import java.util.TimeZone;
 public class SunLineTest {
 
     private static final double LAT = 12.9716, LON = 77.5946;
-    private static final List<SunLine.Greeting> NONE = Collections.emptyList();
-    private static final List<SunLine.Greeting> DAYS = SunLine.greetings("01-15|Happy birthday, Sam|1,2,3,1|1,2,3,1|1,2,3,1|1,2,3,1\n"
+    private static final List<PersonalDays.Day> NONE = Collections.emptyList();
+    private static final List<PersonalDays.Day> DAYS = PersonalDays.parse("01-15|Happy birthday, Sam|1,2,3,1|1,2,3,1|1,2,3,1|1,2,3,1\n"
             + "10-18|Happy anniversary|1,2,3,1|1,2,3,1|1,2,3,1|1,2,3,1\n06-30|Happy birthday, Alexandra Montgomery|1,2,3,1|1,2,3,1|1,2,3,1|1,2,3,1\nnot a day");
 
     private static Calendar at(int y, int mo, int d, int h, int mi) {
@@ -51,7 +51,7 @@ public class SunLineTest {
         assertEquals("HAPPY BIRTHDAY, SAM · SUNRISE 6:46 AM", SunLine.text(at(2027, 1, 15, 3, 0), LAT, LON, DAYS));
         assertEquals("HAPPY BIRTHDAY, ALEXANDRA MONTGOMERY · SUNSET 6:50 PM", SunLine.text(at(2027, 6, 30, 17, 50), LAT, LON, DAYS));
         assertEquals(3, DAYS.size());
-        assertEquals("MIDDAY · SUNSET 5:59 PM", SunLine.text(at(2026, 10, 18, 12, 0), LAT, LON, SunLine.greetings("")));
+        assertEquals("MIDDAY · SUNSET 5:59 PM", SunLine.text(at(2026, 10, 18, 12, 0), LAT, LON, PersonalDays.parse("")));
     }
 
     @Test

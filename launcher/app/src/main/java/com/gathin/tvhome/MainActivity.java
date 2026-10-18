@@ -39,10 +39,9 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.gathin.tvshared.Fonts;
-import com.gathin.tvshared.HomeLines;
-import com.gathin.tvshared.HorizonBackground;
+import com.gathin.tvshared.PersonalDays;
 import com.gathin.tvshared.SunLine;
+import com.gathin.tvshared.SunTimes;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -98,7 +97,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Personal days (launcher/local.properties, tv.day.N): a greeting and their own light. */
     private java.util.List<HorizonBackground.Day> days;
     /** The same days' greetings, for the line above the clock. */
-    private java.util.List<SunLine.Greeting> greetings;
+    private java.util.List<PersonalDays.Day> greetings;
     /**
      * For screenshots only, from the launch intent; any plain Home clears them: "at" (yyyy-MM-ddTHH:mm, the light's
      * time and date), "mood", "sky" (clear, rain, storm), "match" (a colour, #RRGGBB).
@@ -153,10 +152,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setItemAnimator(null);
         dock = new DockDecoration(COLUMNS, density);
         grid.addItemDecoration(dock);
-        HorizonBackground.locate(getResources());
+        SunTimes.locate(getResources());
         String dayText = getString(com.gathin.tvshared.R.string.tv_days);
         days = HorizonBackground.Day.parse(dayText);
-        greetings = SunLine.greetings(dayText);
+        greetings = PersonalDays.parse(dayText);
         readFakes(getIntent());
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
@@ -479,7 +478,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     private void updateGreeting() {
         Calendar now = lightTime();
-        String line = SunLine.text(now, HorizonBackground.LAT, HorizonBackground.LON, greetings);
+        String line = SunLine.text(now, SunTimes.LAT, SunTimes.LON, greetings);
         greeting.setText(line == null ? "" : line);
         greeting.setVisibility(line == null ? View.INVISIBLE : View.VISIBLE);
     }

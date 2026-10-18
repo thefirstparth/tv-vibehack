@@ -1,6 +1,5 @@
 package com.gathin.tvshared;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -40,39 +39,12 @@ public final class SunLine {
         }
     }
 
-    /** A personal day's date and greeting. */
-    public static final class Greeting {
-        public final int month, day;
-        public final String text;
-
-        public Greeting(int month, int day, String text) {
-            this.month = month;
-            this.day = day;
-            this.text = text;
-        }
-    }
-
-    /** The dates and greetings of the personal days (local.properties tv.day.N: "MM-DD|greeting|..."), one per line. */
-    public static List<Greeting> greetings(String text) {
-        List<Greeting> out = new ArrayList<>();
-        for (String line : (text == null ? "" : text).split("\n")) {
-            String[] f = line.trim().split("\\|");
-            if (f.length < 2 || f[1].trim().isEmpty()) continue;
-            try {
-                String[] md = f[0].trim().split("-");
-                out.add(new Greeting(Integer.parseInt(md[0]), Integer.parseInt(md[1]), f[1].trim()));
-            } catch (RuntimeException ignored) {
-            }
-        }
-        return out;
-    }
-
     /**
      * The line for a moment: "MIDDAY · SUNSET 5:59 PM"; between sunrise and sunset today's sunset, otherwise the next
      * sunrise. In the Sunset mood with the sunset still to come, the sun time alone ("SUNSET 5:59 PM"). On a personal
      * day its greeting instead of the mood. Null when the clock is not set yet (a year before 2025).
      */
-    public static String text(Calendar now, double lat, double lon, List<Greeting> days) {
+    public static String text(Calendar now, double lat, double lon, List<PersonalDays.Day> days) {
         if (now.get(Calendar.YEAR) < 2025) return null;
         double tz = now.getTimeZone().getOffset(now.getTimeInMillis()) / 3.6e6;
         double[] rs = riseSet(now, 0, lat, lon, tz);
@@ -81,12 +53,18 @@ public final class SunLine {
         boolean beforeSet = minute >= rs[0] && minute < rs[1];
         double sun = minute < rs[0] ? rs[0] : beforeSet ? rs[1] : riseSet(now, 1, lat, lon, tz)[0];
         String event = Double.isNaN(sun) ? null : (beforeSet ? "Sunset " : "Sunrise ") + clock(sun);
-        String greeting = null;
-        int m = now.get(Calendar.MONTH) + 1, d = now.get(Calendar.DAY_OF_MONTH);
-        for (Greeting g : days) if (g.month == m && g.day == d) greeting = g.text;
+        PersonalDays.Day day = PersonalDays.on(now, days);
+        String greeting = day == null ? null : day.greeting;
         String lead = greeting != null ? greeting : phase == Phase.SUNSET && beforeSet ? null : phase.word;
         String line = lead == null ? event : event == null ? lead : lead + " · " + event;
         return line == null ? null : line.toUpperCase(Locale.ENGLISH);
+    }
+
+    /** Horizon's mood for a moment, at a place (the TV's own time zone). */
+    public static Phase phaseAt(Calendar now, double lat, double lon) {
+        double tz = now.getTimeZone().getOffset(now.getTimeInMillis()) / 3.6e6;
+        double[] rs = riseSet(now, 0, lat, lon, tz);
+        return Phase.at(now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE), rs[0], rs[1]);
     }
 
     private static double[] riseSet(Calendar now, int plusDays, double lat, double lon, double tz) {

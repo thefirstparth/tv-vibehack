@@ -1,4 +1,4 @@
-package com.gathin.tvshared;
+package com.gathin.tvhome;
 
 import android.content.Context;
 import android.graphics.Paint;
@@ -14,14 +14,14 @@ import android.widget.TextView;
  * startup and several MB for the home screen), so views name their weight in their tag instead ("w600") and get it
  * here. The look is the same font at the same weights.
  */
-public final class Fonts {
+final class Fonts {
 
     private static final SparseArray<Typeface> BY_WEIGHT = new SparseArray<>();
 
     private Fonts() {
     }
 
-    public static Typeface weight(Context c, int w) {
+    static Typeface weight(Context c, int w) {
         Typeface t = BY_WEIGHT.get(w);
         if (t == null) {
             Paint p = new Paint();
@@ -34,7 +34,7 @@ public final class Fonts {
     }
 
     /** Gives every TextView under v with a "wNNN" tag its shared weight. */
-    public static void apply(View v) {
+    static void apply(View v) {
         if (v instanceof TextView && v.getTag() instanceof String) {
             String tag = (String) v.getTag();
             if (tag.length() > 1 && tag.charAt(0) == 'w') ((TextView) v).setTypeface(weight(v.getContext(), Integer.parseInt(tag.substring(1))));

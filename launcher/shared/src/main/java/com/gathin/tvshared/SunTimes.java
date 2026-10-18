@@ -9,6 +9,18 @@ public final class SunTimes {
 
     public static final double ZENITH = 90.833;
 
+    /** Where the sun is worked out for: config.xml horizon_lat and horizon_lon (read by locate; Bengaluru until then). */
+    public static double LAT = 12.9716, LON = 77.5946;
+
+    /** Reads the place from config.xml (horizon_lat, horizon_lon); a value that does not read stays as it was. */
+    public static void locate(android.content.res.Resources res) {
+        try {
+            LAT = Double.parseDouble(res.getString(R.string.horizon_lat).trim());
+            LON = Double.parseDouble(res.getString(R.string.horizon_lon).trim());
+        } catch (RuntimeException ignored) {
+        }
+    }
+
     private SunTimes() {
     }
 

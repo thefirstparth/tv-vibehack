@@ -23,8 +23,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.gathin.tvshared.Fonts;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
