@@ -122,6 +122,12 @@ signed with the same `~/.android/debug.keystore` as debug builds, so `pm install
 installed debug build in place and the Home setup stays. `./gradlew :app:assembleDebug` still builds
 the debug APK for testing.
 
+Measured on the TV (MiTV-MOOR2, 2026-10-18; the old debug build against this release build, alternating, 5 rounds
+each, medians): cold start 1479 → 612 ms, return to Home from YouTube 792 → 403 ms, janky frames while scrolling
+the grid 0.74% → 0%, memory (PSS) 78.5 → 66.8 MB. The return to Home is faster also because the app list is no
+longer reloaded and the tiles' entrance is no longer replayed on every return (only on a package change and a
+real start).
+
 Needs JDK 17 and the Android SDK (platform 34, build-tools 34.0.0). On macOS:
 `brew install openjdk@17 android-commandlinetools && sdkmanager "platforms;android-34" "build-tools;34.0.0"`.
 
