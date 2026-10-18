@@ -1,4 +1,13 @@
-# Next session: the plan (parked 2026-10-19, start only when Parth says "start")
+# Next session: the plan — RUN 2026-10-19 02:34–03:40 (results below)
+
+**Results:** Part 1b done (Right/Left wrap along rows; unit-tested, emulator, and on the TV: Right from
+FanCode lands on Prime Video). Part 2: full A/B, 5 alternating rounds each, medians, last fully tested
+build vs new — cold start 591 → 581 ms, Home return 382 → 374 ms, janky 0% both, memory 68.6 → 69.0 MB
+(within the runs' 61–72 MB spread): kept, installed, merged to `main`. Part 3: FanCode's video player
+is the trigger (61–66% janky after it, also with MEMC off); JioHotstar, Netflix (home-screen previews)
+and YouTube don't. Still open: AI super-resolution off (in the TV's menu) with FanCode's player, and
+Netflix/JioHotstar full players beyond previews.
+
 
 Three parts, in this order (Part 1 is already decided). Times are caps, not estimates to stretch.
 
