@@ -19,7 +19,8 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
 
 ## Current state (2026-10-18)
 
-1. **Debloat:** the 17 packages in [`debloat.txt`](debloat.txt) are disabled with `pm disable-user`.
+1. **Debloat:** the 19 packages in [`debloat.txt`](debloat.txt) are disabled with `pm disable-user`
+   (17 debloat entries plus `setupwraith` and `launcherx` for the Home switch below).
 2. **Home screen:** the tvOS-style launcher (`com.gathin.tvhome`) is the Home app. It survives a reboot.
    To get there on Google TV, three things were done, one command at a time:
    ```
@@ -31,11 +32,20 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    The launcher is also listed in the TV's app list (it declares `LEANBACK_LAUNCHER`).
 4. **Kept on purpose:** firmware and Xiaomi update services, Google Assistant voice, Chromecast
    built-in, Netflix, Play Services, Play Store, Live TV, every media/DRM/Dolby package.
-5. **Planned, check whether done:** uninstall ZEE5 (`com.graymatrix.did`), NBA
-   (`com.nbaimd.gametime.nba2011`), MUBI (`com.mubi`), Tata Play (`com.tataskymore.open.uat`) and
-   DAZN (`com.dazn`), plus `pm trim-caches`. Run `pm list packages -3` to see what is still installed.
-6. **Not yet confirmed after the switch:** voice search, the keyboard in YouTube search, the
-   remote's Settings button, the Inputs menu. Test these and update this file.
+5. **Planned, not done yet (all still installed at 06:15 on 2026-10-18):** uninstall ZEE5
+   (`com.graymatrix.did`), NBA (`com.nbaimd.gametime.nba2011`), MUBI (`com.mubi`), Tata Play
+   (`com.tataskymore.open.uat`) and DAZN (`com.dazn`), plus `pm trim-caches`.
+6. **Tested after the switch and a reboot (2026-10-18):**
+   - Home → new launcher, also after a reboot. Every dock app opens and Home returns to the dock.
+   - YouTube search keyboard works (Gboard is the default IME).
+   - Inputs menu opens; HDMI 1 switches via Live TV. Two HDMI-CEC entries show no name, only "Connected".
+   - Voice / Search key reaches Google Assistant, which first asks a one-time data-sharing consent
+     on the TV; until that is answered it shows a spinner.
+   - **Broken: the remote's Settings key.** Xiaomi's `GlobalKeyReceiver`
+     (`com.xiaomi.android.tvsetup.partnercustomizer`) always opens launcherx's dashboard and crashes
+     with launcherx disabled. Use the launcher's Settings pill, which opens Android TV Settings.
+   - Launcher focus: after Home, focus can stay on the top bar, and Down from the top bar skips the
+     dock into the grid.
 
 Check the live state any time:
 
