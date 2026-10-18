@@ -204,6 +204,13 @@ The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `
 
 Nothing here blocks using the TV. Pick up any of it later.
 
+- **Known issue: Home lags after watching video, until a restart.** Measured 2026-10-18: after a
+  reboot Home is smooth (0% janky frames, 6 ms a frame); after 45 s of video (FanCode live) it is
+  60–70% janky (38 ms a frame), and stays so after closing the app, closing every app, standby and
+  power on, or opening Live TV. Opening apps without playing video does not cause it. The original
+  launcher lags the same way (75%), so it is the TV's video/graphics drivers, not the launcher.
+  Only a restart clears it (hold power → Restart). A Xiaomi firmware update may fix it.
+
 - **The remote's Settings key** is still broken (see Current state, item 6). An accessibility service
   that catches the key and opens Android TV Settings would fix it, but it would run all the time, so
   it was left out. The Settings pill works.

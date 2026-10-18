@@ -25,6 +25,11 @@ stutter, and they were removed.
 **Throw away the first run after an install.** Android compiles the app as it runs, so the first run
 is always slow.
 
+**Playing video leaves this TV slow until a restart.** After 45 s of a live stream, Home went from
+0% to 60–70% janky frames, for any launcher (the original too), and stayed that way after closing
+the app, standby and power on, or opening Live TV. Opening apps without playing video didn't do it.
+If a TV "feels laggy", play nothing, restart, and measure again before blaming the code.
+
 **Reboot and rest before measuring.** After hours of use this TV gets into a state where every
 build stutters (70–80% janky frames) and the load average sits around 60. We nearly blamed a good
 build for it; re-running the *old* build showed the TV, not the app, was slow. A reboot fixes it.
