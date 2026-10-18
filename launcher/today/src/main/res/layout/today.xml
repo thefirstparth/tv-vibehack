@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Today app (TodayScreen.java). Two modes, Today and Sport; the background is the window's (the Horizon image),
+     and only @id/content moves for burn-in. Sizes are for a
+     960 x 540 dp screen (1920 x 1080 at density 2). Weights are view tags (Fonts.java). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/todayRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- ================================================ Today -->
+        <FrameLayout
+            android:id="@+id/today"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:id="@+id/clockBlock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="58dp"
+                android:layout_marginTop="34dp"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="true">
+
+                    <TextClock
+                        android:id="@+id/bigClock"
+                        style="@style/TodayBase"
+                        android:format12Hour="h:mm"
+                        android:format24Hour="h:mm"
+                        android:textSize="115sp"
+                        android:tag="w200"
+                        android:letterSpacing="-0.05"
+                        android:textColor="#EBFFFFFF" />
+
+                    <TextClock
+                        style="@style/TodayBase"
+                        android:layout_marginStart="10dp"
+                        android:format12Hour="a"
+                        android:format24Hour="a"
+                        android:textSize="18sp"
+                        android:tag="w500"
+                        android:letterSpacing="0.12"
+                        android:textAllCaps="true"
+                        android:textColor="#8CFFFFFF" />
+                </LinearLayout>
+
+                <TextClock
+                    android:id="@+id/bigDate"
+                    style="@style/TodayCaps"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="2dp"
+                    android:format12Hour="EEEE d MMMM"
+                    android:format24Hour="EEEE d MMMM"
+                    android:textSize="13sp"
+                    android:tag="w500" />
+
+                <TextView
+                    android:id="@+id/sunLine"
+                    style="@style/TodayCaps"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginTop="7dp"
+                    android:textSize="12sp"
+                    android:tag="w500" />
+            </LinearLayout>
+
+            <!-- the home screen's lines (HomeLines), in this screen's places: weather top right, sport in the band -->
+            <FrameLayout
+                android:id="@+id/lines"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="62dp"
+                android:layout_marginEnd="62dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/weather"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end|top"
+                    android:layout_marginTop="56dp"
+                    android:orientation="vertical"
+                    android:gravity="end">
+
+                    <LinearLayout
+                        android:id="@+id/weatherCols"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                    <TextView
+                        android:id="@+id/weatherAsOf"
+                        style="@style/LineAsOf"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sport"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start|top"
+                    android:layout_marginTop="260dp"
+                    android:alpha="0"
+                    android:orientation="vertical">
+
+                    <TextView android:id="@+id/sportLabel" style="@style/TodayLabel" android:drawablePadding="8dp" />
+
+                    <LinearLayout
+                        android:id="@+id/headline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal"
+                        android:baselineAligned="true">
+
+                        <TextView android:id="@+id/hA" style="@style/TodayHeadName" android:textSize="58sp" />
+                        <TextView android:id="@+id/hScoreA" style="@style/TodayHeadScore" android:textSize="58sp" android:tag="w600" />
+                        <TextView android:id="@+id/hV" style="@style/TodayHeadV" android:text="V" android:textSize="16sp" android:layout_gravity="center_vertical" />
+                        <TextView android:id="@+id/hScoreB" style="@style/TodayHeadScore" android:textSize="58sp" android:tag="w600" />
+                        <TextView android:id="@+id/hB" style="@style/TodayHeadName" android:textSize="58sp" />
+                        <TextView android:id="@+id/hLoc" style="@style/TodayHeadLoc" android:textSize="24sp" />
+                    </LinearLayout>
+
+                    <LinearLayout android:id="@+id/then1" style="@style/TodayThenRow">
+                        <TextView android:id="@+id/then1Label" style="@style/TodayThenLabel" />
+                        <TextView android:id="@+id/then1Time" style="@style/TodayThenTime" />
+                        <TextView android:id="@+id/then1Match" style="@style/TodayThenMatch" />
+                        <TextView android:id="@+id/then1Comp" style="@style/TodayThenTime" />
+                    </LinearLayout>
+
+                    <LinearLayout android:id="@+id/then2" style="@style/TodayThenRow">
+                        <TextView android:id="@+id/then2Label" style="@style/TodayThenLabel" />
+                        <TextView android:id="@+id/then2Time" style="@style/TodayThenTime" />
+                        <TextView android:id="@+id/then2Match" style="@style/TodayThenMatch" />
+                        <TextView android:id="@+id/then2Comp" style="@style/TodayThenTime" />
+                    </LinearLayout>
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- the day in a minute (two pages) and Money: filled by TodayScreen -->
+            <LinearLayout android:id="@+id/minute1" style="@style/TodayTodayStop" />
+            <LinearLayout android:id="@+id/minute2" style="@style/TodayTodayStop" />
+            <LinearLayout android:id="@+id/money" style="@style/TodayTodayStop" />
+        </FrameLayout>
+
+        <!-- ================================================ Sport -->
+        <FrameLayout
+            android:id="@+id/sportMode"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:visibility="invisible">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="62dp"
+                android:layout_marginTop="40dp"
+                android:orientation="horizontal"
+                android:baselineAligned="true">
+
+                <TextClock
+                    style="@style/TodayBase"
+                    android:format12Hour="h:mm"
+                    android:format24Hour="h:mm"
+                    android:textSize="33sp"
+                    android:tag="w300"
+                    android:letterSpacing="-0.03"
+                    android:textColor="#EBFFFFFF" />
+
+                <TextClock
+                    style="@style/TodayBase"
+                    android:layout_marginStart="6dp"
+                    android:format12Hour="a"
+                    android:format24Hour="a"
+                    android:textSize="13sp"
+                    android:tag="w500"
+                    android:letterSpacing="0.12"
+                    android:textAllCaps="true"
+                    android:textColor="#8CFFFFFF" />
+
+                <TextClock
+                    style="@style/TodayCaps"
+                    android:layout_marginStart="16dp"
+                    android:format12Hour="EEEE d MMMM"
+                    android:format24Hour="EEEE d MMMM"
+                    android:textSize="12sp"
+                    android:tag="w500" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|top"
+                android:layout_marginTop="52dp"
+                android:layout_marginEnd="62dp"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    style="@style/TodayCaps"
+                    android:text="Sport"
+                    android:textSize="12sp"
+                    android:tag="w600"
+                    android:textColor="#57FFFFFF" />
+
+                <!-- the feed's state, as under the home screen's weather: "as of 2:15 pm" or "Feed not answering" -->
+                <TextView
+                    android:id="@+id/sportAsOf"
+                    style="@style/LineAsOf"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/hero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="62dp"
+                android:layout_marginEnd="62dp"
+                android:layout_marginTop="142dp"
+                android:orientation="vertical">
+
+                <TextView android:id="@+id/sportLabel" style="@style/TodayLabel" android:drawablePadding="8dp" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
+                    android:baselineAligned="true">
+
+                    <TextView android:id="@+id/hA" style="@style/TodayHeadName" android:textSize="79sp" android:letterSpacing="-0.03" />
+                    <TextView android:id="@+id/hScoreA" style="@style/TodayHeadScore" android:textSize="79sp" />
+                    <TextView android:id="@+id/hV" style="@style/TodayHeadV" android:text="V" android:textSize="19sp" android:layout_gravity="center_vertical" />
+                    <TextView android:id="@+id/hScoreB" style="@style/TodayHeadScore" android:textSize="79sp" />
+                    <TextView android:id="@+id/hB" style="@style/TodayHeadName" android:textSize="79sp" android:letterSpacing="-0.03" />
+                    <TextView android:id="@+id/hLoc" style="@style/TodayHeadLoc" android:textSize="28sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/heroContext"
+                    style="@style/TodayBase"
+                    android:layout_marginTop="8dp"
+                    android:textSize="15sp"
+                    android:tag="w400"
+                    android:textColor="#57FFFFFF" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1px"
+                android:layout_marginStart="62dp"
+                android:layout_marginEnd="62dp"
+                android:layout_marginTop="305dp"
+                android:background="#14FFFFFF" />
+
+            <LinearLayout android:id="@+id/week" style="@style/TodaySportStop" />
+            <LinearLayout android:id="@+id/results" style="@style/TodaySportStop" />
+            <LinearLayout android:id="@+id/standings" style="@style/TodaySportStop" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/dots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="62dp"
+            android:layout_marginBottom="29dp"
+            android:orientation="horizontal" />
+    </FrameLayout>
+</FrameLayout>

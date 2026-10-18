@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One city's weather in the Today app's Today mode: the home screen's column (item_city.xml), larger. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="40dp"
+    android:orientation="vertical"
+    android:gravity="end">
+
+    <TextView android:id="@+id/city" style="@style/CityName" />
+    <TextView android:id="@+id/temp" style="@style/TodayCityTemp" />
+    <TextView android:id="@+id/feels" style="@style/TodayCitySmall" />
+    <TextView android:id="@+id/hilo" style="@style/TodayCitySmall" />
+    <TextView android:id="@+id/word" style="@style/TodayCityWord" />
+</LinearLayout>

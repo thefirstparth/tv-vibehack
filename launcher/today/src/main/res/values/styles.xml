@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Today" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <!-- The Today app (layout/today.xml): Outfit only; no text brighter than 92% white (#EB). -->
+    <style name="TodayBase" parent="LineBase" />
+    <style name="TodayCaps" parent="LineBase">
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">#8CFFFFFF</item>
+    </style>
+    <style name="TodayLabel" parent="LineLabel">
+        <item name="android:textSize">13sp</item>
+    </style>
+    <style name="TodayHeadName" parent="LineBase">
+        <item name="android:tag">w200</item>
+        <item name="android:letterSpacing">-0.025</item>
+        <item name="android:textColor">#EBFFFFFF</item>
+    </style>
+    <style name="TodayHeadScore" parent="TodayHeadName">
+        <item name="android:tag">w500</item>
+        <item name="android:layout_marginStart">20dp</item>
+        <item name="android:layout_marginEnd">20dp</item>
+        <item name="android:visibility">gone</item>
+    </style>
+    <style name="TodayHeadV" parent="HeadV">
+        <item name="android:textColor">#8CFFFFFF</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+    </style>
+    <style name="TodayHeadLoc" parent="HeadLoc">
+        <item name="android:layout_marginStart">18dp</item>
+    </style>
+    <style name="TodayThenRow" parent="ThenRow">
+        <item name="android:layout_marginTop">10dp</item>
+    </style>
+    <style name="TodayThenLabel" parent="ThenLabel" />
+    <style name="TodayThenTime" parent="ThenTime">
+        <item name="android:textSize">17sp</item>
+    </style>
+    <style name="TodayThenMatch" parent="TodayThenTime">
+        <item name="android:textColor">#B3FFFFFF</item>
+    </style>
+    <style name="TodayCityTemp" parent="CityTemp">
+        <item name="android:textSize">52sp</item>
+        <item name="android:textColor">#EBFFFFFF</item>
+    </style>
+    <style name="TodayCitySmall" parent="CitySmall">
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TodayCityWord" parent="CityWord">
+        <item name="android:textSize">14sp</item>
+    </style>
+    <!-- a stop in the band: filled in code, faded in and out every 25 seconds -->
+    <style name="TodayTodayStop">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">62dp</item>
+        <item name="android:layout_marginEnd">62dp</item>
+        <item name="android:layout_marginTop">260dp</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:alpha">0</item>
+    </style>
+    <style name="TodaySportStop" parent="TodayTodayStop">
+        <item name="android:layout_marginTop">322dp</item>
+    </style>
+</resources>
