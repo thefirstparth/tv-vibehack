@@ -100,6 +100,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The window's background, by time of day; drawn once per look. */
     private final HorizonBackground horizon = new HorizonBackground();
     private DockDecoration dock;
+    /**
+     * The weekend look: the state it was last worked out for (Weekend.key, as Horizon's claim), and its built pieces
+     * (null on weekdays and personal days). The line above the clock as last set, to set it only when it changes.
+     */
+    private String weekendKey = Weekend.OFF;
+    private WeekendLook weekend;
+    private CharSequence weekendLine;
+    private String weekendEvent;
+    private CharSequence greetingShown;
+    /** The pills' usual icon colours (white, near-black when focused), put back when the weekend ends. */
+    private android.content.res.ColorStateList pillTint;
     private WifiBars wifiBars;
     private String wifiName = "";
     private boolean wifiIconOnly;
@@ -156,6 +167,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         root = findViewById(R.id.root);
         glass = findViewById(R.id.glass);
         greeting = findViewById(R.id.greeting);
+        greeting.setAllCaps(false);   // the line is upper case already; caps here would drop the weekend's symbols
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
@@ -238,6 +250,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setCompoundDrawablesRelative(bars, null, null, null);
         btnWifi.setOnFocusChangeListener((v, focused) -> showWifi(focused));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
+        pillTint = btnSettings instanceof TextView ? ((TextView) btnSettings).getCompoundDrawableTintList() : null;
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction. Down always goes to the dock.
@@ -382,8 +395,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!firstFrameDone) return;
         HorizonBackground.Sky sky = fakeSky != null ? fakeSky : homeLines != null ? homeLines.sky() : HorizonBackground.Sky.CLEAR;
         Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
-        HorizonBackground.State st = HorizonBackground.stateAt(lightTime(), sky, match, days);
+        Calendar now = lightTime();
+        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, match, days);
         if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
+        claimWeekend(now, st);
         if (!horizon.claim(st)) return;
         final HorizonBackground.State state = st;
         android.content.res.Resources res = getResources();
@@ -391,7 +406,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             android.graphics.drawable.BitmapDrawable image = HorizonBackground.draw(res, state);
             handler.post(() -> {
                 getWindow().setBackgroundDrawable(image);
-                dock.setTopEdge(HorizonBackground.edge(state));
+                if (weekend == null) dock.setTopEdge(HorizonBackground.edge(state));
                 grid.invalidate();
             });
         });
@@ -535,8 +550,69 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void updateGreeting() {
         Calendar now = lightTime();
         String line = SunLine.text(now, SunTimes.LAT, SunTimes.LON, greetings);
-        greeting.setText(line == null ? "" : line);
+        CharSequence text = line == null ? "" : line;
+        if (line != null && weekend != null) {
+            // "WEEKEND ⚽ ♪ 🍸 ♥ · SUNSET 5:59 PM": the built lead, then the sun time from the line (the part after
+            // the mood; the whole line in the Sunset mood). Joined again only when the sun time changes.
+            int dot = line.indexOf(" · ");
+            String event = dot >= 0 ? line.substring(dot + 3) : line;
+            if (weekendLine == null || !event.equals(weekendEvent)) {
+                weekendLine = new android.text.SpannableStringBuilder(weekend.lead).append(" · ").append(event);
+                weekendEvent = event;
+            }
+            text = weekendLine;
+        }
+        boolean same = text instanceof String ? text.equals(greetingShown) : text == greetingShown;
+        if (!same) {
+            greeting.setText(text);
+            greetingShown = text;
+        }
         greeting.setVisibility(line == null ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    /**
+     * The weekend look, worked out only when its state changes (as Horizon's claim): on a weekday that is one day
+     * check and nothing else. Turning on, its pieces are built once off the main thread and then only reused.
+     */
+    private void claimWeekend(Calendar now, HorizonBackground.State st) {
+        String key = Weekend.key(now, st);
+        if (key.equals(weekendKey)) return;
+        weekendKey = key;
+        if (Weekend.OFF.equals(key)) {
+            weekend = null;
+            applyWeekend(st);
+            return;
+        }
+        Weekend w = Weekend.of(now, st);
+        final HorizonBackground.State state = st;
+        painter.execute(() -> {
+            WeekendLook look = WeekendLook.build(this, w, density);
+            handler.post(() -> {
+                if (!key.equals(weekendKey)) return;   // the state moved on meanwhile
+                weekend = look;
+                applyWeekend(state);
+            });
+        });
+    }
+
+    /**
+     * The weekend look on or off: the pills' icons tinted (a focused pill as always), the dock's top edge as a
+     * gradient of the weekend colours, and the line above the clock. Only when the look changes.
+     */
+    private void applyWeekend(HorizonBackground.State state) {
+        View[] pills = {btnToday, findViewById(R.id.btnInputs), btnWifi, findViewById(R.id.btnSettings)};
+        for (int i = 0; i < pills.length; i++) {
+            if (pills[i] instanceof TextView) ((TextView) pills[i]).setCompoundDrawableTintList(weekend == null ? pillTint : weekend.pillTints[i]);
+        }
+        if (weekend == null) {
+            dock.setTopEdgeGradient(null);
+            dock.setTopEdge(HorizonBackground.edge(state));
+        } else {
+            dock.setTopEdgeGradient(weekend.edge);
+        }
+        weekendLine = null;
+        grid.invalidate();
+        updateGreeting();
     }
 
     /**

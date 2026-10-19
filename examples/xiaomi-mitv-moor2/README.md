@@ -93,6 +93,11 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    - Nothing else over 20 MB that runs at boot is safe to disable beyond what is kept on purpose. The
      Play Store (`com.android.vending`) uses up to 300 MB while it updates apps; turning off its
      auto-update would make that rarer (not done).
+9. **Launcher look (2026-10-19):** the 1400 pill is a newspaper; Left/Right on the tiles go along the
+   rows in reading order (never up to the top bar); humidity under each city.
+   **The weekend look is on the TV** (2026-10-19, 06:21, `87ddafb`): it passed the night's weekday and
+   Saturday tests under the qualifying rule (all measurements in [BENCHMARKS.md](BENCHMARKS.md)).
+   Undo: `pm install -r` of `backup/launcher-builds/tvhome-on-tv-before-golive.apk`.
 
 Check the live state any time:
 

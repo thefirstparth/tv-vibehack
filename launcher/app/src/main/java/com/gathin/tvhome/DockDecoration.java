@@ -33,8 +33,21 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
 
     /** The top edge's colour; the caller redraws the grid once. */
     void setTopEdge(int color) {
+        topEdge.setShader(null);
+        gradient = null;
         topEdge.setColor(color);
     }
+
+    /** The weekend's top edge: these colours left to right (null: back to the single colour). */
+    void setTopEdgeGradient(int[] colours) {
+        gradient = colours;
+        shaderFrom = shaderTo = -1;
+        if (colours == null) topEdge.setShader(null);
+        else topEdge.setColor(0xFFFFFFFF);
+    }
+
+    private int[] gradient;
+    private float shaderFrom = -1, shaderTo = -1;
 
     @Override
     public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent,
@@ -72,6 +85,13 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         float radius = 26 * density;
         c.drawRoundRect(rect, radius, radius, band);
         c.drawRoundRect(rect, radius, radius, edge);
-        if (topEdge.getColor() != 0) c.drawLine(rect.left + radius, rect.top + 0.5f, rect.right - radius, rect.top + 0.5f, topEdge);
+        float from = rect.left + radius, to = rect.right - radius;
+        if (gradient != null && (from != shaderFrom || to != shaderTo)) {
+            // made again only when the dock's width changes, not on every frame
+            topEdge.setShader(new android.graphics.LinearGradient(from, 0, to, 0, gradient, null, android.graphics.Shader.TileMode.CLAMP));
+            shaderFrom = from;
+            shaderTo = to;
+        }
+        if (topEdge.getColor() != 0) c.drawLine(from, rect.top + 0.5f, to, rect.top + 0.5f, topEdge);
     }
 }

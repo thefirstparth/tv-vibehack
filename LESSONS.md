@@ -41,6 +41,11 @@ build for it; re-running the *old* build showed the TV, not the app, was slow. A
 Store updating apps in the background (up to 300 MB). Netflix looked 200 ms slower; a re-check
 showed it unchanged.
 
+**Measure the noise in the same test.** A "no slower" rule failed a good build twice: the same build's
+Home return varied by 40 ms between runs. Running current → candidate → current, with ten Home returns
+per slot, measured tonight's noise (15.5 ms) and let the rule allow for it; the weekend look then passed.
+Every measurement is in [BENCHMARKS.md](examples/xiaomi-mitv-moor2/BENCHMARKS.md).
+
 **Decide the rules before you look at the numbers.** We wrote "keep it only if cold start is no more
 than 20 ms slower, Home return no slower, stutter and memory no worse" before testing. That made the
 keep-or-roll-back decision mechanical.
