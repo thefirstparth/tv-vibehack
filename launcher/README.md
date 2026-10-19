@@ -65,10 +65,9 @@ band, each kept at its hue as a light pastel (HSV saturation 0.40, value 0.95). 
 off-white stays). The Horizon light itself does not change. Worked out in `Weekend.java` (pure,
 unit-tested) whenever the Horizon state is checked: the existing minute tick and when Home appears;
 no new timers, no animation.
-Not on the MOOR2 yet: its A/B (2026-10-19) was even on cold start, stutter and memory but 6 ms slower
-on Home return (370 → 376 ms, inside the runs' spread), which the keep rule doesn't allow.
-The cheaper version (key/claim, nothing on weekdays, built off the main thread) was 16 ms slower on a
-weekday's Home return in its A/B (380 → 396 ms) although traces show its Home return doing no more work.
+On the MOOR2 since 2026-10-19: after two A/Bs under a strict "no slower" rule failed on noise, a test
+that measures its own noise (current → weekend → current, ten Home returns a slot) passed it on a
+weekday and on a Saturday; see [BENCHMARKS.md](../examples/xiaomi-mitv-moor2/BENCHMARKS.md).
 
 ## Sports and weather (optional)
 
