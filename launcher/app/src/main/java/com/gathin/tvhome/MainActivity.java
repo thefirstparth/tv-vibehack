@@ -549,7 +549,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final int pos = Math.max(0, Math.min(position, adapter.getItemCount() - 1));
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(pos);
         if (vh != null) {
-            vh.itemView.findViewById(R.id.card).requestFocus();
+            View card = vh.itemView.findViewById(R.id.card);
+            // Back on Home with focus still on this tile: requestFocus changes nothing, so no focus callback would bring
+            // back the highlight that onResume hid. Place it here instead.
+            if (card.isFocused()) {
+                if (!glassShown) onTileFocused(pos, card);
+            } else {
+                card.requestFocus();
+            }
             return;
         }
         // Not laid out yet: scroll there, then focus once the scroll settles.
