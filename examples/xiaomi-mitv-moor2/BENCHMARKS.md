@@ -5,6 +5,9 @@ tonight's go-live test for the weekend look (2026-10-19).
 
 ## Method (tonight)
 
+The scripts are in [`tools/ab/`](../../tools/ab/README.md) (`night.sh`, `saturday.sh`, `judge.py`); from 2026-10-20
+they also record the grid run's frame-time percentiles (p50/p90/p95/p99).
+
 - After a restart and about a minute's rest, with nobody using the TV (a remote press stops the test).
 - Each **slot** installs one build (`pm install -r`), warms it up (one scripted grid run, discarded), then
   measures: **1 cold start** (Settings in front, `am force-stop` the launcher, `am start -W`, TotalTime);

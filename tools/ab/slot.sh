@@ -1,0 +1,26 @@
+#!/bin/bash
+# slot.sh <apk> <label>: one measurement slot, as in examples/xiaomi-mitv-moor2/BENCHMARKS.md. Install it, warm it up
+# (one grid run, discarded), then 1 cold start, 1 scripted grid run (janky %, frame-time percentiles, memory), 10 Home
+# returns from YouTube (the Home intent's TotalTime), and a crash/freeze check. Prints one line.
+# Exit 3 on a real remote press, 4 if the install fails.
+source "$(dirname "$0")/common.sh"
+apk=$1; label=$2
+touched && { echo "$(ts) $label TOUCHED (before the slot)"; exit 3; }
+"$AB/put.sh" "$apk" >/dev/null || { echo "$(ts) $label INSTALL FAILED"; exit 4; }
+t "logcat -b crash -c" >/dev/null
+tb "$AB/grid.txt" >/dev/null
+cold=$(tb "$AB/cold.txt" | awk '/TotalTime/{v=$2} END{print v}')
+nav=$(tb "$AB/grid.txt" | awk '/^Total frames/{n=$NF} /^Janky frames:/{j=$4} /^50th percentile/{p50=$3} /^90th percentile/{p90=$3}
+  /^95th percentile/{p95=$3} /^99th percentile/{p99=$3} /TOTAL PSS/{m=$3}
+  END{printf "janky=%s frames=%s p50=%s p90=%s p95=%s p99=%s pssKB=%s", j, n, p50, p90, p95, p99, m}')
+: > "$OUT/rets.txt"
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  printf '%s\n' "am start -W -n com.google.android.youtube.tv/com.google.android.apps.youtube.tv.activity.ShellActivity" \
+    "sleep 4" "am start -W -a android.intent.action.MAIN -c android.intent.category.HOME" "sleep 1.5" \
+    "am force-stop com.google.android.youtube.tv" >> "$OUT/rets.txt"
+done
+rets=$(tb "$OUT/rets.txt" | awk '/^\$ am start -W -n/{m="y"} /^\$ am start -W -a/{m="h"} /TotalTime/{if(m=="h") printf "%s,", $2}')
+top=$(t "dumpsys activity activities | grep -m1 -E 'mResumedActivity|topResumedActivity' | grep -oE 'u0 [^ ]+'; logcat -b crash -d | grep -c gathin" | tr '\n' ' ')
+line="$(ts) $label cold=$cold $nav rets=[$rets] state=[$top]"
+touched && { echo "$line TOUCHED"; exit 3; }
+echo "$line"

@@ -1,4 +1,35 @@
-# Next session: the plan — RUN 2026-10-19 02:34–03:40 (results below)
+# Next session: Part 2 of 2026-10-20 (on the TV)
+
+Part 1 (Mac only) is done: three upstream ports and the highlight fix are on the branch, built as
+`backup/launcher-builds/tvhome-release-rim-4cec0f2.apk` (same key as the TV's build). Run this only once Parth
+says he is home with USB debugging on.
+
+1. `tools/tv.py --probe` must say `MiTV-MOOR2`; check what's on screen (`dumpsys activity activities | grep
+   mResumedActivity`) and ask first if it isn't Home.
+2. Save the APK on the TV: `pm path com.gathin.tvhome`, then `--pull` it to `backup/launcher-builds/`.
+3. The A/B with [`tools/ab/`](../../tools/ab/README.md), as in [BENCHMARKS.md](BENCHMARKS.md): weekday test
+   (`night.sh`, CNC: its two current slots are the noise check), then the Saturday test (`saturday.sh`, which
+   records `auto_time` and `auto_time_zone` and puts them back), each judged with `judge.py`. The grid run's
+   frame-time percentiles are recorded. Install with `pm install -r` only if both pass; otherwise the current
+   build stays.
+4. Debloat: free RAM at rest (`cat /proc/meminfo`, `dumpsys meminfo` summary) before and after. Disable only
+   the packages marked **safe** below, one at a time with `pm disable-user --user 0`, checking Home, the dock
+   apps, Inputs, Settings, voice and casting after each; re-enable any that breaks something. Add the disabled
+   ones to `debloat.txt`, with the undo in the README.
+5. Everything into BENCHMARKS.md; TV on Home, automatic time on, nothing running; commit, push, report.
+
+**The five packages upstream disables and we don't** (researched 2026-10-20; nothing found ties any of them to
+Home, the dock apps, Inputs, Settings, voice, casting or Play Store updates):
+
+| Package | What it is | Verdict |
+|---|---|---|
+| `com.google.android.partnersetup` | Google partner/RLZ install-attribution setup helper; used at first setup | **safe** (re-enable before a factory reset; 11 upstream TV lists disable it) |
+| `com.xiaomo.tv.milegal` | Xiaomi legal and privacy text screens | **safe** (those pages won't open) |
+| `com.xiaomi.mimusic2` | Mi Music (`/system/priv-app/TVMusic`), plays music from USB | **safe**: Parth doesn't play music from USB (2026-10-20), so disable it, though the README kept it on purpose before |
+| `com.mitv.toolhouse` | unknown; no public description, upstream gives none | **unsure**: read its manifest (`dumpsys package`) on the TV, don't disable |
+| `com.xiaomi.tvqs.overseas` | unclear: upstream calls it "Firebase analytics" on this model and "quick settings panel, kept on purpose" on the Mi Box S; a privileged app (`/system/priv-app/TvQS`) that could hold the picture/sound menu | **keep** |
+
+# Previous plan — RUN 2026-10-19 02:34–03:40 (results below)
 
 **Results:** Part 1b done (Right/Left wrap along rows; unit-tested, emulator, and on the TV: Right from
 FanCode lands on Prime Video). Part 2: full A/B, 5 alternating rounds each, medians, last fully tested
