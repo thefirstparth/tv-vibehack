@@ -47,9 +47,10 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
      menu was too narrow. The device on HDMI 3 now shows as "Living room TV" on its port's row.)
    - Voice / Search key reaches Google Assistant, which first asks a one-time data-sharing consent
      on the TV; until that is answered it shows a spinner.
-   - **Broken: the remote's Settings key.** Xiaomi's `GlobalKeyReceiver`
+   - **The remote's Settings key: doesn't apply to this remote** (it has no Settings key; noted
+     2026-10-20). On remotes that have one, Xiaomi's `GlobalKeyReceiver`
      (`com.xiaomi.android.tvsetup.partnercustomizer`) always opens launcherx's dashboard and crashes
-     with launcherx disabled. Use the launcher's Settings pill, which opens Android TV Settings.
+     with launcherx disabled. The launcher's Settings pill opens Android TV Settings.
    - Launcher focus after Home and Down from the top bar: fixed (focus returns to the last tile; Down
      goes to the dock).
 
@@ -224,9 +225,6 @@ Nothing here blocks using the TV. Pick up any of it later.
   the TV's menu; changes from the computer don't survive a restart), and Netflix/JioHotstar full
   players beyond their previews. Workaround: restart after watching FanCode.
 
-- **The remote's Settings key** is still broken (see Current state, item 6). An accessibility service
-  that catches the key and opens Android TV Settings would fix it, but it would run all the time, so
-  it was left out. The Settings pill works.
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).
