@@ -230,6 +230,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         springY = new SpringAnimation(glass, DynamicAnimation.TRANSLATION_Y);
         for (SpringAnimation s : new SpringAnimation[]{springX, springY}) {
             s.setSpring(new SpringForce().setStiffness(260f).setDampingRatio(0.58f));
+            // at rest the highlight takes its exact (fractional) position again; see GlassView
+            s.addEndListener((anim, canceled, value, velocity) -> {
+                if (!springX.isRunning() && !springY.isRunning()) glass.setMoving(false);
+            });
         }
 
         View btnInputs = findViewById(R.id.btnInputs);
@@ -469,9 +473,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float y = r.exactCenterY() - h / 2f;
 
         ViewGroup.LayoutParams lp = glass.getLayoutParams();
-        if (lp.width != (int) w || lp.height != (int) h) {
-            lp.width = (int) w;
-            lp.height = (int) h;
+        if (lp.width != (int) w + GlassView.SPARE || lp.height != (int) h + GlassView.SPARE) {
+            lp.width = (int) w + GlassView.SPARE;
+            lp.height = (int) h + GlassView.SPARE;
             glass.setLayoutParams(lp);
             glass.setRadius(16f * density * AppAdapter.FOCUS_SCALE + pad);
         }
@@ -482,9 +486,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             springY.cancel();
             glass.setTranslationX(x);
             glass.setTranslationY(y);
+            glass.animate().cancel();
             glass.animate().alpha(1f).setDuration(180).start();
             glassShown = true;
         } else {
+            glass.setMoving(true);
             springX.animateToFinalPosition(x);
             springY.animateToFinalPosition(y);
         }
@@ -504,6 +510,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void hideGlass() {
         if (!glassShown) return;
         glassShown = false;
+        glass.animate().cancel();
         glass.animate().alpha(0f).setDuration(160).start();
     }
 
