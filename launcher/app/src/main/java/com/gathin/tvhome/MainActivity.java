@@ -85,6 +85,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int linesTop = -1, linesBottom = -1;
     /** Set once the first frame is on screen: the work kept off the startup path may begin. */
     private boolean firstFrameDone, resumed;
+    /** On screen since the last onResume (paused counts, stopped doesn't): a Home intent now is Home pressed on Home. */
+    private boolean shown;
     /** An app was installed, removed or updated while Home was in the background: the tiles and the moon are redone on return. */
     private boolean appsChanged;
     /** The app list is loaded once (onCreate) and redone only when a package changes, not on every return to Home. */
@@ -283,6 +285,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        shown = true;
         glassShown = false;
         glass.setAlpha(0f);
         if (appsChanged) {
@@ -340,6 +343,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         readFakes(intent);
+        // Home pressed while Home is already in front (the launcher was paused for it, never stopped): back to the
+        // top with the first dock tile focused, like the stock launcher. Home or Back from an app stops the launcher
+        // first, so focus still returns to the tile it was on (onResume).
+        if (shown && intent != null && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            grid.scrollToPosition(0);
+            lastFocused = 0;
+            lastDockFocused = 0;
+            focusMoon = false;
+        }
     }
 
     /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
@@ -427,6 +439,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onPause();
         resumed = false;
         handler.removeCallbacks(minuteTick);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        shown = false;
     }
 
     @Override
