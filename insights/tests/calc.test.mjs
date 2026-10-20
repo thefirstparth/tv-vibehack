@@ -75,3 +75,9 @@ test("the screensaver is left out of the apps but kept apart", async () => {
   assert.deepEqual(topApps(ds).map(a => a.pkg), ["com.sonyliv"]);
   assert.equal(saverMinutes(ds), 40);
 });
+
+test("the TV's input app is shown as the Xbox", async () => {
+  const { nameOf, colourOf } = await import("../public/calc.js");
+  assert.equal(nameOf({ pkg: "com.mitv.livetv", name: "Live TV" }), "Xbox (TV input)");
+  assert.equal(colourOf("com.mitv.livetv"), "#107c10");
+});

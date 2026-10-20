@@ -104,6 +104,7 @@ const BRAND = {
   "com.gathin.tv1400": "#2442e8",
   "com.formulaone.production": "#8a1538",   // not YouTube's red
   "com.google.android.apps.tv.dreamx": "#a99f8c",
+  "com.mitv.livetv": "#107c10",   // the TV's input app: in this house, the Xbox
 };
 const SPARE = ["#147a40", "#b5650d", "#0f6e8c", "#8c2f6e", "#4b5b9a", "#6b6b2a"];
 export function colourOf(pkg) {
@@ -114,7 +115,11 @@ export function colourOf(pkg) {
 }
 
 /** What a person calls it: the screensaver's package says "Backdrop". */
-export const nameOf = a => (a.pkg === "com.google.android.apps.tv.dreamx" ? "Screensaver" : a.name || a.pkg);
+/**
+ * What a person calls it: the screensaver's package says "Backdrop"; the TV's input app ("Live TV") is the Xbox here
+ * (Parth, 21 Oct): Android can't tell this TV's HDMI ports apart, and the Xbox is the only thing he uses on them.
+ */
+export const nameOf = a => (a.pkg === "com.google.android.apps.tv.dreamx" ? "Screensaver" : a.pkg === "com.mitv.livetv" ? "Xbox (TV input)" : a.name || a.pkg);
 
 /** "26 s", "5 min", "3 h", "2 days": never rounded up. */
 export function ago(ms) {
