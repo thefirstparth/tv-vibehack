@@ -118,6 +118,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     ```
     Nothing else was changed: the clock and automatic time were not touched tonight (`auto_time` and
     `auto_time_zone` both 1).
+    **Not installed: the weather highlights** (`97d3e73`, the warmest/coolest temperature tinted and the
+    extremes lit, mockup option 5): its short A/B failed on cold start (+37.5 ms against the allowed 20; see
+    [BENCHMARKS.md](BENCHMARKS.md)). The code is on the branch; the TV keeps `4cec0f2`.
 
 Check the live state any time:
 

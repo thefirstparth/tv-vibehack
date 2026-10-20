@@ -58,6 +58,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-19 night | weekend (`87ddafb`) | Saturday (clock set), 2 full rounds | 585.5 ms (578–593) | 96.5 ms (84–150, n=20) | 0% | 74.2 MB | **pass**: −6.0 ms, cold +15 ms, −0.7 MB; installed |
 | 2026-10-20 | current (`tvhome-on-tv-before-gpu`, = `87ddafb`) | weekday, 6 slots, Home returns from Media Player | 595 ms (577–613) | 88.5 ms (75–109, n=60) | 0% | 65.4 MB | noise: C1 89.5 vs C2 88.0 ms = **1.5 ms**; frame times p50/p90/p95/p99 5/6/6/7 ms (813 frames a run) |
 | 2026-10-20 | Home on Home, GPU highlight, highlight on return (`4cec0f2`) | weekday, 3 slots, Home returns from Media Player | 586 ms (574–604) | 88.0 ms (79–101, n=30) | 0% | 66.1 MB | **pass**: −0.5 ms (allowed 17), cold −9 ms, +0.7 MB; p50/p90/p95/p99 5/6/7/10 ms (707 frames a run); Saturday test skipped (Parth); installed 06:27 |
+| 2026-10-20 07:00 | current (`4cec0f2`, on the TV) | short weekday, 2 rounds current → new | 595 ms (594, 596) | 93.5 ms (77–122, n=20) | 0% | 70.8 MB | noise taken from the 05:56 test (1.5 ms) |
+| 2026-10-20 07:00 | weather highlights (`97d3e73`) | short weekday, 2 rounds current → new | 632.5 ms (649, 616) | 92.5 ms (79–99, n=20) | 0% | 67.6 MB | **fail**: cold start +37.5 ms (allowed 20); Home return −1.0 ms, −3.2 MB; **not installed** |
 
 ## 2026-10-20
 
@@ -69,3 +71,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - Two earlier starts were discarded: one round with Home returns from YouTube (stopped when YouTube was found signed out;
   `backup/ab/weekday-youtube-round1-discarded.log`) and one slot with Home returns from Settings (all ten read the same
   stale 227 ms; see Method).
+- 07:00 short weekday A/B of the weather highlights (`97d3e73`, 2 rounds of current → new after a restart, judged with
+  tonight's noise): **fail** on cold start (+37.5 ms, two samples: 649 and 616 ms against 594 and 596). Everything else
+  passed. Not installed; `4cec0f2` stays on the TV. The highlights are worked out after the first frame (the lines are
+  built then), so the code isn't an obvious cause, but under the rule the result stands; a longer A/B (3 rounds of
+  current → new → current) would be the next step if the change is wanted.
