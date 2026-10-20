@@ -74,6 +74,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 19:22 | Horizon v3, 960x540 (`a065555`) | same | 608 ms (n=10) | 94.0 ms (n=20) | 0% | 79.2 MB | **fail on memory only** (+11.4 MB, allowed 3); cut early to leave time for 480 |
 | 2026-10-20 19:41 | current (`9bb14ef`) | Horizon v3 at 480x270, full: CN x 5 after a restart, 5 cold starts a slot | 603 ms (n=25) | 97.0 ms (n=50) | 0% | 68.4 MB | noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 19:41 | Horizon v3, 480x270 (`a28b832`) | same | 603 ms (n=25) | 96.5 ms (n=50) | 0% | 66.6 MB | **pass**: Home return −0.5 ms, cold 0 ms, −1.8 MB; installed 20:22 |
+| 2026-10-20 21:33 | current (`a28b832`) | short weekday, 2 rounds current → new, 3 cold starts a slot | 607 ms (n=6) | 99.5 ms (n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 21:33 | quick re-ask, live-match rate (`e1cc510`) | same | 612.5 ms (n=6) | 99.0 ms (88–415, n=20) | 0% | 66.3 MB | **pass**: Home return −0.5 ms, cold +5.5 ms, −3.2 MB; one 415 ms return straight after an install; installed 21:51 |
 
 ## 2026-10-20
 
@@ -113,3 +115,6 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   picture switched to 480x270 as planned. 19:41 the full A/B (LESSONS.md: 5 alternating rounds after a restart, medians;
   BENCHMARKS.md rule) passed on every point. Installed with `pm install -r` at 20:22; all checks passed. On the TV that
   night the readability floor took the sport and weather blocks from 4.46 to 4.50 and 4.51:1 (4 shadow passes).
+- 21:33 short A/B of the quick re-ask (`e1cc510`: 8 s after an old or failed copy, twice at most; every 2 minutes during
+  a live match): **pass**. Trimmed for time at Parth's request: 3 cold starts a slot (n=6 a build), no emulator run, a
+  short check after the install (Home, Netflix, the request log). Installed with `pm install -r` at 21:51.
