@@ -315,6 +315,11 @@ Nothing here blocks using the TV. Pick up any of it later.
   `pm install -r` only if it passes (undo: `pm install -r` of that 1bb593d APK; the frozen copies in files/diary/sent/
   are then just ignored); deploy `insights/` (the page and day.js take days with or without `inputs`); and check a week
   of real days on the site and `DaySummary.SLOW_MS` (100 ms) against the real Home times (sign-in needed).
+  **The site's address:** since 21 Oct the insights app also answers at `https://tv.bhatia.page` (custom domain, CNAME
+  at Spaceship). The TV sends to `https://tv-insights-chi.vercel.app/api/day` (`tv.diaryUrl` in `launcher/local.properties`),
+  and the saved candidate has that address built in. When this build is A/B'd and installed, `tv.diaryUrl` may become
+  `https://tv.bhatia.page/api/day` (then rebuild, and A/B that build, not the saved one). Keep the vercel.app alias
+  working regardless: an older build put back with `pm install -r` still sends there.
 
 - **Known issue: Home lags after watching video, until a restart.** Measured 2026-10-18: after a
   reboot Home is smooth (0% janky frames, 6 ms a frame); after 45 s of video (FanCode live) it is
