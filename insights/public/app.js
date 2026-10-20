@@ -1,6 +1,7 @@
 import { ago, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
-document.getElementById("fonts").media = "all";   // the web fonts load without holding up the page
+const fontsLink = document.getElementById("fonts");   // the web fonts load without holding up the page
+if (fontsLink) fontsLink.media = "all";
 const main = document.getElementById("main");
 const tabs = document.getElementById("tabs");
 const fresh = document.getElementById("fresh");
@@ -15,6 +16,7 @@ const store = {
 };
 
 let data = store.get("tv-days");
+let example = false;   // made-up days to show the screens before the first real one arrives
 let failed = false, signedOut = false;
 let { view, date } = route();
 let period = route().period || store.get("tv-period") || "month";
@@ -230,15 +232,22 @@ function draw(moved) {
   if (!days.length) {
     tabs.hidden = true;
     main.innerHTML = data
-      ? `<section class="card"><h1 id="h" tabindex="-1">No days yet</h1><p class="note">The TV sends the day before each morning, the first time its home screen opens after 4 AM IST.</p></section>`
+      ? `<section class="card"><p class="label">Nothing here yet</p><h1 id="h" tabindex="-1">The first day is on its way</h1>
+          <p class="note">The TV sends each day's summary the next morning, the first time its home screen opens after 4 AM IST.
+          The record starts at 4 AM on Wednesday 21 October, so that day should arrive on the morning of Thursday 22 October.</p>
+          <button class="primary" id="ex" type="button" style="margin-top:14px">Show an example with made-up data</button></section>`
       : skeleton();
+    document.getElementById("ex")?.addEventListener("click", () => { example = true; data = { ...data, days: exampleDays() }; draw(true); });
     topLine();
     return;
   }
   tabs.hidden = false;
   const watts = data.watts || 95, rate = data.rate || 6.7;
-  document.getElementById("aboutEnergy").textContent = `Energy is an estimate: hours on times a typical ${watts} W, not a meter reading. The cost uses ₹${rate.toFixed(2)} a unit (1 unit = 1 kWh).`;
-  main.innerHTML = view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "insights" ? insightsView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate);
+  document.body.classList.toggle("example", example);
+  const aboutEnergy = document.getElementById("aboutEnergy");
+  if (aboutEnergy) aboutEnergy.textContent = `Energy is an estimate: hours on times a typical ${watts} W, not a meter reading. The cost uses ₹${rate.toFixed(2)} a unit (1 unit = 1 kWh).`;
+  main.innerHTML = (example ? `<p class="exampleBar" role="status">Example with made-up data, not your TV. <button type="button" id="exOff">Back to real</button></p>` : "") + (view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "insights" ? insightsView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate));
+  document.getElementById("exOff")?.addEventListener("click", () => { example = false; load(true); });
   for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
   for (const d of main.querySelectorAll("details[data-key]")) d.ontoggle = () => store.set("open-" + d.dataset.key, d.open);
   for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => { if (b.dataset.day) { const side = b.getAttribute("aria-label"); go("day", b.dataset.day, true); main.querySelector(`[aria-label="${side}"]:not([disabled])`)?.focus(); } };
@@ -251,6 +260,7 @@ function draw(moved) {
 /** The quiet freshness line, tap to refresh: amber when the last day is late or offline, red when a refresh failed. */
 function topLine() {
   if (signedOut) return;
+  if (example) { fresh.className = "fresh"; fresh.textContent = "Example data"; return; }
   const f = freshness(data?.days ?? [], Date.now());
   fresh.className = "fresh";
   if (!navigator.onLine) {
@@ -297,9 +307,10 @@ async function load(moved) {
     const j = r.ok ? await r.json().catch(() => null) : null;
     if (!j || !Array.isArray(j.days)) throw new Error("bad answer");
     const before = data?.days?.length ?? 0;
+    if (example) return;   // looking at the example: a refresh doesn't take it away
     data = j;
     failed = false;
-    store.set("tv-days", data);
+    if (!example) store.set("tv-days", data);
     if (before && j.days.length > before) say.textContent = "A new day has arrived.";
   } catch {
     failed = true;
@@ -315,6 +326,25 @@ async function load(moved) {
     clearTimeout(timer);
   }
   draw(moved);
+}
+
+/** Three weeks of made-up days in the shape the TV sends, for the example. */
+function exampleDays() {
+  const hm = m => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  const out = [], end = Date.parse(todayIST() + "T12:00:00Z");
+  for (let i = 21; i >= 1; i--) {
+    const date = new Date(end - i * 86400000).toISOString().slice(0, 10), k = 22 - i;
+    const start = 1140 + (k * 17) % 60, a = 60 + (k * 13) % 70, b = 30 + (k * 7) % 50, c = 20 + (k * 5) % 30;
+    out.push({ v: 1, date, received: new Date(end - (i - 1) * 86400000 - 7 * 3600000).toISOString(),
+      on: { minutes: a + b + c + 15, spans: [[hm(start), hm(Math.min(1439, start + a + b + c + 15))]] },
+      apps: [
+        { pkg: "com.sonyliv", name: "SonyLIV", minutes: a, opens: 2, spans: [[hm(start + 5), hm(start + 4 + a)]] },
+        { pkg: "com.google.android.youtube.tv", name: "YouTube", minutes: b, opens: 3, spans: [[hm(start + 6 + a), hm(start + 5 + a + b)]] },
+        { pkg: "in.startv.hotstar", name: "JioHotstar", minutes: c, opens: 1, spans: [[hm(start + 7 + a + b), hm(Math.min(1439, start + 6 + a + b + c))]] },
+        { pkg: "com.google.android.apps.tv.dreamx", name: "Backdrop", minutes: 8 }],
+      home: { opens: 30 + k, median_ms: 40 + (k * 11) % 30, slow: k % 6 === 0 ? 1 : 0 }, feed: { asks: 40, fresh: 38, old: 2 }, tv: { boots: 0, mem_free_mb: 420 } });
+  }
+  return out;
 }
 
 tabs.onclick = e => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };

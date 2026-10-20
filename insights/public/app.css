@@ -142,4 +142,6 @@ dialog p { color: var(--ink2); }
 .wkl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 12px; color: var(--muted); text-align: center; margin-top: 3px; }
 .ink { color: var(--ink); }
 .up { color: var(--green); } .down { color: var(--red); }
+.exampleBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--tang); color: var(--ink); font-weight: 700; font-size: .78rem; border-radius: 12px; padding: 4px 4px 4px 12px; margin: 0 0 10px; }
+.exampleBar button { min-height: 40px; border: 0; border-radius: 9px; background: var(--surface); font-weight: 700; padding: 0 12px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }
