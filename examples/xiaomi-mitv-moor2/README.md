@@ -166,7 +166,20 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     <file>` saves a new one. Settings made from the computer may not survive a
     restart; if the picture changes after one, set them again (Undo has the lines; the new values instead of the
     old). Don't change **brightness** for "more life": at 80 it greyed the blacks (tried 21 Oct, rolled back).
-    Undo: see "The picture settings" under Undo.
+    Undo: see "The picture settings" under Undo. **Picture settings are kept per input** (seen 21 Oct, 03:04): these
+    values are the apps' (Android TV source); the HDMI inputs (the Xbox, `HW5`, "Game console") have their own,
+    untouched (backlight 63, colour temperature 2, contrast 50, saturation 50, black stretch off).
+
+14. **The daily summary for the insights app** (`1bb593d`, on the TV since 03:03 on 21 Oct; `insights/`, a private
+    Vercel app at tv-insights-chi.vercel.app). The launcher keeps a small diary (files/diary/, a few KB a day, 35 days:
+    each Home return's time to draw, cold starts, feed answers, Wi-Fi drops) and, the first time Home has been on screen
+    5 s after 4 am, sends each unsent day's summary (with Android's usage stats: when the screen was on, which apps and
+    when) to the site, up to 30 days back; off days as 0 minutes, send problems with the next good send. The record
+    starts 04:00 IST on 21 Oct. Needs **usage access**, granted 03:03:
+    `appops set com.gathin.tvhome GET_USAGE_STATS allow` (was `default`). Passed its short A/B (BENCHMARKS.md).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-quick-e1cc510.apk`, then
+    `appops set com.gathin.tvhome GET_USAGE_STATS default`. Off without undoing: remove `tv.diaryUrl` from
+    `launcher/local.properties` and rebuild.
 
 Check the live state any time:
 

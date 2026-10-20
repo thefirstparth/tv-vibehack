@@ -8,6 +8,11 @@ def localProps = new Properties()
 def localFile = rootProject.file('local.properties')
 if (localFile.exists()) localFile.withInputStream { localProps.load(it) }
 def feedUrl = (localProps.getProperty('tv.feedUrl') ?: '').trim()
+// The daily summary to the insights site (insights/, DiarySend): off unless both are set. The key is private.
+def diaryUrl = (localProps.getProperty('tv.diaryUrl') ?: '').trim()
+def diaryKey = (localProps.getProperty('tv.diaryKey') ?: '').trim()
+// the build's commit, sent with each day so a slow day can be matched to the build that was on the TV
+def commit = 'git rev-parse --short HEAD'.execute([], rootProject.projectDir).text.trim()
 
 android {
     namespace 'com.gathin.tvhome'
@@ -20,7 +25,10 @@ android {
         versionCode 2
         versionName '2.0'
         // plain http only when the configured feed is http (a computer on the home network, for testing)
-        manifestPlaceholders = [cleartext: feedUrl.startsWith('http://') ? 'true' : 'false']
+        manifestPlaceholders = [cleartext: (feedUrl.startsWith('http://') || diaryUrl.startsWith('http://')) ? 'true' : 'false']
+        resValue 'string', 'tv_diary_url', diaryUrl
+        resValue 'string', 'tv_diary_key', diaryKey
+        resValue 'string', 'tv_build', commit
     }
 
     buildTypes {

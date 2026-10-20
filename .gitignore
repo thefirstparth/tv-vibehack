@@ -11,3 +11,6 @@ launcher/local.properties
 # your own TV's dumps (serial, android_id, device names) stay local
 backup/
 .DS_Store
+
+# Vercel CLI link for insights/ (deploys run from the repo root; the project root is insights)
+.vercel/

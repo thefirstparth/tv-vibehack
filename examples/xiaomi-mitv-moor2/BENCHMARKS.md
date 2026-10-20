@@ -76,6 +76,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 19:41 | Horizon v3, 480x270 (`a28b832`) | same | 603 ms (n=25) | 96.5 ms (n=50) | 0% | 66.6 MB | **pass**: Home return −0.5 ms, cold 0 ms, −1.8 MB; installed 20:22 |
 | 2026-10-20 21:33 | current (`a28b832`) | short weekday, 2 rounds current → new, 3 cold starts a slot | 607 ms (n=6) | 99.5 ms (n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 21:33 | quick re-ask, live-match rate (`e1cc510`) | same | 612.5 ms (n=6) | 99.0 ms (88–415, n=20) | 0% | 66.3 MB | **pass**: Home return −0.5 ms, cold +5.5 ms, −3.2 MB; one 415 ms return straight after an install; installed 21:51 |
+| 2026-10-21 02:33 | current (`e1cc510`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 612 ms (n=10) | 104.0 ms (n=20) | 0% | 54.96 MB | memory from a separate run (02:58, 2 a build): the grid's meminfo by package name now prints the whole-system report on this TV, so it reads by pid (`tools/ab/grid.txt`) |
+| 2026-10-21 02:33 | insights diary and daily summary (`1bb593d`) | same | 604.5 ms (n=10) | 96.0 ms (n=20) | 0% | 54.96 MB | **pass**: cold −7.5 ms, Home return −8 ms, janky 0, memory 0 MB; installed 03:03 |
 
 ## 2026-10-20
 
@@ -118,3 +120,7 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - 21:33 short A/B of the quick re-ask (`e1cc510`: 8 s after an old or failed copy, twice at most; every 2 minutes during
   a live match): **pass**. Trimmed for time at Parth's request: 3 cold starts a slot (n=6 a build), no emulator run, a
   short check after the install (Home, Netflix, the request log). Installed with `pm install -r` at 21:51.
+- 02:33 short A/B of the insights diary (`1bb593d`: a few KB a day of the launcher's own timings, and once a day a
+  summary sent to the insights site, never while an app is open): **pass** on every point. The memory column failed in
+  all four slots (see the row); measured again at 02:58 with the fixed command, two alternating installs a build:
+  55.7 / 54.2 MB current, 53.8 / 56.1 MB new. Installed with `pm install -r` at 03:03; usage access granted.

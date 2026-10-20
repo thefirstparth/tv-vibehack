@@ -85,6 +85,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int linesTop = -1, linesBottom = -1;
     /** Set once the first frame is on screen: the work kept off the startup path may begin. */
     private boolean firstFrameDone, resumed;
+    /** The diary's Home timing (Diary): when Home started coming back (uptime ms; 0 once measured) and whether as a cold start. */
+    private long homeAt;
+    private boolean homeCold;
+    /** Yesterday's summary, a few seconds after Home appears (DiarySend); taken back when Home goes. */
+    private final Runnable diarySend = () -> DiarySend.maybe(this);
     /** On screen since the last onResume (paused counts, stopped doesn't): a Home intent now is Home pressed on Home. */
     private boolean shown;
     /** An app was installed, removed or updated while Home was in the background: the tiles and the moon are redone on return. */
@@ -153,10 +158,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Fonts.apply(getWindow().getDecorView());
+        homeAt = android.os.Process.getStartUptimeMillis();
+        homeCold = true;
         // startup ends at the first frame; the lines and the Horizon image are made just after it
         getWindow().getDecorView().getViewTreeObserver().addOnDrawListener(new android.view.ViewTreeObserver.OnDrawListener() {
             @Override
             public void onDraw() {
+                if (homeAt != 0) {
+                    Diary.get(MainActivity.this).home(android.os.SystemClock.uptimeMillis() - homeAt, homeCold);
+                    homeAt = 0;
+                }
                 if (firstFrameDone) return;
                 firstFrameDone = true;
                 handler.post(MainActivity.this::afterFirstFrame);
@@ -284,6 +295,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
                 @Override
                 public void onLost(@NonNull Network network) {
+                    Diary.get(MainActivity.this).netLost();
                     updateWifiLabel();
                 }
             };
@@ -343,6 +355,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             homeLines.refresh();   // and one request for a fresh copy
         }
         handler.postDelayed(minuteTick, MINUTE_MS);
+        handler.postDelayed(diarySend, DiarySend.AFTER_HOME_MS);
 
         // Return to the tile we left from, or the first one. The window restores its old focus (often a
         // top-bar pill) when it regains focus, so this runs again from onWindowFocusChanged.
@@ -513,7 +526,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onPause();
         resumed = false;
         handler.removeCallbacks(minuteTick);
+        handler.removeCallbacks(diarySend);
         if (homeLines != null) homeLines.pause();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // back to Home from an app or the screensaver (a cold start is timed from the process start, in onCreate)
+        if (homeAt == 0) {
+            homeAt = android.os.SystemClock.uptimeMillis();
+            homeCold = false;
+        }
     }
 
     @Override
