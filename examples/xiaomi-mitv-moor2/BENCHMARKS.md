@@ -6,7 +6,10 @@ tonight's go-live test for the weekend look (2026-10-19).
 ## Method (tonight)
 
 The scripts are in [`tools/ab/`](../../tools/ab/README.md) (`night.sh`, `saturday.sh`, `judge.py`); from 2026-10-20
-they also record the grid run's frame-time percentiles (p50/p90/p95/p99).
+they also record the grid run's frame-time percentiles (p50/p90/p95/p99), and the Home returns start from **Media
+Player** (`com.xiaomi.mitv.mediaexplorer`), not YouTube (Parth's rule: no test touches YouTube or any app's data).
+Settings can't be used for it: on Google TV it is a side panel over Home, so Home never leaves and every "return"
+reads the same stale time.
 
 - After a restart and about a minute's rest, with nobody using the TV (a remote press stops the test).
 - Each **slot** installs one build (`pm install -r`), warms it up (one scripted grid run, discarded), then
@@ -53,3 +56,16 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-19 night | weekend (`87ddafb`) | weekday, 3 slots | 589 ms (584–594) | 108.5 ms (85–135, n=30) | 0% | 69.4 MB | **pass**: +4.5 ms (allowed 17), cold +5 ms, −0.9 MB |
 | 2026-10-19 night | current | Saturday (clock set), 2 full rounds | 570.5 ms (562–579) | 102.5 ms (74–139, n=20) | 0% | 74.9 MB | round 3's current slot (601 ms, 82–120) ran but had no pair |
 | 2026-10-19 night | weekend (`87ddafb`) | Saturday (clock set), 2 full rounds | 585.5 ms (578–593) | 96.5 ms (84–150, n=20) | 0% | 74.2 MB | **pass**: −6.0 ms, cold +15 ms, −0.7 MB; installed |
+| 2026-10-20 | current (`tvhome-on-tv-before-gpu`, = `87ddafb`) | weekday, 6 slots, Home returns from Media Player | 595 ms (577–613) | 88.5 ms (75–109, n=60) | 0% | 65.4 MB | noise: C1 89.5 vs C2 88.0 ms = **1.5 ms**; frame times p50/p90/p95/p99 5/6/6/7 ms (813 frames a run) |
+| 2026-10-20 | Home on Home, GPU highlight, highlight on return (`4cec0f2`) | weekday, 3 slots, Home returns from Media Player | 586 ms (574–604) | 88.0 ms (79–101, n=30) | 0% | 66.1 MB | **pass**: −0.5 ms (allowed 17), cold −9 ms, +0.7 MB; p50/p90/p95/p99 5/6/7/10 ms (707 frames a run); Saturday test skipped (Parth); installed 06:27 |
+
+## 2026-10-20
+
+- Weekday test only, 3 full rounds of current → new → current after a restart (05:56–06:27), judged by
+  `tools/ab/judge.py`: **pass** on every point. Saturday test skipped by Parth's choice: the weekend code didn't change
+  and the TV's clock was not to be touched.
+- New build's frame-time tail: p99 10 ms against 7 ms (p95 7 against 6), with fewer frames drawn per grid run (707 against
+  813). Still well inside a 16.7 ms frame, and janky frames stayed 0%.
+- Two earlier starts were discarded: one round with Home returns from YouTube (stopped when YouTube was found signed out;
+  `backup/ab/weekday-youtube-round1-discarded.log`) and one slot with Home returns from Settings (all ten read the same
+  stale 227 ms; see Method).

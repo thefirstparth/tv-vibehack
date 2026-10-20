@@ -19,8 +19,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
 
 ## Current state (2026-10-18)
 
-1. **Debloat:** the 19 packages in [`debloat.txt`](debloat.txt) are disabled with `pm disable-user`
-   (17 debloat entries plus `setupwraith` and `launcherx` for the Home switch below).
+1. **Debloat:** the 22 packages in [`debloat.txt`](debloat.txt) are disabled with `pm disable-user`
+   (20 debloat entries plus `setupwraith` and `launcherx` for the Home switch below). Three were added
+   on 2026-10-20 (item 10).
 2. **Home screen:** the tvOS-style launcher (`com.gathin.tvhome`) is the Home app. It survives a reboot.
    To get there on Google TV, three things were done, one command at a time:
    ```
@@ -34,7 +35,8 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    `launcher/app/src/main/res/values/config.xml` (`dock_apps`, `grid_order`, `hidden_apps`).
    The launcher is also listed in the TV's app list (it declares `LEANBACK_LAUNCHER`).
 4. **Kept on purpose:** firmware and Xiaomi update services, Google Assistant voice, Chromecast
-   built-in, Netflix, Play Services, Play Store, Live TV, every media/DRM/Dolby package.
+   built-in, Netflix, Play Services, Play Store, Live TV, every media/DRM/Dolby package (Mi Music
+   excepted since 2026-10-20).
 5. **Storage cleanup (2026-10-18, /data free 1.1G → 1.7G):** `pm trim-caches 999G`; `pm clear` on the
    disabled `com.mitv.tvhome.atv`, `com.mitv.tvhome.mitvplus`, `com.mitv.tvhome.oemtab`,
    `com.google.android.play.games`; uninstalled ZEE5 (`com.graymatrix.did`), NBA
@@ -99,6 +101,23 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    **The weekend look is on the TV** (2026-10-19, 06:21, `87ddafb`): it passed the night's weekday and
    Saturday tests under the qualifying rule (all measurements in [BENCHMARKS.md](BENCHMARKS.md)).
    Undo: `pm install -r` of `backup/launcher-builds/tvhome-on-tv-before-golive.apk`.
+10. **2026-10-20:** the launcher build `4cec0f2` is on the TV (installed 06:27 with `pm install -r`): Home
+    pressed on Home goes back to the first dock tile, the focus highlight is drawn on the GPU and comes
+    back on every return to Home. It passed the weekday A/B ([BENCHMARKS.md](BENCHMARKS.md)); the
+    Saturday test was skipped by Parth's choice (the weekend code is unchanged). Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-on-tv-before-gpu.apk` (the build on the TV before; same as
+    `tvhome-release-weekend2.apk`).
+    Three more packages disabled, one at a time, with Home, the dock apps, Inputs, Settings, voice and
+    casting checked after each: `com.google.android.partnersetup`, `com.xiaomo.tv.milegal`,
+    `com.xiaomi.mimusic2`. Free RAM at rest (after a restart and 3 minutes): MemAvailable 974.5 → 995.7 MB,
+    "Free RAM" 703.8 → 715.1 MB. Undo, one command per call:
+    ```
+    pm enable com.google.android.partnersetup
+    pm enable com.xiaomo.tv.milegal
+    pm enable com.xiaomi.mimusic2
+    ```
+    Nothing else was changed: the clock and automatic time were not touched tonight (`auto_time` and
+    `auto_time_zone` both 1).
 
 Check the live state any time:
 

@@ -1,4 +1,11 @@
-# Next session: Part 2 of 2026-10-20 (on the TV)
+# Next session: Part 2 of 2026-10-20 (on the TV) — RUN 05:05–06:55 (results below)
+
+**Results:** `4cec0f2` passed the weekday A/B (Home return 88.5 → 88.0 ms, noise 1.5 ms, cold 595 → 586 ms, janky 0%
+both, memory +0.7 MB) and is installed; the Saturday test was skipped (Parth: the clock stays untouched, the weekend
+code is unchanged). Home returns now start from Media Player, not YouTube or Settings. Disabled, all checks passing:
+partnersetup, milegal, Mi Music; free RAM at rest +11 to +21 MB. toolhouse and tvqs stay. Details in
+[BENCHMARKS.md](BENCHMARKS.md) and the README (Current state, item 10).
+
 
 Part 1 (Mac only) is done: three upstream ports and the highlight fix are on the branch, built as
 `backup/launcher-builds/tvhome-release-rim-4cec0f2.apk` (same key as the TV's build). Run this only once Parth
