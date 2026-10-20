@@ -5,14 +5,15 @@ The rule (examples/xiaomi-mitv-moor2/BENCHMARKS.md): Home return median no more 
 never more than 30 ms slower; cold start no more than 20 ms slower; janky frames no more than 0.5 points higher; memory
 no more than 3 MB higher; no crash or freeze. The noise is the gap between the C1 and C2 slots' Home return medians
 (pattern CNC); a CN log takes it from --noise (the weekday test's). Only rounds with both builds in them count.
-Frame-time percentiles (grid run) are reported, not judged.
+Frame-time percentiles (grid run) are reported, not judged. Cold start is judged on the median of every cold start
+of a build (slots with colds=[...] give five each).
 """
 import re
 import statistics as st
 import sys
 
 # (older logs, before the frame-time fields, called the new build W; both still read)
-SLOT = re.compile(r"(C1|C2|C|N|W)-r(\d+) cold=(\d*) janky=\(([\d.]*)%?\)(?: frames=(\d*) p50=(\d*)ms)? p90=(\d*)ms"
+SLOT = re.compile(r"(C1|C2|C|N|W)-r(\d+) cold=(\d*)(?: colds=\[([\d,]*)\])? janky=\(([\d.]*)%?\)(?: frames=(\d*) p50=(\d*)ms)? p90=(\d*)ms"
                   r"(?: p95=(\d*)ms p99=(\d*)ms)? pssKB=(\d*) rets=\[([\d,]*)\] state=\[(.*?)\]")
 
 
@@ -33,9 +34,10 @@ def main():
         if not m:
             continue
         g = m.groups()
-        rows.append(dict(slot="N" if g[0] == "W" else g[0], r=int(g[1]), cold=num(g[2]), janky=num(g[3], float), frames=num(g[4]),
-                         p50=num(g[5]), p90=num(g[6]), p95=num(g[7]), p99=num(g[8]), pss=num(g[9]),
-                         rets=[int(x) for x in g[10].split(",") if x], state=g[11].split()))
+        colds = [int(x) for x in (g[3] or "").split(",") if x] or ([num(g[2])] if g[2] else [])
+        rows.append(dict(slot="N" if g[0] == "W" else g[0], r=int(g[1]), cold=num(g[2]), colds=colds,
+                         janky=num(g[4], float), frames=num(g[5]), p50=num(g[6]), p90=num(g[7]), p95=num(g[8]),
+                         p99=num(g[9]), pss=num(g[10]), rets=[int(x) for x in g[11].split(",") if x], state=g[12].split()))
     rounds = sorted(r for r in set(x["r"] for x in rows)
                     if any(x["r"] == r and x["slot"] == "N" for x in rows)
                     and any(x["r"] == r and x["slot"].startswith("C") for x in rows))
@@ -68,8 +70,12 @@ def main():
     def col(xs, k):
         return [x[k] for x in xs]
 
-    print("cold start   current %s ms %s | new %s ms %s" % (med(col(cur, "cold")), col(cur, "cold"),
-                                                            med(col(new, "cold")), col(new, "cold")))
+    # cold start: the median of every cold start in the build's slots (one per slot, or AB_COLDS of them)
+    cc = [v for x in cur for v in x["colds"]]
+    nc = [v for x in new for v in x["colds"]]
+    print("cold start   current %s ms (n=%d, %s-%s) | new %s ms (n=%d, %s-%s)"
+          % (med(cc), len(cc), min(cc, default=None), max(cc, default=None),
+             med(nc), len(nc), min(nc, default=None), max(nc, default=None)))
     print("janky        current %.2f%% | new %.2f%%" % (med(col(cur, "janky")), med(col(new, "janky"))))
     print("memory       current %.1f MB | new %.1f MB" % (med(col(cur, "pss")) / 1024, med(col(new, "pss")) / 1024))
     print("frame times  current p50/p90/p95/p99 %s/%s/%s/%s ms (%s frames) | new %s/%s/%s/%s ms (%s frames)"
@@ -80,7 +86,7 @@ def main():
            if len(x["state"]) < 2 or not x["state"][1].startswith("com.gathin.tvhome/") or x["state"][-1] != "0"]
     d_ret = med(nr) - med(cr)
     allow = max(17.0, noise or 0.0)
-    d_cold = med(col(new, "cold")) - med(col(cur, "cold"))
+    d_cold = med(nc) - med(cc)
     d_jank = med(col(new, "janky")) - med(col(cur, "janky"))
     d_mem = (med(col(new, "pss")) - med(col(cur, "pss"))) / 1024
     checks = [

@@ -22,7 +22,7 @@ python3 -I tools/ab/judge.py backup/ab/saturday.log --noise <the weekday noise>
 |---|---|
 | `night.sh <test> <minutes> <current> <new> <CNC\|CN> <rounds>` | Restart, a minute's rest, the remote-press watcher, then the slots; stops before a slot that would end past the time limit. Ends with the current build back on, Home pressed and the watcher stopped. |
 | `saturday.sh <minutes> <current> <new> <rounds> [YYYY-MM-DDTHH:MM]` | Records `auto_time` and `auto_time_zone`, turns automatic time off, sets a Saturday, runs `night.sh saturday … CN`, then sets the clock from this computer and puts both settings back as recorded, even after a stop. |
-| `slot.sh <apk> <label>` | One slot: install, warm-up grid run (discarded), 1 cold start, 1 grid run (janky %, frame-time percentiles, memory), 10 Home returns from Media Player (no other app is force-stopped or has its data touched), crash/freeze check. One line of results. |
+| `slot.sh <apk> <label>` | One slot: install, warm-up grid run (discarded), 1 cold start (`AB_COLDS=5` for five; `judge.py` then judges the median of them all), 1 grid run (janky %, frame-time percentiles, memory), 10 Home returns from Media Player (no other app is force-stopped or has its data touched), crash/freeze check. One line of results. |
 | `judge.py <log> [--noise MS]` | Side-by-side medians and the rule. Only rounds with both builds count. Also reads the 2026-10-19 logs (it reproduces that night's published numbers). |
 | `put.sh <apk>` | `pm install -r` of one APK; fails unless the TV says Success. |
 | `grid.txt`, `cold.txt` | The scripted D-pad run across the dock and grid, and the cold start, as `tv.py --batch` input. |
