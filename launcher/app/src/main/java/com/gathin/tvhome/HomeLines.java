@@ -214,6 +214,7 @@ final class HomeLines {
      */
     /** An answer is in: drawn; after an old or failed copy, one more request soon (twice at most), else the count resets. */
     private void answered() {
+        Diary.get(act).feed(!data.saved());
         render();
         if (Refresh.quickAgain(data.saved(), quickTries)) {
             quickTries++;
