@@ -31,8 +31,8 @@ import java.util.TimeZone;
  */
 final class HorizonV3 {
 
-    /** The picture's size (stretched to the screen). */
-    static final int W = 960, H = 540;
+    /** The picture's size (stretched to the screen): 480x270, since 960x540 failed the A/B on memory (+11.4 MB, 20 Oct). */
+    static final int W = 480, H = 270;
     private static final float S = W / 960f, HOR = 0.66f;
     private static final double R = Astro.R;
     /** The floor: the faintest text keeps this contrast against its block's 90th-percentile background pixel. */
