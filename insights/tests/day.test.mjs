@@ -105,3 +105,15 @@ test("the first day is kept only from 04:00, without its home-screen numbers", a
   assert.equal(d.home, undefined);
   assert.equal(fromStart({ date: "2026-10-22", home: { opens: 3 } }, start).home.opens, 3, "later days as sent");
 });
+
+test("per-input minutes are kept when sent, and a day without them (build 1bb593d) is as before", () => {
+  const XBOX = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
+  const d = cleanDay({ ...DAY, inputs: [
+    { id: XBOX, name: "Xbox", minutes: 95, opens: 2, spans: [["19:40", "21:15"]], extra: 1 },
+    { id: "livetv", name: "Live TV", minutes: 10 },
+    { id: "bad id with spaces", minutes: 5 },
+    { id: XBOX, name: "no minutes" }] });
+  assert.deepEqual(d.inputs, [{ id: XBOX, name: "Xbox", minutes: 95, opens: 2, spans: [["19:40", "21:15"]] }, { id: "livetv", name: "Live TV", minutes: 10 }]);
+  assert.equal("inputs" in cleanDay(DAY), false);
+  assert.deepEqual(Object.keys(cleanDay(DAY)).sort(), ["apps", "build", "date", "feed", "home", "on", "tv", "v"]);
+});

@@ -119,7 +119,33 @@ export function colourOf(pkg) {
  * What a person calls it: the screensaver's package says "Backdrop"; the TV's input app ("Live TV") is the Xbox here
  * (Parth, 21 Oct): Android can't tell this TV's HDMI ports apart, and the Xbox is the only thing he uses on them.
  */
-export const nameOf = a => (a.pkg === "com.google.android.apps.tv.dreamx" ? "Screensaver" : a.pkg === "com.mitv.livetv" ? "Xbox (TV input)" : a.name || a.pkg);
+export const nameOf = a => (a.pkg === "com.google.android.apps.tv.dreamx" ? "Screensaver" : a.pkg === TV_INPUT ? "Xbox (TV input)" : a.name || a.pkg);
+
+/** The TV's input app: everything on HDMI and Live TV shows as this one app to Android. */
+export const TV_INPUT = "com.mitv.livetv";
+
+/**
+ * The TV input app's minutes over some days, split by the input picked on the home screen's Inputs menu (the TV sends
+ * "inputs" from the build after 1bb593d): [{id, name, minutes}] most first, and the minutes it can't name (switched with
+ * the remote's source button, the TV waking on its last input, or a day from before the TV sent inputs).
+ */
+export function inputSplit(days) {
+  const by = new Map();
+  let total = 0;
+  for (const d of days) {
+    total += (d.apps ?? []).filter(a => a.pkg === TV_INPUT).reduce((s, a) => s + (a.minutes || 0), 0);
+    for (const i of d.inputs ?? []) {
+      const t = by.get(i.id) ?? { id: i.id, name: i.name || inputName(i.id), minutes: 0 };
+      t.minutes += i.minutes || 0;
+      if (i.name) t.name = i.name;
+      by.set(i.id, t);
+    }
+  }
+  const named = [...by.values()].filter(i => i.minutes > 0).sort((a, b) => b.minutes - a.minutes);
+  return { named, unnamed: Math.max(0, total - named.reduce((s, i) => s + i.minutes, 0)) };
+}
+/** An input with no name sent: "Live TV", or the end of its id ("HW5"). */
+const inputName = id => (id === "livetv" ? "Live TV" : String(id).split("/").pop());
 
 /** "26 s", "5 min", "3 h", "2 days": never rounded up. */
 export function ago(ms) {

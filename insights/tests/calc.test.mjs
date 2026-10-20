@@ -81,3 +81,16 @@ test("the TV's input app is shown as the Xbox", async () => {
   assert.equal(nameOf({ pkg: "com.mitv.livetv", name: "Live TV" }), "Xbox (TV input)");
   assert.equal(colourOf("com.mitv.livetv"), "#107c10");
 });
+
+test("the TV input's time split by what was picked on the Inputs menu", async () => {
+  const { inputSplit } = await import("../public/calc.js");
+  const XBOX = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
+  const days = [
+    { date: "2026-10-28", apps: [{ pkg: "com.mitv.livetv", minutes: 120 }], inputs: [{ id: XBOX, name: "Xbox", minutes: 90 }, { id: "livetv", minutes: 10 }] },
+    { date: "2026-10-29", apps: [{ pkg: "com.mitv.livetv", minutes: 30 }, { pkg: "com.sonyliv", minutes: 60 }] },   // a day from 1bb593d: no inputs
+    { date: "2026-10-30", apps: [{ pkg: "com.mitv.livetv", minutes: 40 }], inputs: [{ id: XBOX, name: "Xbox", minutes: 41 }] },   // rounding: over by a minute
+  ];
+  assert.deepEqual(inputSplit(days), { named: [{ id: XBOX, name: "Xbox", minutes: 131 }, { id: "livetv", name: "Live TV", minutes: 10 }], unnamed: 49 });
+  assert.deepEqual(inputSplit([days[1]]), { named: [], unnamed: 30 });
+  assert.deepEqual(inputSplit([]), { named: [], unnamed: 0 });
+});

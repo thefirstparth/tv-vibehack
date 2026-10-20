@@ -1,4 +1,4 @@
-import { ago, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
+import { ago, inputSplit, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
 const fontsLink = document.getElementById("fonts");   // the web fonts load without holding up the page
 if (fontsLink) fontsLink.media = "all";
@@ -70,6 +70,14 @@ function saverLine(days) {
   return m >= 1 ? `<p class="note">Also ${hm(m)} of screensaver: counted in hours on and energy, not in the apps above.</p>` : "";
 }
 
+/** The TV input's time by what was picked on Home's Inputs menu; shown only once the TV has named some. */
+function inputLine(days) {
+  const { named, unnamed } = inputSplit(days);
+  if (!named.length) return "";
+  return `<p class="note">Xbox (TV input), by what was picked on the home screen's Inputs menu: ${named.map(i => `${esc(i.name)} ${hm(i.minutes)}`).join(", ")}${
+    unnamed >= 1 ? `; ${hm(unnamed)} not known (switched with the remote's source button, or already on)` : ""}.</p>`;
+}
+
 function appRows(apps, key) {
   if (!apps.length) return `<p class="note">No app use recorded. The TV needs "usage access" turned on for its home screen.</p>`;
   const row = a => `<li><span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span>${a.opens ? ` · opened ${a.opens}×` : ""}</span></li>`;
@@ -109,7 +117,7 @@ function dayView(days, watts, rate) {
       ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}
       <p class="key">Times are India time (IST).</p>
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}${saverLine([d])}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}${saverLine([d])}${inputLine([d])}</section>`;
 }
 
 function weekView(days, watts, rate) {
@@ -123,7 +131,7 @@ function weekView(days, watts, rate) {
       <div class="week">${week.map(d => `<span class="d">${esc(dayName(d.date).replace(",", "").split(" ").slice(0, 2).join(" "))}</span>${stripHtml(d, "thin")}<span class="h num">${hm(d.on?.minutes)}</span>`).join("")}</div>
       ${ticks("margin:4px 74px 0 58px", true)}
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}${saverLine(week)}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}${saverLine(week)}${inputLine(week)}</section>`;
 }
 
 function monthView(days, watts, rate) {
@@ -154,7 +162,7 @@ function monthView(days, watts, rate) {
       <li><span>Energy</span><span>about <span class="num">${t.kwh}</span> kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
     </ul></section>
-    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}${saverLine(month)}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}${saverLine(month)}${inputLine(month)}</section>`;
 }
 
 function insightsView(days, watts, rate) {
@@ -341,7 +349,9 @@ function exampleDays() {
         { pkg: "com.sonyliv", name: "SonyLIV", minutes: a, opens: 2, spans: [[hm(start + 5), hm(start + 4 + a)]] },
         { pkg: "com.google.android.youtube.tv", name: "YouTube", minutes: b, opens: 3, spans: [[hm(start + 6 + a), hm(start + 5 + a + b)]] },
         { pkg: "in.startv.hotstar", name: "JioHotstar", minutes: c, opens: 1, spans: [[hm(start + 7 + a + b), hm(Math.min(1439, start + 6 + a + b + c))]] },
+        { pkg: "com.mitv.livetv", name: "Live TV", minutes: 15, opens: 1, spans: [[hm(start - 20), hm(start - 6)]] },
         { pkg: "com.google.android.apps.tv.dreamx", name: "Backdrop", minutes: 8 }],
+      inputs: [{ id: "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5", name: "Xbox", minutes: 10 + k % 5, opens: 1 }],
       home: { opens: 30 + k, median_ms: 40 + (k * 11) % 30, slow: k % 6 === 0 ? 1 : 0 }, feed: { asks: 40, fresh: 38, old: 2 }, tv: { boots: 0, mem_free_mb: 420 } });
   }
   return out;

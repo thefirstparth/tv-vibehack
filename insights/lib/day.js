@@ -10,6 +10,8 @@ const realDate = s => {
   return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === s;
 };
 const PKG = /^[A-Za-z0-9_.]{1,120}$/;
+/** A TV input's id ("com.mediatek.tvinput/.hdmi.HDMIInputService/HW5") or "livetv" for the Live TV row. */
+const INPUT_ID = /^[A-Za-z0-9_.\/:-]{1,160}$/;
 export const MAX_BYTES = 32 * 1024;   // 40 apps with 24 stretches each fits
 
 const int = (v, max) => (v === null || v === undefined || v === "" || !Number.isFinite(+v) ? null : Math.max(0, Math.min(max, Math.round(+v))));
@@ -37,6 +39,14 @@ export function cleanDay(input, now = new Date()) {
       .filter(a => a && PKG.test(a.pkg ?? ""))
       .slice(0, 40)
       .map(a => drop({ pkg: a.pkg, name: text(a.name, 60), minutes: int(a.minutes, 1440), opens: int(a.opens, 10000), spans: spans(a.spans, 24) }))
+      .filter(a => a.minutes != null);
+  }
+  // the TV input app's time by the input picked on the home screen's Inputs menu (from build 1bb593d's successor; optional)
+  if (Array.isArray(input.inputs)) {
+    d.inputs = input.inputs
+      .filter(a => a && INPUT_ID.test(a.id ?? ""))
+      .slice(0, 12)
+      .map(a => drop({ id: a.id, name: text(a.name, 60), minutes: int(a.minutes, 1440), opens: int(a.opens, 10000), spans: spans(a.spans, 24) }))
       .filter(a => a.minutes != null);
   }
   if (input.home && typeof input.home === "object") {
@@ -97,6 +107,7 @@ export function fromStart(day, start) {
   const d = { ...day, from: start.time };
   if (day.on) { const s = cut(day.on.spans); d.on = { minutes: mins(s), spans: s }; }
   if (day.apps) d.apps = day.apps.map(a => { const s = cut(a.spans); return { ...a, spans: s, minutes: mins(s) }; }).filter(a => a.minutes > 0);
+  if (day.inputs) d.inputs = day.inputs.map(a => { const s = cut(a.spans); return { ...a, spans: s, minutes: mins(s) }; }).filter(a => a.minutes > 0);
   delete d.home; delete d.cold; delete d.feed;
   return d;
 }
