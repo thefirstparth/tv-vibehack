@@ -122,6 +122,37 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     and most humid value lit; mockup option 5) are on the TV since 07:43. A short A/B first failed on cold start
     (two samples a build); the re-test with five cold starts a slot passed (+18 ms, allowed 20; see
     [BENCHMARKS.md](BENCHMARKS.md)). Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-rim-4cec0f2.apk`.
+    **Our side stands out** (`264f568`, on the TV since 08:16): in the sport lines the side Parth doesn't follow is
+    dimmed (65% white in the headline; the lines' 45% dim in the THEN/LATER rows), from the feed's new `ours` (the
+    site, house-of-1400 `638b1ff`). It passed its short A/B. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-weather-97d3e73.apk`.
+    **Tabular digits** (`7fe2268`, on the TV since 08:39): Outfit's `tnum` for the clock and the sport scores, so
+    they keep their width as the digits change. Passed its short A/B. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-ours-264f568.apk`.
+    **Icon-only top bar** (`1bfd00c`, on the TV since 09:16): Inputs and Settings show only their icon, the name
+    while focused (as the 1400 and Wi-Fi pills); with no network or no internet the Wi-Fi icon gets an amber "!" and
+    the pill says "No internet" until the connection is back (one network callback, no polling). Passed its short
+    A/B. The no-internet look was checked on the emulator only (with the launch extra `net=offline`): cutting the
+    TV's Wi-Fi would also cut ADB. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-tnum-7fe2268.apk`.
+    **The feed refreshes while Home stays on screen** (`9bb14ef`, on the TV since 17:48). Before, the sport and weather
+    were fetched only when Home appeared, and the site's cache answers the first request after a quiet spell with
+    its old copy (making a fresh one at the same moment), so the TV could sit on "as of" an old time (20 Oct: "as of
+    4:51 pm" at 5:18). Now one more request comes a minute after a saved copy and every 15 minutes otherwise, on the
+    minute tick, only while Home is in front. Each request is logged: `logcat -s HomeLines:I`. Passed its short A/B.
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-topbar-1bfd00c.apk`.
+11. **Horizon v3 is the home screen's light** (`a28b832`, on the TV since 20:22 on 20 Oct; spec and approved mockup in
+    [horizon-v3/](horizon-v3/README.md)): the light follows the real sun and moon, the moon as light only, 909 stars
+    and the Milky Way at night, the feed's new `sky` for Bengaluru (house-of-1400 `067cdea`), grain, and a readability
+    floor (4.5:1 for each block's faintest text, with a soft shadow where needed). The picture is 480x270: at 960x540
+    the A/B failed on memory (+11.4 MB). It passed the full A/B at 480x270 ([BENCHMARKS.md](BENCHMARKS.md)). Not in
+    this build: meteors, the match ribbon, the after-match glows. The floor's figures are logged:
+    `logcat -s Horizon:I`. Undo: `pm install -r` of `backup/launcher-builds/tvhome-on-tv-before-horizon3.apk` (the
+    build before, `9bb14ef`).
+12. **Quicker feed re-asks** (`e1cc510`, on the TV since 21:51 on 20 Oct): after an old or failed copy the home screen
+    asks again 8 s later (twice at most) instead of on the next minute tick, so "as of" clears within about 10 s of
+    waking the TV or pressing Home (it took about a minute at 9:21 pm); while a match is live the feed is asked every
+    2 minutes instead of 15. Passed its short A/B. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-horizon3-480-a28b832.apk`.
 
 Check the live state any time:
 
@@ -248,6 +279,26 @@ Nothing here blocks using the TV. Pick up any of it later.
   the TV's menu; changes from the computer don't survive a restart), and Netflix/JioHotstar full
   players beyond their previews. Workaround: restart after watching FanCode.
 
+- **The remote sometimes can't turn the TV on (Parth: for 2 to 3 months; seen again 20 Oct, 16:40–16:50);
+  the button on the TV always works.** Diagnosed from the TV's own log, nothing changed: at 14:13 the TV went into
+  quick standby by itself (30 minutes idle, `sleep_timeout`); this firmware's quick standby (Suspend-to-RAM,
+  `persist.vendor.mitv.str.framework=true`) switches Bluetooth off ("Start STR disabling bluetooth") and relies on
+  the Bluetooth/Wi-Fi chip (MediaTek MT7663) to wake on the paired remote (`bluetooth.wake_up_rc` = the one bonded
+  "Xiaomi RC"). After 2 h 37 min asleep the remote did nothing; the TV's button woke it at 16:50:12, and 4 s later the
+  chip reported a hardware error (`bt_hci: Ctlr H/w error event - code:0xf2`) and Android logged "Bluetooth crashed"
+  (16:50:18) and restarted it; the remote reconnected at 16:50:22. So the chip had stopped listening for the remote
+  during standby: a firmware/driver fault in the TV, not the launcher or the debloat (it predates both; no disabled
+  package touches Bluetooth or wake). The firmware clears its logs on boot, so earlier cases can't be read back.
+  Read in Xiaomi's power service (`services.jar`, disassembled on the Mac): Bluetooth is switched off on every quick
+  standby, with no setting to keep it on, so waking on the remote is the chip's job alone; after 30 quick standbys
+  (`persist.sys.max_str_count`, default 30) the TV restarts fully instead (likely the 13:42 boot). Related settings,
+  recorded and not changed: `global mitv_go_suspend=1`, `go_to_str_direct=1`, `sleep_mode_mitv_go_suspend=1`,
+  `persist.vendor.wow=0` (wake on Wi-Fi off), `hdmi_control_auto_wakeup_enabled=0`, `secure sleep_timeout=1800000`.
+  Options, none applied yet: a Xiaomi system update (the only fix to the chip itself); fresh remote batteries;
+  re-pair the remote; a test, with Parth and the remote, of the power button doing a full shutdown instead
+  (`mitv_go_suspend=0`; undo `settings put global mitv_go_suspend 1`): slower to turn on, and whether the remote can
+  then turn it on is unknown. A longer auto-standby was considered and not recommended (it only changes how often
+  the TV sleeps by itself; the remote's power button uses the same standby).
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).

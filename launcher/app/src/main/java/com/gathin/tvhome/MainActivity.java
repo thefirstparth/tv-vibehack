@@ -115,7 +115,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private android.content.res.ColorStateList pillTint;
     private WifiBars wifiBars;
     private String wifiName = "";
-    private boolean wifiIconOnly;
+    /** What the Wi-Fi pill says (WifiPill), from the default network: kept current by netWatch, no polling. */
+    private WifiPill.State wifiState = WifiPill.State.WIFI;
+    private ConnectivityManager.NetworkCallback netWatch;
     /** Names for inputs (config input_names), by the port's label. */
     private final java.util.Map<String, String> inputNames = new java.util.HashMap<>();
     private static final java.util.regex.Pattern CONSOLE = java.util.regex.Pattern.compile("xbox|playstation|ps[45]|switch|nintendo", java.util.regex.Pattern.CASE_INSENSITIVE);
@@ -125,12 +127,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private java.util.List<PersonalDays.Day> greetings;
     /**
      * For screenshots only, from the launch intent; any plain Home clears them: "at" (yyyy-MM-ddTHH:mm, the light's
-     * time and date), "mood", "sky" (clear, rain, storm), "match" (a colour, #RRGGBB).
+     * time and date), "mood", "sky" (clear, rain, storm), "match" (a colour, #RRGGBB), "net" ("offline": the Wi-Fi pill's no-internet look).
      */
     private Calendar fakeAt;
     private HorizonBackground.Mood fakeMood;
     private HorizonBackground.Sky fakeSky;
+    private String fakeWx;
     private Integer fakeMatch;
+    private boolean fakeOffline;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable minuteTick = new Runnable() {
@@ -257,6 +261,38 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi.setOnFocusChangeListener((v, focused) -> showWifi(focused));
         btnSettings.setOnClickListener(v -> open(new Intent(Settings.ACTION_SETTINGS)));
         pillTint = btnSettings instanceof TextView ? ((TextView) btnSettings).getCompoundDrawableTintList() : null;
+        // Inputs and Settings: icon only, their name beside the icon while focused (as the 1400 pill)
+        for (View p : new View[]{btnInputs, btnSettings}) {
+            final TextView pill = (TextView) p;
+            final String name = pill.getText().toString();
+            pill.setOnFocusChangeListener((v, focused) -> showNamePill(pill, name, focused));
+            showNamePill(pill, name, false);
+        }
+        // the Wi-Fi pill follows the default network's internet state (one callback, called on the main thread)
+        ConnectivityManager cmw = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cmw != null) {
+            netWatch = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    updateWifiLabel();
+                }
+
+                @Override
+                public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities caps) {
+                    updateWifiLabel();
+                }
+
+                @Override
+                public void onLost(@NonNull Network network) {
+                    updateWifiLabel();
+                }
+            };
+            try {
+                cmw.registerDefaultNetworkCallback(netWatch, handler);
+            } catch (RuntimeException e) {
+                netWatch = null;
+            }
+        }
 
         // Keep focus on the top bar at its ends and at the top: Android's focus finder would otherwise
         // jump to a tile far below when there is nothing in that direction. Down always goes to the dock.
@@ -330,6 +366,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         unregisterReceiver(packages);
+        if (netWatch != null) {
+            try {
+                ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).unregisterNetworkCallback(netWatch);
+            } catch (RuntimeException ignored) {
+            }
+        }
         super.onDestroy();
     }
 
@@ -390,7 +432,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         fakeMood = HorizonBackground.Mood.named(i.getStringExtra("mood"));
         String sky = i.getStringExtra("sky");
+        fakeWx = sky;   // Horizon v3's sky word as given (clear, partly, overcast, fog, rain, storm)
         fakeSky = sky == null ? null : "rain".equalsIgnoreCase(sky) ? HorizonBackground.Sky.RAIN : "storm".equalsIgnoreCase(sky) ? HorizonBackground.Sky.STORM : HorizonBackground.Sky.CLEAR;
+        fakeOffline = "offline".equalsIgnoreCase(i.getStringExtra("net"));
         String match = i.getStringExtra("match");
         try {
             fakeMatch = match == null ? null : android.graphics.Color.parseColor(match);
@@ -404,6 +448,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
+     * Horizon v3's text blocks, from the views' real positions (in the picture's 960-wide units, 6 px of room around
+     * each), with each block's faintest text's alpha: the clock line, the top bar, the sport lines, the weather.
+     */
+    private java.util.List<HorizonBackground.Zone> textZones() {
+        java.util.List<HorizonBackground.Zone> out = new java.util.ArrayList<>();
+        int rw = root.getWidth();
+        if (rw <= 0) return out;
+        float k = 960f / rw;
+        zone(out, "clock line", R.id.leftBlock, 0.55f, k);
+        zone(out, "top bar", R.id.topButtons, 0.86f, k);
+        zone(out, "sport lines", R.id.sport, 0.45f, k);
+        zone(out, "weather", R.id.weather, 0.45f, k);
+        return out;
+    }
+
+    private void zone(java.util.List<HorizonBackground.Zone> out, String name, int id, float alpha, float k) {
+        View v = findViewById(id);
+        if (v == null || v.getVisibility() != View.VISIBLE || v.getWidth() == 0 || !v.isShown()) return;
+        int[] at = new int[2], r0 = new int[2];
+        v.getLocationInWindow(at);
+        root.getLocationInWindow(r0);
+        out.add(new HorizonBackground.Zone(name, (at[0] - r0[0]) * k - 6, (at[1] - r0[1]) * k - 6, v.getWidth() * k + 12, v.getHeight() * k + 12, alpha));
+    }
+
+    /**
      * The Horizon image for now: the sun's mood, the season, Bengaluru's sky and a live match from the lines, and any
      * personal day. A new image only when one of those changes; drawn off the main thread and swapped in whole.
      */
@@ -412,8 +481,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         HorizonBackground.Sky sky = fakeSky != null ? fakeSky : homeLines != null ? homeLines.sky() : HorizonBackground.Sky.CLEAR;
         Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
         Calendar now = lightTime();
-        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, match, days);
-        if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
+        String wx = fakeWx != null ? fakeWx : homeLines != null ? homeLines.skyWord() : null;
+        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, wx, match, days, textZones());
+        if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day, st.at, st.wx, st.zones, true);
         claimWeekend(now, st);
         if (!horizon.claim(st)) return;
         final HorizonBackground.State state = st;
@@ -443,6 +513,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onPause();
         resumed = false;
         handler.removeCallbacks(minuteTick);
+        if (homeLines != null) homeLines.pause();
     }
 
     @Override
@@ -648,35 +719,40 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
-     * The Wi-Fi pill: the signal's bars only, and the network's name only while the pill is focused. Offline and
-     * Ethernet are said in words at all times (no bars to show).
+     * The Wi-Fi pill (WifiPill): the signal's bars only, and the network's name only while the pill is focused;
+     * Ethernet in words; no network or no internet as "No internet" with an amber "!" on the bars, focused or not.
+     * Called from netWatch (the default network's callback), on the minute tick (the bars) and when Home appears.
      */
     private void updateWifiLabel() {
-        String text = getString(R.string.wifi);
-        boolean wifi = false;
+        String name = getString(R.string.wifi);
+        boolean connected = false, wifi = false, ethernet = false, validated = false;
         try {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             Network net = cm != null ? cm.getActiveNetwork() : null;
             NetworkCapabilities caps = net != null ? cm.getNetworkCapabilities(net) : null;
-            if (caps == null) {
-                text = getString(R.string.offline);
-            } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) {
-                text = getString(R.string.ethernet);
-            } else if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            if (caps != null) {
+                connected = true;
+                validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+                ethernet = caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET);
+                wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
+            }
+            if (wifi) {
                 WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                 WifiInfo info = wm != null ? wm.getConnectionInfo() : null;
                 String ssid = info != null ? info.getSSID() : null;
-                wifi = true;
                 if (info != null) wifiBars.setBars(WifiManager.calculateSignalLevel(info.getRssi(), 4));
                 if (ssid != null) {
                     ssid = ssid.replace("\"", "").trim();
-                    if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) text = ssid;
+                    if (!ssid.isEmpty() && !ssid.contains("unknown") && !ssid.equals("0x")) name = ssid;
                 }
+            } else {
+                wifiBars.setBars(0);
             }
         } catch (Exception ignored) {
         }
-        wifiName = text;
-        wifiIconOnly = wifi;
+        wifiName = name;
+        wifiState = fakeOffline ? WifiPill.State.NO_INTERNET : WifiPill.of(connected, wifi, ethernet, validated);
+        wifiBars.setAlert(WifiPill.alert(wifiState));
         showWifi(btnWifi.isFocused());
     }
 
@@ -689,9 +765,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnToday.setPaddingRelative(side, btnToday.getPaddingTop(), end, btnToday.getPaddingBottom());
     }
 
+    /** Inputs and Settings: icon only and square, the name beside the icon while focused (as the 1400 pill). */
+    private void showNamePill(TextView pill, String name, boolean focused) {
+        String want = focused ? name : "";
+        if (!want.contentEquals(pill.getText())) pill.setText(want);
+        int side = (int) ((focused ? 16 : 11) * density), end = (int) ((focused ? 20 : 11) * density);
+        pill.setCompoundDrawablePadding(focused ? (int) (9 * density) : 0);
+        pill.setPaddingRelative(side, pill.getPaddingTop(), end, pill.getPaddingBottom());
+    }
+
     private void showWifi(boolean focused) {
-        boolean iconOnly = wifiIconOnly && !focused;
-        String want = iconOnly ? "" : wifiName;
+        boolean iconOnly = WifiPill.iconOnly(wifiState, focused);
+        String want = WifiPill.label(wifiState, focused, wifiName, getString(R.string.ethernet), getString(R.string.no_internet));
         if (!want.contentEquals(btnWifi.getText())) btnWifi.setText(want);
         // an icon-only pill is as wide as it is tall: no gap for the missing text
         int side = (int) ((iconOnly ? 11 : 16) * density), end = (int) ((iconOnly ? 11 : 20) * density);

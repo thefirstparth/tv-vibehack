@@ -62,6 +62,20 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 07:00 | weather highlights (`97d3e73`) | short weekday, 2 rounds current → new | 632.5 ms (649, 616) | 92.5 ms (79–99, n=20) | 0% | 67.6 MB | **fail**: cold start +37.5 ms (allowed 20); Home return −1.0 ms, −3.2 MB; **not installed** |
 | 2026-10-20 07:17 | current (`4cec0f2`) | re-test, 3 rounds current → new, **5 cold starts a slot** | 588 ms (572–626, n=15) | 89.5 ms (82–106, n=30) | 0% | 67.4 MB | noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 07:17 | weather highlights (`97d3e73`) | re-test, 3 rounds current → new, **5 cold starts a slot** | 606 ms (574–618, n=15) | 88.5 ms (78–100, n=30) | 0% | 68.2 MB | **pass**: cold +18 ms (allowed 20), Home return −1.0 ms, +0.8 MB; p99 frame 9 vs 10 ms; installed 07:43 |
+| 2026-10-20 07:58 | current (weather highlights, `97d3e73`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 604 ms (584–616, n=10) | 92.5 ms (85–101, n=20) | 0% | 69.6 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 07:58 | our side stands out (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 593 ms (582–622, n=10) | 93.0 ms (84–109, n=20) | 0% | 68.9 MB | **pass**: Home return +0.5 ms, cold −11 ms, −0.6 MB; installed 08:16 |
+| 2026-10-20 08:21 | current (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 588.5 ms (569–617, n=10) | 95.5 ms (82–112, n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 08:21 | tabular digits (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600 ms (572–623, n=10) | 98.0 ms (84–111, n=20) | 0% | 67.4 MB | **pass**: Home return +2.5 ms, cold +11.5 ms, −2.1 MB; installed 08:39 |
+| 2026-10-20 08:57 | current (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 598.5 ms (579–612, n=10) | 99.5 ms (84–114, n=20) | 0% | 68.6 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 08:57 | icon-only top bar, Wi-Fi problems shown (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600.5 ms (579–635, n=10) | 97.0 ms (82–108, n=20) | 0% | 68.7 MB | **pass**: Home return −2.5 ms, cold +2 ms, +0.1 MB; installed 09:16 |
+| 2026-10-20 17:29 | current (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 609 ms (592–639, n=10) | 100.0 ms (75–109, n=20) | 0% | 68.4 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 17:29 | feed asked again while Home stays on screen (`9bb14ef`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 613 ms (592–633, n=10) | 97.0 ms (81–108, n=20) | 0.07% | 68.3 MB | **pass**: Home return −3 ms, cold +4 ms, janky +0.07 points, −0.1 MB; installed 17:48 |
+| 2026-10-20 19:22 | current (`9bb14ef`) | Horizon v3 at 960x540, CN, cut after 2 of 5 rounds, 5 cold starts a slot | 594.5 ms (n=10) | 99.5 ms (n=20) | 0% | 67.8 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 19:22 | Horizon v3, 960x540 (`a065555`) | same | 608 ms (n=10) | 94.0 ms (n=20) | 0% | 79.2 MB | **fail on memory only** (+11.4 MB, allowed 3); cut early to leave time for 480 |
+| 2026-10-20 19:41 | current (`9bb14ef`) | Horizon v3 at 480x270, full: CN x 5 after a restart, 5 cold starts a slot | 603 ms (n=25) | 97.0 ms (n=50) | 0% | 68.4 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 19:41 | Horizon v3, 480x270 (`a28b832`) | same | 603 ms (n=25) | 96.5 ms (n=50) | 0% | 66.6 MB | **pass**: Home return −0.5 ms, cold 0 ms, −1.8 MB; installed 20:22 |
+| 2026-10-20 21:33 | current (`a28b832`) | short weekday, 2 rounds current → new, 3 cold starts a slot | 607 ms (n=6) | 99.5 ms (n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 21:33 | quick re-ask, live-match rate (`e1cc510`) | same | 612.5 ms (n=6) | 99.0 ms (88–415, n=20) | 0% | 66.3 MB | **pass**: Home return −0.5 ms, cold +5.5 ms, −3.2 MB; one 415 ms return straight after an install; installed 21:51 |
 
 ## 2026-10-20
 
@@ -83,3 +97,24 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   +18 ms against the allowed 20 (close to the limit). The 07:00 short test's fail (+37.5 ms) came from two samples a
   build; one slot alone tonight ranged 572–626 ms. Installed with `pm install -r` at 07:43; Home, the dock, Inputs,
   Settings, voice and casting checked.
+- 07:58 short weekday A/B of "our side stands out" (`264f568`; the feed's new `ours`, house-of-1400 `638b1ff`): 2 rounds of
+  current → new after a restart, five cold starts a slot: **pass** on every point. Installed with `pm install -r` at
+  08:16; Home, the dock, Inputs, Settings, voice and casting checked.
+- 08:21 short weekday A/B of Outfit's tabular digits (`7fe2268`: `tnum` on the clock, the headline scores and the
+  THEN/LATER match text): **pass** on every point. Installed with `pm install -r` at 08:39; Home, the dock, Inputs,
+  Settings, voice and casting checked.
+- 08:57 short weekday A/B of the icon-only top bar (`1bfd00c`: Inputs and Settings icon only, the Wi-Fi pill's amber "!"
+  and "No internet" from one network callback): **pass** on every point. The TV was on the screensaver (idle), not in
+  use. Installed with `pm install -r` at 09:16; Home, the dock, Inputs, Settings, voice and casting checked, and on the
+  TV: Right walks 1400 → Inputs → Wi-Fi → Settings and stays, Down goes to the dock; all four pills icon only, no "!".
+- 17:29 short weekday A/B of the feed refresh (`9bb14ef`: while Home stays on screen, one more request a minute after a
+  saved copy, and every 15 minutes otherwise, on the existing minute tick): **pass** on every point. Installed with
+  `pm install -r` at 17:48; all checks passed; the TV's log shows each request (`HomeLines: feed asked: …`).
+- 19:22 Horizon v3 (the light from the approved mockup; Parth's brief): at 960x540 the A/B failed on memory alone (+11.4 MB
+  over 2 full rounds; Home return −5.5 ms, cold start +13.5 ms, janky 0%), so it was stopped there to leave time and the
+  picture switched to 480x270 as planned. 19:41 the full A/B (LESSONS.md: 5 alternating rounds after a restart, medians;
+  BENCHMARKS.md rule) passed on every point. Installed with `pm install -r` at 20:22; all checks passed. On the TV that
+  night the readability floor took the sport and weather blocks from 4.46 to 4.50 and 4.51:1 (4 shadow passes).
+- 21:33 short A/B of the quick re-ask (`e1cc510`: 8 s after an old or failed copy, twice at most; every 2 minutes during
+  a live match): **pass**. Trimmed for time at Parth's request: 3 cold starts a slot (n=6 a build), no emulator run, a
+  short check after the install (Home, Netflix, the request log). Installed with `pm install -r` at 21:51.

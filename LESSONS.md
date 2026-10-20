@@ -55,6 +55,15 @@ needs no account and gives real numbers.
 **Check every number for sense before letting a test run.** All ten Home returns reading exactly 227 ms meant the
 measurement was broken, not that the build was steady.
 
+**A bigger background picture costs more memory than its pixels.** Horizon v3's 960x540 picture measured +11.4 MB
+on the TV (the bitmap is 2 MB; the window's texture, the drawing's working arrays and the old picture while the new
+one is swapped in add the rest), against a 3 MB allowance; at 480x270, stretched to the screen as v2's always was, it
+measured −1.8 MB and looks the same from the sofa. Start a background at the smaller size.
+
+**Check a contrast target against the text it applies to.** 45%-white text tops out near 4.5:1 however dark the
+background gets (4.43:1 on pure black), so a 4.5:1 floor for it is only just reachable; the floor then darkens that
+block as far as it needs and no further (30 soft passes at most).
+
 **Decide the rules before you look at the numbers.** We wrote "keep it only if cold start is no more
 than 20 ms slower, Home return no slower, stutter and memory no worse" before testing. That made the
 keep-or-roll-back decision mechanical.

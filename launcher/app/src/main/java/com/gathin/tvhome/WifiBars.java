@@ -21,6 +21,9 @@ final class WifiBars extends Drawable {
     private final RectF arc = new RectF();
     private ColorStateList tint;
     private int bars;
+    /** A small amber "!" at the icon's lower right (no internet), in the weather alerts' amber; not tinted. */
+    private boolean alert;
+    private static final int AMBER = 0xFFFFB347;
 
     WifiBars(float density) {
         dp = density;
@@ -31,6 +34,12 @@ final class WifiBars extends Drawable {
     void setBars(int n) {
         if (n == bars) return;
         bars = n;
+        invalidateSelf();
+    }
+
+    void setAlert(boolean on) {
+        if (on == alert) return;
+        alert = on;
         invalidateSelf();
     }
 
@@ -48,6 +57,15 @@ final class WifiBars extends Drawable {
             arc.set(cx - r, base - r, cx + r, base + r);
             paint.setColor(i <= bars ? colour : (colour & 0x00FFFFFF) | 0x4D000000);
             c.drawArc(arc, 225, 90, false, paint);
+        }
+        if (alert) {
+            // below the arcs' right end, where the icon is empty: a short stroke and a dot
+            float x = getBounds().right - 2f * dp, bottom = getBounds().bottom;
+            paint.setColor(AMBER);
+            paint.setStrokeWidth(2.2f * dp);
+            c.drawLine(x, bottom - 10.5f * dp, x, bottom - 5f * dp, paint);
+            paint.setStyle(Paint.Style.FILL);
+            c.drawCircle(x, bottom - 1.6f * dp, 1.2f * dp, paint);
         }
     }
 
