@@ -513,6 +513,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onPause();
         resumed = false;
         handler.removeCallbacks(minuteTick);
+        if (homeLines != null) homeLines.pause();
     }
 
     @Override

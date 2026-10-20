@@ -183,10 +183,20 @@ final class HomeLines {
 
     /** When this screen last asked the feed (Refresh: when to ask again while Home stays on screen). */
     private long asked;
+    /** Quick tries made since the last good copy or Home appearance (Refresh.quickAgain), and the pending one. */
+    private int quickTries;
+    private final Runnable quick = () -> refresh("saved, 8 s");
 
     /** Each time the home screen appears: one request, on a background thread. */
     void refresh() {
+        quickTries = 0;
+        lines.removeCallbacks(quick);
         refresh("home");
+    }
+
+    /** Home has gone (an app, the screensaver): no pending quick try. */
+    void pause() {
+        lines.removeCallbacks(quick);
     }
 
     /** One request; why ("home", "saved", "15 min") goes in the log, so the TV can show when it asked. */
@@ -194,7 +204,7 @@ final class HomeLines {
         if (!enabled()) return;
         asked = System.currentTimeMillis();
         android.util.Log.i("HomeLines", "feed asked: " + why);
-        data.refresh(this::render);
+        data.refresh(this::answered);
     }
 
     /**
@@ -202,8 +212,22 @@ final class HomeLines {
      * one more request a minute after a saved copy (the site's cache answered with its old copy while it makes a fresh
      * one, or the request failed) and every 15 minutes otherwise.
      */
+    /** An answer is in: drawn; after an old or failed copy, one more request soon (twice at most), else the count resets. */
+    private void answered() {
+        render();
+        if (Refresh.quickAgain(data.saved(), quickTries)) {
+            quickTries++;
+            lines.removeCallbacks(quick);
+            lines.postDelayed(quick, Refresh.QUICK_MS);
+        } else if (!data.saved()) {
+            quickTries = 0;
+        }
+    }
+
     void tick() {
-        if (enabled() && Refresh.due(System.currentTimeMillis(), asked, data.saved())) refresh(data.saved() ? "saved" : "15 min");
+        long now = System.currentTimeMillis();
+        boolean live = data.value() != null && data.liveItem(now) != null;
+        if (enabled() && Refresh.due(now, asked, data.saved(), live)) refresh(data.saved() ? "saved" : live ? "2 min, live" : "15 min");
         render();
     }
 

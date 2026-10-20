@@ -29,4 +29,20 @@ public class RefreshTest {
         assertFalse(Refresh.due(T, 0, true));
         assertFalse(Refresh.due(T, 0, false));
     }
+
+    @Test
+    public void aLiveMatchIsAskedForEveryTwoMinutes() {
+        assertFalse(Refresh.due(T + MIN, T, false, true));
+        assertTrue(Refresh.due(T + 2 * MIN, T, false, true));
+        assertFalse(Refresh.due(T + 2 * MIN, T, false, false));
+    }
+
+    @Test
+    public void anOldCopyIsAskedForAgainSoonTwiceAtMost() {
+        assertTrue(Refresh.quickAgain(true, 0));
+        assertTrue(Refresh.quickAgain(true, 1));
+        assertFalse(Refresh.quickAgain(true, 2));
+        assertFalse(Refresh.quickAgain(false, 0));
+        assertTrue(Refresh.QUICK_MS == 8_000L);
+    }
 }
