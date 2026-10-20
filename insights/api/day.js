@@ -2,6 +2,8 @@ import { tvAllowed } from "../lib/auth.js";
 import { cleanDay, MAX_BYTES, monthPath, withDay } from "../lib/day.js";
 import { archiveDay, readMonth, writeMonth, writeStatus } from "../lib/store.js";
 
+export const START = "2026-10-21";
+
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.
 // First the day is archived as it arrived (never overwritten), then merged into its month file. A resend never
 // replaces a fuller copy with an emptier one (withDay). If the month can't be read cleanly, nothing is written and
@@ -20,6 +22,9 @@ export async function POST(request) {
   } catch (e) {
     return refuse(400, String(e.message ?? e).slice(0, 60));
   }
+  // The record starts on 21 Oct 2026 (Parth, 21 Oct): earlier days the TV still has (Android's usage stats) are full of
+  // the A/B tests that night and are taken as sent but not kept, so the TV doesn't try them again or call it a failure.
+  if (day.date < START) return Response.json({ ok: true, date: day.date, kept: false }, { headers: { "cache-control": "no-store" } });
   day.received = new Date().toISOString();   // the page's "Updated" line
   try {
     await archiveDay(day);
