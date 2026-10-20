@@ -66,6 +66,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 07:58 | our side stands out (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 593 ms (582–622, n=10) | 93.0 ms (84–109, n=20) | 0% | 68.9 MB | **pass**: Home return +0.5 ms, cold −11 ms, −0.6 MB; installed 08:16 |
 | 2026-10-20 08:21 | current (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 588.5 ms (569–617, n=10) | 95.5 ms (82–112, n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 08:21 | tabular digits (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600 ms (572–623, n=10) | 98.0 ms (84–111, n=20) | 0% | 67.4 MB | **pass**: Home return +2.5 ms, cold +11.5 ms, −2.1 MB; installed 08:39 |
+| 2026-10-20 08:57 | current (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 598.5 ms (579–612, n=10) | 99.5 ms (84–114, n=20) | 0% | 68.6 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 08:57 | icon-only top bar, Wi-Fi problems shown (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600.5 ms (579–635, n=10) | 97.0 ms (82–108, n=20) | 0% | 68.7 MB | **pass**: Home return −2.5 ms, cold +2 ms, +0.1 MB; installed 09:16 |
 
 ## 2026-10-20
 
@@ -93,3 +95,7 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - 08:21 short weekday A/B of Outfit's tabular digits (`7fe2268`: `tnum` on the clock, the headline scores and the
   THEN/LATER match text): **pass** on every point. Installed with `pm install -r` at 08:39; Home, the dock, Inputs,
   Settings, voice and casting checked.
+- 08:57 short weekday A/B of the icon-only top bar (`1bfd00c`: Inputs and Settings icon only, the Wi-Fi pill's amber "!"
+  and "No internet" from one network callback): **pass** on every point. The TV was on the screensaver (idle), not in
+  use. Installed with `pm install -r` at 09:16; Home, the dock, Inputs, Settings, voice and casting checked, and on the
+  TV: Right walks 1400 → Inputs → Wi-Fi → Settings and stays, Down goes to the dock; all four pills icon only, no "!".

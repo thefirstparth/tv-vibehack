@@ -129,6 +129,11 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     **Tabular digits** (`7fe2268`, on the TV since 08:39): Outfit's `tnum` for the clock and the sport scores, so
     they keep their width as the digits change. Passed its short A/B. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-ours-264f568.apk`.
+    **Icon-only top bar** (`1bfd00c`, on the TV since 09:16): Inputs and Settings show only their icon, the name
+    while focused (as the 1400 and Wi-Fi pills); with no network or no internet the Wi-Fi icon gets an amber "!" and
+    the pill says "No internet" until the connection is back (one network callback, no polling). Passed its short
+    A/B. The no-internet look was checked on the emulator only (with the launch extra `net=offline`): cutting the
+    TV's Wi-Fi would also cut ADB. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-tnum-7fe2268.apk`.
 
 Check the live state any time:
 
