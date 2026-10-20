@@ -140,6 +140,14 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     4:51 pm" at 5:18). Now one more request comes a minute after a saved copy and every 15 minutes otherwise, on the
     minute tick, only while Home is in front. Each request is logged: `logcat -s HomeLines:I`. Passed its short A/B.
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-topbar-1bfd00c.apk`.
+11. **Horizon v3 is the home screen's light** (`a28b832`, on the TV since 20:22 on 20 Oct; spec and approved mockup in
+    [horizon-v3/](horizon-v3/README.md)): the light follows the real sun and moon, the moon as light only, 909 stars
+    and the Milky Way at night, the feed's new `sky` for Bengaluru (house-of-1400 `067cdea`), grain, and a readability
+    floor (4.5:1 for each block's faintest text, with a soft shadow where needed). The picture is 480x270: at 960x540
+    the A/B failed on memory (+11.4 MB). It passed the full A/B at 480x270 ([BENCHMARKS.md](BENCHMARKS.md)). Not in
+    this build: meteors, the match ribbon, the after-match glows. The floor's figures are logged:
+    `logcat -s Horizon:I`. Undo: `pm install -r` of `backup/launcher-builds/tvhome-on-tv-before-horizon3.apk` (the
+    build before, `9bb14ef`).
 
 Check the live state any time:
 

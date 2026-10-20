@@ -70,6 +70,10 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 08:57 | icon-only top bar, Wi-Fi problems shown (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600.5 ms (579–635, n=10) | 97.0 ms (82–108, n=20) | 0% | 68.7 MB | **pass**: Home return −2.5 ms, cold +2 ms, +0.1 MB; installed 09:16 |
 | 2026-10-20 17:29 | current (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 609 ms (592–639, n=10) | 100.0 ms (75–109, n=20) | 0% | 68.4 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 17:29 | feed asked again while Home stays on screen (`9bb14ef`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 613 ms (592–633, n=10) | 97.0 ms (81–108, n=20) | 0.07% | 68.3 MB | **pass**: Home return −3 ms, cold +4 ms, janky +0.07 points, −0.1 MB; installed 17:48 |
+| 2026-10-20 19:22 | current (`9bb14ef`) | Horizon v3 at 960x540, CN, cut after 2 of 5 rounds, 5 cold starts a slot | 594.5 ms (n=10) | 99.5 ms (n=20) | 0% | 67.8 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 19:22 | Horizon v3, 960x540 (`a065555`) | same | 608 ms (n=10) | 94.0 ms (n=20) | 0% | 79.2 MB | **fail on memory only** (+11.4 MB, allowed 3); cut early to leave time for 480 |
+| 2026-10-20 19:41 | current (`9bb14ef`) | Horizon v3 at 480x270, full: CN x 5 after a restart, 5 cold starts a slot | 603 ms (n=25) | 97.0 ms (n=50) | 0% | 68.4 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 19:41 | Horizon v3, 480x270 (`a28b832`) | same | 603 ms (n=25) | 96.5 ms (n=50) | 0% | 66.6 MB | **pass**: Home return −0.5 ms, cold 0 ms, −1.8 MB; installed 20:22 |
 
 ## 2026-10-20
 
@@ -104,3 +108,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - 17:29 short weekday A/B of the feed refresh (`9bb14ef`: while Home stays on screen, one more request a minute after a
   saved copy, and every 15 minutes otherwise, on the existing minute tick): **pass** on every point. Installed with
   `pm install -r` at 17:48; all checks passed; the TV's log shows each request (`HomeLines: feed asked: …`).
+- 19:22 Horizon v3 (the light from the approved mockup; Parth's brief): at 960x540 the A/B failed on memory alone (+11.4 MB
+  over 2 full rounds; Home return −5.5 ms, cold start +13.5 ms, janky 0%), so it was stopped there to leave time and the
+  picture switched to 480x270 as planned. 19:41 the full A/B (LESSONS.md: 5 alternating rounds after a restart, medians;
+  BENCHMARKS.md rule) passed on every point. Installed with `pm install -r` at 20:22; all checks passed. On the TV that
+  night the readability floor took the sport and weather blocks from 4.46 to 4.50 and 4.51:1 (4 shadow passes).
