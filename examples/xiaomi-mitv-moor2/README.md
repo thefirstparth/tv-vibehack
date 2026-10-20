@@ -157,7 +157,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     judging each against the old value): colour temperature `2` → `3` (warmer white: the TV's gains went from
     R1034/G1024/B1019 to R1055/G959/B833), saturation `50` → `55`, contrast `50` → `56`. Everything else as before:
     picture mode `0`, brightness 50, backlight 80, sharpness 10, hue 0, motion smoothing (MEMC) off, noise reduction
-    and MPEG noise reduction off, AI super-resolution on (3). Settings made from the computer may not survive a
+    and MPEG noise reduction off. Later that night (Parth's choice): AI super-resolution `3` → `2`
+    (`tv_picture_video_aisr`, less sharpening when upscaling) and black stretch `0` → `1` (`picture_black_stretch`, on).
+    Contrast read 55, not 56, at 01:40 (changed outside these commands, probably in the TV's menu); left as it was. Settings made from the computer may not survive a
     restart; if the picture changes after one, set them again (Undo has the lines; the new values instead of the
     old). Don't change **brightness** for "more life": at 80 it greyed the blacks (tried 21 Oct, rolled back).
     Undo: see "The picture settings" under Undo.
@@ -217,6 +219,8 @@ The picture settings (Current state, item 13), back to how they were before 21 O
 $T 'settings put global picture_color_temperature 2'
 $T 'settings put global picture_saturation 50'
 $T 'settings put global picture_contrast 50'
+$T 'settings put global tv_picture_video_aisr 3'
+$T 'settings put global picture_black_stretch 0'
 ```
 
 Everything back to stock, debloat included: run the three lines above, then
