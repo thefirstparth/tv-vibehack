@@ -44,3 +44,15 @@ export async function readStatus() {
     return null;
   }
 }
+
+/** Parth's settings from the page (the electricity rate, the TV's draw): settings.json, or null. */
+export async function readSettings() {
+  const { get } = await import("@vercel/blob");
+  const r = await get("settings.json", { access: "private", useCache: false });
+  return r?.stream ? await new Response(r.stream).json() : null;
+}
+
+export async function writeSettings(obj) {
+  const { put } = await import("@vercel/blob");
+  return put("settings.json", JSON.stringify(obj), { access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json" });
+}

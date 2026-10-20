@@ -2,7 +2,7 @@
 // background for next time (so a stalled connection never holds the page up). The days: from the network first, the
 // kept copy if that fails or stalls for 8 s. Sign-in is never cached. The days live only in this phone's cache and in
 // the page's own storage.
-const CACHE = "tv-insights-v3";
+const CACHE = "tv-insights-v4";
 const SHELL = ["/", "/app.js", "/calc.js", "/app.css", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));
@@ -13,7 +13,7 @@ const stalls = ms => new Promise((_, no) => setTimeout(() => no(new Error("stall
 
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.pathname.startsWith("/api/login")) return;
+  if (e.request.method !== "GET" || url.pathname.startsWith("/api/login") || url.pathname.startsWith("/api/export")) return;
   const fonts = url.host === "fonts.googleapis.com" || url.host === "fonts.gstatic.com";
   if (url.origin !== location.origin && !fonts) return;
   const key = url.pathname === "/" || url.pathname === "/index.html" ? "/" : e.request;

@@ -349,7 +349,38 @@ function exampleDays() {
 
 tabs.onclick = e => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
 fresh.onclick = () => { fresh.textContent = "Refreshing…"; load(false); };
-document.getElementById("aboutBtn").onclick = () => document.getElementById("about").showModal();
+// ---- settings ----------------------------------------------------------------------------------------------------
+const sheet = document.getElementById("settings"), energyForm = document.getElementById("energyForm");
+function toast(text) {
+  const t = document.getElementById("toast");
+  t.textContent = text;
+  t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => (t.hidden = true), 4000);
+}
+document.getElementById("settingsBtn").onclick = () => {
+  energyForm.rate.value = (data?.rate ?? 6.7).toFixed(2);
+  energyForm.watts.value = data?.watts ?? 95;
+  sheet.showModal();
+};
+energyForm.onsubmit = async e => {
+  e.preventDefault();
+  const body = { rate: energyForm.rate.value, watts: energyForm.watts.value };
+  const r = await fetch("/api/settings", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+  const j = r ? await r.json().catch(() => ({})) : {};
+  if (!r?.ok) return toast(j.error || "Couldn't save: no connection. Try again.");
+  if (data) { data.rate = j.rate; data.watts = j.watts; if (!example) store.set("tv-days", data); }
+  sheet.close();
+  draw(false);
+  toast(`Saved: ₹${j.rate.toFixed(2)} a unit, ${j.watts} W.`);
+};
+document.getElementById("signOut").onclick = async () => {
+  await fetch("/api/logout", { method: "POST" }).catch(() => {});
+  try { localStorage.removeItem("tv-days"); } catch {}
+  data = null;
+  sheet.close();
+  signin("Signed out of this phone.");
+};
 window.addEventListener("hashchange", () => { const r = route(); view = r.view; date = r.date; if (r.period) period = r.period; draw(true); });
 window.addEventListener("online", () => load(false));
 window.addEventListener("offline", topLine);

@@ -20,7 +20,7 @@
 <header class="top" id="top">
   <span class="logo">TV</span>
   <button class="fresh" id="fresh" type="button">Loading…</button>
-  <button class="icon" id="aboutBtn" type="button" aria-label="About and privacy"><span aria-hidden="true">i</span></button>
+  <button class="icon" id="settingsBtn" type="button" aria-label="Settings"><span aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.7 7.7 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.7 7.7 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.7 7.7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.7 7.7 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></span></button>
 </header>
 <main id="main"><section class="card" aria-busy="true"><div class="skeleton" style="width:30%"></div><div class="skeleton" style="width:70%;height:30px"></div>
   <div class="skeleton" style="width:50%;height:56px"></div><div class="skeleton" style="height:46px"></div></section></main>
@@ -32,8 +32,21 @@
   <button type="button" data-view="insights">Insights</button>
   <button type="button" data-view="speed">Speed</button>
 </nav>
-<dialog id="about" aria-labelledby="aboutTitle">
-  <h2 id="aboutTitle">About and privacy</h2>
+<dialog id="settings" aria-labelledby="settingsTitle">
+  <h2 id="settingsTitle">Settings</h2>
+  <form id="energyForm">
+    <h3>Electricity</h3>
+    <label>Rate, ₹ per unit (1 unit = 1 kWh)<input name="rate" type="number" inputmode="decimal" step="0.01" min="0" max="50" required></label>
+    <label>The TV's power, in watts<input name="watts" type="number" inputmode="numeric" step="1" min="10" max="500" required></label>
+    <p class="note">From your BESCOM bill: the total divided by the units. The cost on every page uses these.</p>
+    <button class="primary" type="submit">Save</button>
+  </form>
+  <h3>Your data</h3>
+  <a class="secondary" href="/api/export" download>Download everything (JSON)</a>
+  <a class="secondary" href="/api/export?for=ai" download>Download for an AI (text, with a prompt)</a>
+  <p class="note">Every day kept so far, with what each field means. The "for an AI" file starts with a request to look for
+    patterns, waste and things to fix; paste it into Claude or a similar assistant.</p>
+  <h3>About and privacy</h3>
   <p>Each morning the living-room TV sends one summary of the day before. It holds: when the screen was on; which apps
     were open, when and for how long; how fast its home screen opened; how often the sport and weather came in late;
     restarts, free memory and storage, Wi-Fi drops; which version of the home screen it runs; and any trouble it had
@@ -42,8 +55,10 @@
     Nothing is deleted. This page keeps the last copy on your phone so it opens offline, and one cookie keeps you signed
     in for a year. No analytics. The fonts come from Google Fonts.</p>
   <p id="aboutEnergy">Energy is an estimate: hours on times a typical 95 W, not a meter reading. The cost uses about ₹6.70 a unit (1 unit = 1 kWh).</p>
+  <button class="secondary" id="signOut" type="button">Sign out of this phone</button>
   <form method="dialog"><button class="primary">Close</button></form>
 </dialog>
+<p class="toast" id="toast" role="status" hidden></p>
 <script type="module" src="/app.js"></script>
 </body>
 </html>

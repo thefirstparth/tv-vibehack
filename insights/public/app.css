@@ -144,4 +144,12 @@ dialog p { color: var(--ink2); }
 .up { color: var(--green); } .down { color: var(--red); }
 .exampleBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--tang); color: var(--ink); font-weight: 700; font-size: .78rem; border-radius: 12px; padding: 4px 4px 4px 12px; margin: 0 0 10px; }
 .exampleBar button { min-height: 40px; border: 0; border-radius: 9px; background: var(--surface); font-weight: 700; padding: 0 12px; }
+.secondary { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 48px; border-radius: 12px; border: .5px solid var(--line2); background: var(--sunk); color: var(--ink); font-weight: 700; text-decoration: none; margin: 8px 0 0; }
+dialog h3 { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 18px 0 6px; }
+dialog label { display: block; font-size: .78rem; color: var(--ink2); margin: 8px 0 0; }
+dialog input { display: block; width: 100%; font: inherit; font-size: 1rem; padding: 10px 12px; min-height: 46px; border-radius: 12px; border: .5px solid var(--line2); background: var(--bg); color: var(--ink); margin-top: 4px; }
+dialog { max-height: 88vh; overflow: auto; }
+dialog form[method="dialog"] { margin-top: 14px; }
+.toast { position: fixed; left: 16px; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); max-width: 528px; margin: 0 auto; z-index: 9; background: var(--ink); color: var(--surface); padding: 12px 14px; border-radius: 12px; font-weight: 600; }
+.toast[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }
