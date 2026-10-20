@@ -270,8 +270,16 @@ Nothing here blocks using the TV. Pick up any of it later.
   (16:50:18) and restarted it; the remote reconnected at 16:50:22. So the chip had stopped listening for the remote
   during standby: a firmware/driver fault in the TV, not the launcher or the debloat (it predates both; no disabled
   package touches Bluetooth or wake). The firmware clears its logs on boot, so earlier cases can't be read back.
-  Options, none applied yet: check for a Xiaomi system update; fresh remote batteries; re-pair the remote; a longer
-  or "never" auto-standby (fewer self-standbys, more power); a nightly restart.
+  Read in Xiaomi's power service (`services.jar`, disassembled on the Mac): Bluetooth is switched off on every quick
+  standby, with no setting to keep it on, so waking on the remote is the chip's job alone; after 30 quick standbys
+  (`persist.sys.max_str_count`, default 30) the TV restarts fully instead (likely the 13:42 boot). Related settings,
+  recorded and not changed: `global mitv_go_suspend=1`, `go_to_str_direct=1`, `sleep_mode_mitv_go_suspend=1`,
+  `persist.vendor.wow=0` (wake on Wi-Fi off), `hdmi_control_auto_wakeup_enabled=0`, `secure sleep_timeout=1800000`.
+  Options, none applied yet: a Xiaomi system update (the only fix to the chip itself); fresh remote batteries;
+  re-pair the remote; a test, with Parth and the remote, of the power button doing a full shutdown instead
+  (`mitv_go_suspend=0`; undo `settings put global mitv_go_suspend 1`): slower to turn on, and whether the remote can
+  then turn it on is unknown. A longer auto-standby was considered and not recommended (it only changes how often
+  the TV sleeps by itself; the remote's power button uses the same standby).
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).
