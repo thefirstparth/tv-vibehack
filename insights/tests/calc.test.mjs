@@ -38,3 +38,27 @@ test("the last seven days reach back into the month before", () => {
   assert.deepEqual(lastDays(days, "2026-10-21", 7).map(d => d.date), ["2026-10-20", "2026-10-21"]);
   assert.deepEqual(lastDays(days, "2026-10-21", 22).map(d => d.date), ["2026-09-30", "2026-10-20", "2026-10-21"]);
 });
+
+test("a day's strip: on time first, apps on top in their colours", async () => {
+  const { strip, colourOf, OTHER } = await import("../public/calc.js");
+  const s = strip({ on: { spans: [["19:40", "23:59"]] }, apps: [{ pkg: "com.sonyliv", spans: [["19:40", "20:39"]] }] });
+  assert.equal(s.length, 2);
+  assert.equal(s[0].colour, OTHER);
+  assert.ok(Math.abs(s[0].left - (1180 / 1440) * 100) < 1e-9);
+  assert.ok(Math.abs(s[0].width - (260 / 1440) * 100) < 1e-9, "to the end of the day");
+  assert.equal(s[1].colour, "#1d1d1d");
+  assert.ok(Math.abs(s[1].width - (60 / 1440) * 100) < 1e-9);
+  assert.equal(colourOf("com.example.x"), colourOf("com.example.x"), "the same colour every time");
+});
+
+test("ages are never rounded up, and a day over 30 h old is late", async () => {
+  const { ago, freshness } = await import("../public/calc.js");
+  assert.equal(ago(26_900), "26 s");
+  assert.equal(ago(5 * 60_000 + 59_000), "5 min");
+  assert.equal(ago(3 * 3600_000 + 3599_000), "3 h");
+  assert.equal(ago(50 * 3600_000), "2 days");
+  const now = Date.parse("2026-10-22T10:00:00Z");
+  assert.equal(freshness([{ received: "2026-10-22T04:00:00Z" }], now).late, false);
+  assert.equal(freshness([{ received: "2026-10-21T03:00:00Z" }], now).late, true);
+  assert.equal(freshness([{}], now), null);
+});

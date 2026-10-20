@@ -43,6 +43,11 @@ test("a resent day replaces its earlier copy, days stay in order", () => {
   assert.equal(monthPath("2026-10-21"), "months/2026-10.json");
 });
 
+test("an app's stretches on screen are kept when well formed", () => {
+  const d = cleanDay({ ...DAY, apps: [{ pkg: "com.sonyliv", minutes: 85, spans: [["19:40", "21:05"], ["9pm", "10pm"]] }] });
+  assert.deepEqual(d.apps[0].spans, [["19:40", "21:05"]]);
+});
+
 test("the last months go back across a year", () => {
   assert.deepEqual(lastMonths("2026-02", 3), ["2026-02", "2026-01", "2025-12"]);
 });

@@ -14,6 +14,7 @@ export async function POST(request) {
   } catch (e) {
     return Response.json({ error: String(e.message ?? e).slice(0, 60) }, { status: 400 });
   }
+  day.received = new Date().toISOString();   // the page's "Updated" line
   const path = monthPath(day.date);
   await writeMonth(path, withDay(await readMonth(path), day));
   return Response.json({ ok: true, date: day.date }, { headers: { "cache-control": "no-store" } });

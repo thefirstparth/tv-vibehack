@@ -31,6 +31,8 @@ final class UsageDay {
         final String pkg;
         long ms;
         int opens;
+        /** When it was on screen, [start, end] in ms; stretches under a minute are left out (ms still counts them). */
+        final List<long[]> spans = new ArrayList<>();
 
         App(String pkg) {
             this.pkg = pkg;
@@ -107,7 +109,13 @@ final class UsageDay {
         Long s = since.remove(pkg);
         if (s == null || !counted(pkg)) return;
         long from = Math.max(s, start);
-        if (t > from) apps.computeIfAbsent(pkg, App::new).ms += t - from;
+        if (t <= from) return;
+        App a = apps.computeIfAbsent(pkg, App::new);
+        a.ms += t - from;
+        if (t - from < 60_000) return;
+        long[] last = a.spans.isEmpty() ? null : a.spans.get(a.spans.size() - 1);
+        if (last != null && from - last[1] < 60_000) last[1] = t;   // back within a minute: one stretch
+        else a.spans.add(new long[]{from, t});
     }
 
     private void span(long from, long to, long start) {

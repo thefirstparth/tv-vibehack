@@ -46,6 +46,9 @@ public class DiaryTest {
         assertEquals(120 * MIN, d.apps.get(0).ms);
         assertEquals(1, d.apps.get(0).opens);
         assertEquals(30 * MIN, d.apps.get(1).ms);   // closed by the screen going off
+        assertEquals(1, d.apps.get(0).spans.size());   // the second activity didn't split the stretch
+        assertEquals(at(21, 19, 1), d.apps.get(0).spans.get(0)[0]);
+        assertEquals(at(21, 21, 1), d.apps.get(0).spans.get(0)[1]);
         assertEquals(151 * MIN, d.onMs);
         assertEquals(1, d.on.size());
     }
@@ -85,7 +88,7 @@ public class DiaryTest {
         tv.uptimeH = 30;
         String j = DaySummary.json("2026-10-21", "e1cc510", diary, u, names, tv, IST);
         assertTrue(j, j.startsWith("{\"v\":1,\"date\":\"2026-10-21\",\"build\":\"e1cc510\",\"on\":{\"minutes\":60,\"spans\":[[\"19:00\",\"19:59\"]]}"));
-        assertTrue(j, j.contains("{\"pkg\":\"com.sonyliv\",\"name\":\"Sony \\\"LIV\\\"\",\"minutes\":60,\"opens\":1}"));
+        assertTrue(j, j.contains("{\"pkg\":\"com.sonyliv\",\"name\":\"Sony \\\"LIV\\\"\",\"minutes\":60,\"opens\":1,\"spans\":[[\"19:00\",\"19:59\"]]}"));
         assertTrue(j, j.contains("\"home\":{\"opens\":3,\"median_ms\":120,\"p90_ms\":400,\"max_ms\":400,\"slow\":2}"));
         assertTrue(j, j.contains("\"cold\":{\"count\":1,\"median_ms\":610}"));
         assertTrue(j, j.contains("\"feed\":{\"asks\":2,\"fresh\":1,\"old\":1}"));

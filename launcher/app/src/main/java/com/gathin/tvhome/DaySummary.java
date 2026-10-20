@@ -69,7 +69,17 @@ final class DaySummary {
                 String name = names == null ? null : names.get(a.pkg);
                 s.append("{\"pkg\":").append(q(a.pkg));
                 if (name != null) s.append(",\"name\":").append(q(name));
-                s.append(",\"minutes\":").append(Math.round(a.ms / 60000.0)).append(",\"opens\":").append(a.opens).append('}');
+                s.append(",\"minutes\":").append(Math.round(a.ms / 60000.0)).append(",\"opens\":").append(a.opens);
+                if (!a.spans.isEmpty()) {
+                    s.append(",\"spans\":[");
+                    for (int i = 0; i < a.spans.size() && i < 24; i++) {
+                        long[] p = a.spans.get(i);
+                        if (i > 0) s.append(',');
+                        s.append('[').append(q(hm.format(Instant.ofEpochMilli(p[0])))).append(',').append(q(hm.format(Instant.ofEpochMilli(p[1] - 1)))).append(']');
+                    }
+                    s.append(']');
+                }
+                s.append('}');
             }
             s.append(']');
         }

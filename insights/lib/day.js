@@ -4,10 +4,13 @@
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HM = /^\d{2}:\d{2}$/;
 const PKG = /^[A-Za-z0-9_.]{1,120}$/;
-export const MAX_BYTES = 16 * 1024;
+export const MAX_BYTES = 32 * 1024;   // 40 apps with 24 stretches each fits
 
 const int = (v, max) => (Number.isFinite(+v) ? Math.max(0, Math.min(max, Math.round(+v))) : null);
 const text = (v, max) => (typeof v === "string" ? v.replace(/[\u0000-\u001f]/g, "").slice(0, max) : null);
+/** [["19:40","21:05"], ...] kept as given when well formed; anything else left out. */
+const spans = (list, max) =>
+  Array.isArray(list) ? list.filter(s => Array.isArray(s) && HM.test(s[0]) && HM.test(s[1])).slice(0, max).map(s => [s[0], s[1]]) : null;
 const drop = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined));
 
 /** The stored day, or throws Error with a short reason. */
@@ -19,16 +22,13 @@ export function cleanDay(input) {
   d.build = text(input.build, 40);
   d.sent = text(input.sent, 40);
   if (input.on && typeof input.on === "object") {
-    const spans = Array.isArray(input.on.spans)
-      ? input.on.spans.filter(s => Array.isArray(s) && HM.test(s[0]) && HM.test(s[1])).slice(0, 48).map(s => [s[0], s[1]])
-      : [];
-    d.on = drop({ minutes: int(input.on.minutes, 1440), spans });
+    d.on = drop({ minutes: int(input.on.minutes, 1440), spans: spans(input.on.spans, 48) ?? [] });
   }
   if (Array.isArray(input.apps)) {
     d.apps = input.apps
       .filter(a => a && PKG.test(a.pkg ?? ""))
       .slice(0, 40)
-      .map(a => drop({ pkg: a.pkg, name: text(a.name, 60), minutes: int(a.minutes, 1440), opens: int(a.opens, 10000) }))
+      .map(a => drop({ pkg: a.pkg, name: text(a.name, 60), minutes: int(a.minutes, 1440), opens: int(a.opens, 10000), spans: spans(a.spans, 24) }))
       .filter(a => a.minutes != null);
   }
   if (input.home && typeof input.home === "object") {
