@@ -159,7 +159,11 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     picture mode `0`, brightness 50, backlight 80, sharpness 10, hue 0, motion smoothing (MEMC) off, noise reduction
     and MPEG noise reduction off. Later that night (Parth's choice): AI super-resolution `3` → `2`
     (`tv_picture_video_aisr`, less sharpening when upscaling) and black stretch `0` → `1` (`picture_black_stretch`, on).
-    Contrast read 55, not 56, at 01:28 (changed outside these commands, probably in the TV's menu); left as it was. Settings made from the computer may not survive a
+    Contrast 55, not 56: Parth set it in the TV's menu (01:28).
+    **Every picture setting (90) is saved** in `picture/2026-10-21-tuned.txt` (this look) and
+    `picture/before-2026-10-21.txt` (as it was before that night). `tools/picture.sh diff <file>` shows what differs on
+    the TV, `tools/picture.sh restore <file>` sets back only what differs and checks it, and `tools/picture.sh save
+    <file>` saves a new one. Settings made from the computer may not survive a
     restart; if the picture changes after one, set them again (Undo has the lines; the new values instead of the
     old). Don't change **brightness** for "more life": at 80 it greyed the blacks (tried 21 Oct, rolled back).
     Undo: see "The picture settings" under Undo.
@@ -213,7 +217,8 @@ $T 'settings put system screen_off_timeout 600000'
 $T 'settings put secure sleep_timeout 1800000'
 ```
 
-The picture settings (Current state, item 13), back to how they were before 21 Oct:
+The picture settings (Current state, item 13), back to how they were before 21 Oct, all 90 at once:
+`tools/picture.sh restore examples/xiaomi-mitv-moor2/picture/before-2026-10-21.txt`, or just the ones changed:
 
 ```bash
 $T 'settings put global picture_color_temperature 2'
