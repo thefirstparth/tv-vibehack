@@ -148,6 +148,11 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     this build: meteors, the match ribbon, the after-match glows. The floor's figures are logged:
     `logcat -s Horizon:I`. Undo: `pm install -r` of `backup/launcher-builds/tvhome-on-tv-before-horizon3.apk` (the
     build before, `9bb14ef`).
+12. **Quicker feed re-asks** (`e1cc510`, on the TV since 21:51 on 20 Oct): after an old or failed copy the home screen
+    asks again 8 s later (twice at most) instead of on the next minute tick, so "as of" clears within about 10 s of
+    waking the TV or pressing Home (it took about a minute at 9:21 pm); while a match is live the feed is asked every
+    2 minutes instead of 15. Passed its short A/B. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-horizon3-480-a28b832.apk`.
 
 Check the live state any time:
 
