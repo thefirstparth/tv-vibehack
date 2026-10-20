@@ -35,6 +35,8 @@ import java.util.Locale;
 final class HomeLines {
 
     private static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF;
+    /** The weather highlights (mockup option 5): the warmest and coolest temperature tinted, the extremes lit. */
+    private static final int WARM_TINT = 0xFFFFDCBF, COOL_TINT = 0xFFCFE2FF, LIT = 0xE0FFFFFF;
     /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to 31 sp. */
     private static final float HEAD_SP = 44f;
 
@@ -48,6 +50,9 @@ final class HomeLines {
     /** THEN and LATER rows: label, time, match, competition (columns lined up across the two rows). */
     private final TextView[][] thenCells;
     private final LinearLayout weatherCols;
+    /** Which cities to pick out, worked out once per weather list from the feed (not on every redraw). */
+    private JSONArray extremesFor;
+    private WeatherExtremes extremes = WeatherExtremes.NONE;
     private final Drawable dot;
 
     /** The competition's colour (res/values/config.xml, accent_colours): by competition, short form, then sport. */
@@ -382,6 +387,10 @@ final class HomeLines {
             weatherCols.addView(col);
         }
         while (weatherCols.getChildCount() > list.length()) weatherCols.removeViewAt(weatherCols.getChildCount() - 1);
+        if (list != extremesFor) {
+            extremesFor = list;
+            extremes = extremesOf(list);
+        }
         String asOf = null;
         int widest = 0;
         for (int i = 0; i < list.length(); i++) {
@@ -392,13 +401,17 @@ final class HomeLines {
             TextView temp = col.findViewById(R.id.temp), feels = col.findViewById(R.id.feels), hilo = col.findViewById(R.id.hilo), word = col.findViewById(R.id.word);
             temp.setText(c.has("now") ? degrees(c.optInt("now")) : "");
             temp.setVisibility(c.has("now") ? View.VISIBLE : View.GONE);
+            temp.setTextColor(i == extremes.warmest ? WARM_TINT : i == extremes.coolest ? COOL_TINT : WHITE);
             feels.setText(c.has("feels") ? "Feels " + c.optInt("feels") + "°" : "");
             feels.setVisibility(c.has("feels") ? View.VISIBLE : View.GONE);
-            String hl = c.has("hi") && c.has("lo") ? "H " + c.optInt("hi") + "° · L " + c.optInt("lo") + "°" : c.has("hi") ? "H " + c.optInt("hi") + "°" : c.has("lo") ? "L " + c.optInt("lo") + "°" : "";
+            SpannableStringBuilder hl = new SpannableStringBuilder();
+            if (c.has("hi")) lit(hl, "H " + c.optInt("hi") + "°", i == extremes.highestHigh);
+            if (c.has("hi") && c.has("lo")) hl.append(" · ");
+            if (c.has("lo")) lit(hl, "L " + c.optInt("lo") + "°", i == extremes.lowestLow);
             hilo.setText(hl);
-            hilo.setVisibility(hl.isEmpty() ? View.GONE : View.VISIBLE);
+            hilo.setVisibility(hl.length() == 0 ? View.GONE : View.VISIBLE);
             TextView hum = col.findViewById(R.id.hum);
-            hum.setText(c.has("hum") ? "Humidity " + c.optInt("hum") + "%" : "");
+            hum.setText(c.has("hum") ? lit(new SpannableStringBuilder(), "Humidity " + c.optInt("hum") + "%", i == extremes.mostHumid) : "");
             hum.setVisibility(c.has("hum") ? View.VISIBLE : View.GONE);
             // measured without the word: an invisible view still takes its width, and a long word ("Storms likely
             // tomorrow") left from the last update would widen all three columns
@@ -442,6 +455,28 @@ final class HomeLines {
         weatherAsOf.setText(note == null ? "" : note);
         weatherAsOf.setVisibility(note == null ? View.GONE : View.VISIBLE);
         return true;
+    }
+
+    private static WeatherExtremes extremesOf(JSONArray list) {
+        int n = list.length();
+        Integer[] now = new Integer[n], hi = new Integer[n], lo = new Integer[n], hum = new Integer[n];
+        for (int i = 0; i < n; i++) {
+            JSONObject c = list.optJSONObject(i);
+            if (c == null) continue;
+            if (c.has("now")) now[i] = c.optInt("now");
+            if (c.has("hi")) hi[i] = c.optInt("hi");
+            if (c.has("lo")) lo[i] = c.optInt("lo");
+            if (c.has("hum")) hum[i] = c.optInt("hum");
+        }
+        return WeatherExtremes.of(now, hi, lo, hum);
+    }
+
+    /** Appends a value; when it is the extreme, only the value is lit (the line around it stays dim). */
+    private static SpannableStringBuilder lit(SpannableStringBuilder b, String value, boolean on) {
+        int at = b.length();
+        b.append(value);
+        if (on) b.setSpan(new ForegroundColorSpan(LIT), at, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return b;
     }
 
     private static String asOfClock(String iso) {
