@@ -102,13 +102,13 @@ details[open] > summary span:last-child { transform: rotate(90deg); }
 /* floating tab bar with the sliding sticker pill */
 .tabs {
   position: fixed; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); max-width: 536px; margin: 0 auto; z-index: 5;
-  height: 60px; border-radius: 22px; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; padding: 0 6px;
+  height: 60px; border-radius: 22px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 4px;
   background: color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: .5px solid var(--line2); box-shadow: 0 8px 24px rgba(20, 23, 43, .12);
 }
 .tabs[hidden] { display: none; }
 .tabs button { border: 0; background: none; min-height: 44px; font-weight: 600; font-size: .78rem; color: var(--muted); border-radius: 999px; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
-.tabs button[aria-current="page"] { background: var(--cobalt); color: #fff; transform: rotate(-3deg); box-shadow: 0 0 0 2.5px var(--surface); margin: 0 6px; }
+.tabs button[aria-current="page"] { background: var(--cobalt); color: #fff; transform: rotate(-3deg); box-shadow: 0 0 0 2.5px var(--surface); margin: 0 2px; }
 .tabs button:active { transform: scale(.94); }
 
 /* sign in, empty, failure, loading */
@@ -122,4 +122,18 @@ dialog { border: 0; border-radius: 20px 20px 0 0; margin: auto 0 0; max-width: 1
 dialog::backdrop { background: rgba(20, 23, 43, .35); }
 dialog h2 { font-size: 1.18rem; text-transform: none; letter-spacing: -.01em; color: var(--ink); font-weight: 800; }
 dialog p { color: var(--ink2); }
+/* insights */
+.seg { display: flex; background: var(--sunk); border-radius: 12px; padding: 3px; margin: 2px 0 10px; }
+.seg button { flex: 1; border: 0; background: none; min-height: 44px; font-size: .78rem; font-weight: 600; color: var(--muted); border-radius: 9px; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(20, 23, 43, .12); }
+.share { height: 10px; border-radius: 5px; background: var(--sunk); overflow: hidden; display: flex; margin-top: 8px; }
+.share i { display: block; height: 100%; }
+.heat { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; margin-top: 8px; }
+.heat i { aspect-ratio: .55; border-radius: 3px; background: rgba(36, 66, 232, max(.06, var(--a))); }
+.wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 70px; margin-top: 12px; }
+.wk i { display: block; border-radius: 4px 4px 0 0; background: var(--cobalt); min-height: 2px; }
+.wk i.best { background: var(--tang); }
+.wkl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 11px; color: var(--muted); text-align: center; margin-top: 3px; }
+.ink { color: var(--ink); }
+.up { color: var(--green); } .down { color: var(--red); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }

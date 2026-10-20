@@ -125,3 +125,120 @@ export function freshness(days, now) {
   const age = now - Math.max(...r);
   return { age, late: age > 30 * 3600 * 1000 };
 }
+
+// ---- Insights: the same days looked at across a month, a year or all time ----------------------------------------
+
+/** The days of a period ending at `date`: "month", "year" or "all". */
+export function periodOf(days, date, period) {
+  if (period === "all") return days.filter(d => d.date <= date);
+  const n = period === "year" ? 4 : 7;
+  return days.filter(d => d.date.slice(0, n) === date.slice(0, n) && d.date <= date);
+}
+
+/** The period before: last month or last year (null for all time). */
+export function periodBefore(days, date, period) {
+  if (period === "all") return null;
+  let y = +date.slice(0, 4), m = +date.slice(5, 7);
+  if (period === "year") y--; else if (--m === 0) { m = 12; y--; }
+  const key = period === "year" ? String(y) : `${y}-${String(m).padStart(2, "0")}`;
+  return days.filter(d => d.date.startsWith(key));
+}
+
+/** Minutes on in each hour of the day (0–23), summed over the days, from the screen's on stretches. */
+export function hourHeat(days) {
+  const h = new Array(24).fill(0);
+  for (const d of days) for (const s of d.on?.spans ?? []) {
+    let a = minuteOf(s[0]);
+    const b = minuteOf(s[1], true);
+    while (a < b) {
+      const next = Math.min(b, (Math.floor(a / 60) + 1) * 60);
+      h[Math.floor(a / 60)] += next - a;
+      a = next;
+    }
+  }
+  return h;
+}
+
+/** The two hours in a row with the most time on: [start hour, minutes], or null when there is nothing. */
+export function busiestHours(heat) {
+  let best = null;
+  for (let i = 0; i < 24; i++) {
+    const v = heat[i] + heat[(i + 1) % 24];
+    if (v > 0 && (!best || v > best[1])) best = [i, v];
+  }
+  return best;
+}
+
+/** "8 to 10 PM", "11 PM to 1 AM" for a start hour and a length of two hours. */
+export function hoursWords(start) {
+  const w = h => ({ n: h % 12 || 12, ap: h < 12 ? "AM" : "PM" });
+  const a = w(start), b = w((start + 2) % 24);
+  return a.ap === b.ap ? `${a.n} to ${b.n} ${b.ap}` : `${a.n} ${a.ap} to ${b.n} ${b.ap}`;
+}
+
+/** Average minutes on for each weekday, Monday first, over the days recorded on that weekday (null when none). */
+export function weekdays(days) {
+  const sum = new Array(7).fill(0), n = new Array(7).fill(0);
+  for (const d of days) {
+    const i = (new Date(d.date + "T12:00:00Z").getUTCDay() + 6) % 7;
+    sum[i] += d.on?.minutes || 0;
+    n[i]++;
+  }
+  return sum.map((s, i) => (n[i] ? s / n[i] : null));
+}
+
+const medianOf = xs => {
+  const s = xs.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!s.length) return null;
+  const i = s.length >> 1;
+  return s.length % 2 ? s[i] : Math.round((s[i - 1] + s[i]) / 2);
+};
+
+/**
+ * When the TV usually goes on and off, as minutes after midnight: the median of each day's first switch-on and its
+ * last switch-off. A day still on at midnight ends after midnight the next day, so off can pass 1440.
+ */
+export function usualOnOff(days) {
+  const byDate = new Map(days.map(d => [d.date, d]));
+  const on = [], off = [];
+  for (const d of days) {
+    const spans = (d.on?.spans ?? []).filter(s => s[0] !== "00:00" || !byDate.has(prevDate(d.date)));
+    if (!spans.length) continue;
+    on.push(minuteOf(spans[0][0]));
+    let end = minuteOf(d.on.spans[d.on.spans.length - 1][1], true);
+    if (end >= 1440) {   // went on past midnight: where it stopped the next day
+      const next = byDate.get(nextDate(d.date));
+      const first = next?.on?.spans?.[0];
+      end = first && first[0] === "00:00" ? 1440 + minuteOf(first[1], true) : 1440;
+    }
+    off.push(end);
+  }
+  return { on: medianOf(on), off: medianOf(off) };
+}
+const prevDate = d => new Date(Date.parse(d + "T12:00:00Z") - 86400000).toISOString().slice(0, 10);
+const nextDate = d => new Date(Date.parse(d + "T12:00:00Z") + 86400000).toISOString().slice(0, 10);
+
+/** "7:40 PM" for minutes after midnight (past 1440 is the next day). */
+export function clockWords(min) {
+  if (min == null) return "—";
+  const m = Math.round(min) % 1440, h = Math.floor(m / 60);
+  return `${h % 12 || 12}:${String(m % 60).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+
+/** The longest single stretch: of the screen on ({date, minutes}) and of one app ({date, minutes, pkg, name}). */
+export function records(days) {
+  let on = null, app = null;
+  const len = s => minuteOf(s[1], true) - minuteOf(s[0]);
+  for (const d of days) {
+    for (const s of d.on?.spans ?? []) if (!on || len(s) > on.minutes) on = { date: d.date, minutes: len(s) };
+    for (const a of d.apps ?? []) for (const s of a.spans ?? []) if (!app || len(s) > app.minutes) app = { date: d.date, minutes: len(s), pkg: a.pkg, name: a.name };
+  }
+  return { on, app };
+}
+
+/** The change in time on a day between two periods, as a whole percent, or null when either has no days. */
+export function change(now, before) {
+  const avg = ds => (ds?.length ? ds.reduce((s, d) => s + (d.on?.minutes || 0), 0) / ds.length : null);
+  const a = avg(now), b = avg(before);
+  return a == null || !b ? null : Math.round(((a - b) / b) * 100);
+}

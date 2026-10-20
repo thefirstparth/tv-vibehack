@@ -1,10 +1,11 @@
-import { ago, colourOf, rupees, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
+import { ago, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
 const main = document.getElementById("main");
 const tabs = document.getElementById("tabs");
 const fresh = document.getElementById("fresh");
 const say = document.getElementById("say");
-const VIEWS = ["day", "week", "month", "speed"];
+const VIEWS = ["day", "week", "month", "insights", "speed"];
+const PERIODS = { month: "This month", year: "This year", all: "All time" };
 const TZ = "Asia/Kolkata";
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const store = {
@@ -15,15 +16,17 @@ const store = {
 let data = store.get("tv-days");
 let failed = false, signedOut = false;
 let { view, date } = route();
+let period = route().period || store.get("tv-period") || "month";
 
-/** "#day/2026-10-20", "#week", ...: the view, and for Day the date shown. */
+/** "#day/2026-10-20", "#insights/year", "#week": the view, for Day the date shown, for Insights the period. */
 function route() {
   const [v, d] = location.hash.slice(1).split("/");
-  return { view: VIEWS.includes(v) ? v : "day", date: /^\d{4}-\d{2}-\d{2}$/.test(d ?? "") ? d : null };
+  return { view: VIEWS.includes(v) ? v : "day", date: /^\d{4}-\d{2}-\d{2}$/.test(d ?? "") ? d : null, period: PERIODS[d] ? d : null };
 }
 /** Tabs and day steps replace the history entry, so Back is one step out of the app. */
 function go(v, d = null) {
-  view = v; date = d;
+  if (v === "insights") { period = d || period; store.set("tv-period", period); d = period; }
+  view = v; date = v === "day" ? d : null;
   history.replaceState(null, "", `#${v}${d ? "/" + d : ""}`);
   draw(true);
 }
@@ -134,6 +137,41 @@ function monthView(days, watts, rate) {
     <section class="card"><h2>Apps</h2>${appRows(apps, "month")}</section>`;
 }
 
+function insightsView(days, watts, rate) {
+  const end = days[days.length - 1].date, these = periodOf(days, end, period), before = periodBefore(days, end, period);
+  const apps = topApps(these), total = apps.reduce((s, a) => s + a.minutes, 0) || 1, t = totals(these, watts);
+  const heat = hourHeat(these), hmax = Math.max(1, ...heat), busy = busiestHours(heat);
+  const wk = weekdays(these), wmax = Math.max(1, ...wk.map(v => v || 0));
+  const best = wk.reduce((b, v, i) => (v != null && (b < 0 || v > wk[b]) ? i : b), -1);
+  const names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const usual = usualOnOff(these), rec = records(these), ch = change(these, before);
+  const label = period === "all" ? `Since ${dayName(days[0].date)}` : period === "year" ? end.slice(0, 4) : new Date(end + "T12:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const versus = period === "year" ? "last year" : new Date(Date.UTC(+end.slice(0, 4), +end.slice(5, 7) - 2, 15)).toLocaleDateString("en-GB", { month: "long", timeZone: "UTC" });
+  const top3 = apps.slice(0, 3), others = Math.max(0, total - top3.reduce((s, a) => s + a.minutes, 0));
+  const pct = m => Math.round((m / total) * 100);
+  return `<div class="seg" role="group" aria-label="Period">${Object.entries(PERIODS).map(([k, v]) => `<button type="button" data-period="${k}" aria-pressed="${k === period}">${v}</button>`).join("")}</div>
+    <section class="card" aria-labelledby="h"><p class="label">${esc(label)} · ${count(t.days, "day", "days")}</p><h1 id="h" tabindex="-1">Insights</h1>
+      <h2 style="margin-top:12px">Most watched</h2>
+      <div class="share" role="img" aria-label="${esc(top3.map(a => `${nameOf(a)} ${pct(a.minutes)}%`).join(", "))}">${top3.map(a => `<i style="width:${pct(a.minutes)}%;background:${colourOf(a.pkg)}"></i>`).join("")}${others ? `<i style="width:${pct(others)}%;background:${OTHER}"></i>` : ""}</div>
+      ${apps.length ? `<ul class="rows" style="margin-top:6px">${top3.map(a => `<li><span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span> · ${pct(a.minutes)}%</span></li>`).join("")}</ul>` : appRows([], "")}
+    </section>
+    <section class="card"><h2>When it's on</h2>
+      <div class="heat" role="img" aria-label="Time on in each hour of the day">${heat.map(v => `<i style="--a:${(v / hmax).toFixed(2)}"></i>`).join("")}</div>${ticks()}
+      <p class="note">Busiest hours: <b class="ink">${busy ? `${hoursWords(busy[0])} IST` : "—"}</b></p>
+      <div class="wk" role="img" aria-label="Average time on for each weekday">${wk.map((v, i) => `<i class="${i === best ? "best" : ""}" style="height:${((v || 0) / wmax) * 100}%"></i>`).join("")}</div>
+      <div class="wkl" aria-hidden="true">${names.map(n => `<span>${n.slice(0, 3)}</span>`).join("")}</div>
+      <p class="note">Busiest day: <b class="ink">${best < 0 ? "—" : names[best]}</b>${best < 0 ? "" : `, ${hm(wk[best])} on average`}</p>
+    </section>
+    <section class="card"><h2>Habits and records</h2><ul class="rows">
+      <li><span>Usually on</span><span>${usual.on == null ? "—" : `${clockWords(usual.on)} – ${clockWords(usual.off)}`}</span></li>
+      <li><span>An average day</span><span class="num">${hm(t.perDay)}</span></li>
+      <li><span>Longest stretch on</span><span>${rec.on ? `${esc(dayName(rec.on.date))} · <span class="num">${hm(rec.on.minutes)}</span>` : "—"}</span></li>
+      <li><span>Longest in one app</span><span>${rec.app ? `${esc(nameOf(rec.app))} · <span class="num">${hm(rec.app.minutes)}</span>` : "—"}</span></li>
+      ${period === "all" ? "" : `<li><span>Against ${esc(versus)}</span><span>${ch == null ? "not enough days yet" : `<b class="${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : "−"}${Math.abs(ch)}%</b> time on a day`}</span></li>`}
+      <li><span>Energy</span><span>${t.kwh} kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
+    </ul></section>`;
+}
+
 function speedView(days) {
   const end = days[days.length - 1].date, recent = lastDays(days, end, 30), t = totals(recent, 0);
   const max = Math.max(50, ...recent.map(d => d.home?.median_ms || 0));
@@ -173,10 +211,11 @@ function draw(moved) {
   }
   tabs.hidden = false;
   const watts = data.watts || 95, rate = data.rate || 6.7;
-  main.innerHTML = view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate);
+  main.innerHTML = view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "insights" ? insightsView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate);
   for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
   for (const d of main.querySelectorAll("details[data-key]")) d.ontoggle = () => store.set("open-" + d.dataset.key, d.open);
   for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => b.dataset.day && go("day", b.dataset.day);
+  for (const b of main.querySelectorAll("[data-period]")) b.onclick = () => go("insights", b.dataset.period);
   if (moved) { document.getElementById("h")?.focus({ preventScroll: true }); window.scrollTo(0, 0); }
   topLine();
 }
@@ -250,7 +289,7 @@ async function load(moved) {
 tabs.onclick = e => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
 fresh.onclick = () => load(false);
 document.getElementById("aboutBtn").onclick = () => document.getElementById("about").showModal();
-window.addEventListener("hashchange", () => { ({ view, date } = route()); draw(true); });
+window.addEventListener("hashchange", () => { const r = route(); view = r.view; date = r.date; if (r.period) period = r.period; draw(true); });
 window.addEventListener("online", () => load(false));
 window.addEventListener("offline", topLine);
 window.addEventListener("scroll", () => document.getElementById("top").classList.toggle("solid", scrollY > 4), { passive: true });

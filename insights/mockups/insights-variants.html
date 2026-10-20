@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Insights mockups</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="/app.css">
+<style>
+  body { background: #d9d4c8; padding: 24px; }
+  .row { display: flex; gap: 28px; align-items: flex-start; }
+  .lab { font: 700 15px var(--ui); color: var(--ink); margin: 0 0 8px 4px; max-width: 390px; }
+  .lab small { font-weight: 500; color: var(--muted); }
+  .rec { display: inline-block; background: var(--tang); color: var(--ink); font: 700 12px var(--ui); padding: 2px 8px; border-radius: 999px; transform: rotate(-3deg); }
+  .phone { width: 390px; height: 1180px; overflow: hidden; border-radius: 36px; background: var(--bg); position: relative; box-shadow: 0 20px 50px rgba(20,23,43,.25);
+    background-image: radial-gradient(rgba(20,23,43,.035) 1px, transparent 1px); background-size: 3px 3px; }
+  .phone .top { position: static; padding-top: 40px; }
+  .phone main { padding: 4px 16px; }
+  .phone .tabs { position: absolute; grid-template-columns: repeat(5, 1fr); }
+  .seg { display: flex; background: var(--sunk); border-radius: 12px; padding: 3px; margin: 2px 0 10px; }
+  .seg span { flex: 1; text-align: center; min-height: 38px; display: grid; place-items: center; font-size: .78rem; font-weight: 600; color: var(--muted); border-radius: 9px; }
+  .seg .on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(20,23,43,.12); }
+  .heat { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; margin-top: 8px; }
+  .heat i { aspect-ratio: .55; border-radius: 3px; background: rgba(36,66,232,var(--a)); }
+  .wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 70px; margin-top: 8px; }
+  .wk i { display: block; border-radius: 4px 4px 0 0; background: var(--cobalt); }
+  .wkl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 11px; color: var(--muted); text-align: center; margin-top: 3px; }
+  .share { height: 10px; border-radius: 5px; background: var(--sunk); overflow: hidden; display: flex; margin-top: 8px; }
+  .share i { display: block; height: 100%; }
+  .fact { position: relative; background: var(--surface); border-radius: 16px; border: .5px solid var(--line2); box-shadow: 0 1px 0 rgba(20,23,43,.06); padding: 14px 16px; margin-bottom: 10px; }
+  .fact .big { font: 700 52px/1 var(--num); }
+  .fact .big small { font-size: 26px; }
+  .fact p { margin: 4px 0 0; color: var(--ink2); }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .duo .fact .big { font-size: 40px; }
+  .clock { width: 250px; height: 250px; margin: 6px auto 0; display: block; }
+  .up { color: var(--green); font-weight: 700; } .down { color: var(--red); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="row">
+
+<!-- A -->
+<div>
+  <p class="lab">A · Story <small>one card per question, charts inside</small></p>
+  <div class="phone">
+    <header class="top"><span class="logo">TV</span><span class="fresh">Updated 3 h ago</span><span class="icon"><span>i</span></span></header>
+    <main>
+      <div class="seg"><span class="on">This month</span><span>This year</span><span>All time</span></div>
+      <section class="card"><p class="label">October 2026 · 21 days</p><h1>Insights</h1>
+        <h2 style="margin-top:12px">Most watched</h2>
+        <div class="share"><i style="width:41%;background:#1d1d1d"></i><i style="width:25%;background:#ff0000"></i><i style="width:13%;background:#7a2fc0"></i><i style="width:21%;background:#c9c2b3"></i></div>
+        <ul class="rows" style="margin-top:6px">
+          <li><span><span class="chip" style="--c:#1d1d1d"></span>SonyLIV</span><span><span class="num">33 h 43 m</span> · 41%</span></li>
+          <li><span><span class="chip" style="--c:#ff0000"></span>YouTube</span><span><span class="num">20 h 05 m</span> · 25%</span></li>
+          <li><span><span class="chip" style="--c:#7a2fc0"></span>JioHotstar</span><span><span class="num">10 h 40 m</span> · 13%</span></li>
+        </ul></section>
+      <section class="card"><h2>When it's on</h2>
+        <div class="heat">
+          <i style="--a:.08"></i><i style="--a:.05"></i><i style="--a:.03"></i><i style="--a:.02"></i><i style="--a:.02"></i><i style="--a:.03"></i><i style="--a:.12"></i><i style="--a:.22"></i><i style="--a:.15"></i><i style="--a:.08"></i><i style="--a:.06"></i><i style="--a:.07"></i><i style="--a:.1"></i><i style="--a:.12"></i><i style="--a:.1"></i><i style="--a:.12"></i><i style="--a:.18"></i><i style="--a:.3"></i><i style="--a:.55"></i><i style="--a:.85"></i><i style="--a:1"></i><i style="--a:.95"></i><i style="--a:.7"></i><i style="--a:.35"></i>
+        </div>
+        <div class="ticks"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
+        <p class="note">Busiest hours: <b style="color:var(--ink)">8 to 10 PM IST</b></p>
+        <div class="wk"><i style="height:55%"></i><i style="height:50%"></i><i style="height:48%"></i><i style="height:52%"></i><i style="height:70%"></i><i style="height:92%"></i><i style="height:100%;background:var(--tang)"></i></div>
+        <div class="wkl"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <p class="note">Busiest day: <b style="color:var(--ink)">Sunday</b>, 5 h 10 m on average</p></section>
+      <section class="card"><h2>Habits and records</h2><ul class="rows">
+        <li><span>Usually on</span><span>7:40 PM – 12:20 AM</span></li>
+        <li><span>An average day</span><span class="num">3 h 27 m</span></li>
+        <li><span>Longest stretch on</span><span>Sun 18 Oct · <span class="num">5 h 50 m</span></span></li>
+        <li><span>Against September</span><span><span class="up">+12%</span> hours</span></li>
+        <li><span>Energy</span><span>6.9 kWh · <span class="num">₹46.23</span></span></li></ul></section>
+    </main>
+    <nav class="tabs"><button>Day</button><button>Week</button><button>Month</button><button aria-current="page">Insights</button><button>Speed</button></nav>
+  </div>
+</div>
+
+<!-- B -->
+<div>
+  <p class="lab">B · Headlines <span class="rec">Recommended</span> <small>each finding as a big number, then the detail</small></p>
+  <div class="phone">
+    <header class="top"><span class="logo">TV</span><span class="fresh">Updated 3 h ago</span><span class="icon"><span>i</span></span></header>
+    <main>
+      <div class="seg"><span class="on">This month</span><span>This year</span><span>All time</span></div>
+      <p class="label" style="margin:2px 0 2px">October 2026 · 21 days</p><h1 style="margin-bottom:10px">Insights</h1>
+      <div class="fact"><p class="label">Most watched</p><div class="big num">41<small>%</small></div><p><b style="color:var(--ink)">SonyLIV</b>, 33 h 43 m of your TV time</p>
+        <div class="share"><i style="width:41%;background:#1d1d1d"></i><i style="width:25%;background:#ff0000"></i><i style="width:13%;background:#7a2fc0"></i><i style="width:21%;background:#c9c2b3"></i></div>
+        <p class="note">Then YouTube 25%, JioHotstar 13%, others 21%</p><span class="sticker">Up 8% on Sept</span></div>
+      <div class="fact"><p class="label">Busiest hours</p><div class="big num">8–10<small> PM</small></div>
+        <div class="heat"><i style="--a:.08"></i><i style="--a:.05"></i><i style="--a:.03"></i><i style="--a:.02"></i><i style="--a:.02"></i><i style="--a:.03"></i><i style="--a:.12"></i><i style="--a:.22"></i><i style="--a:.15"></i><i style="--a:.08"></i><i style="--a:.06"></i><i style="--a:.07"></i><i style="--a:.1"></i><i style="--a:.12"></i><i style="--a:.1"></i><i style="--a:.12"></i><i style="--a:.18"></i><i style="--a:.3"></i><i style="--a:.55"></i><i style="--a:.85"></i><i style="--a:1"></i><i style="--a:.95"></i><i style="--a:.7"></i><i style="--a:.35"></i></div>
+        <div class="ticks"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div></div>
+      <div class="duo">
+        <div class="fact"><p class="label">Busiest day</p><div class="big num">Sun</div><p class="note">5 h 10 m on average</p></div>
+        <div class="fact"><p class="label">A usual day</p><div class="big num">3<small>h</small>27<small>m</small></div><p class="note"><span class="up">+12%</span> on September</p></div>
+        <div class="fact"><p class="label">Usually on</p><div class="big num" style="font-size:30px">7:40<small> PM</small></div><p class="note">off around 12:20 AM</p></div>
+        <div class="fact"><p class="label">Energy</p><div class="big num">₹46</div><p class="note">6.9 kWh, an estimate</p></div>
+      </div>
+      <section class="card"><h2>Records</h2><ul class="rows">
+        <li><span>Longest stretch on</span><span>Sun 18 Oct · <span class="num">5 h 50 m</span></span></li>
+        <li><span>Longest in one app</span><span>SonyLIV · <span class="num">2 h 55 m</span></span></li></ul></section>
+    </main>
+    <nav class="tabs"><button>Day</button><button>Week</button><button>Month</button><button aria-current="page">Insights</button><button>Speed</button></nav>
+  </div>
+</div>
+
+<!-- C -->
+<div>
+  <p class="lab">C · Clock <small>a 24-hour dial of when it's on, as the hero</small></p>
+  <div class="phone">
+    <header class="top"><span class="logo">TV</span><span class="fresh">Updated 3 h ago</span><span class="icon"><span>i</span></span></header>
+    <main>
+      <div class="seg"><span class="on">This month</span><span>This year</span><span>All time</span></div>
+      <section class="card"><p class="label">October 2026 · 21 days</p><h1>Insights</h1>
+        <svg class="clock" viewBox="-130 -130 260 260" aria-hidden="true">
+          <circle r="100" fill="none" stroke="#f0ebe1" stroke-width="34"/>
+          <g fill="none" stroke-width="34">
+            <path d="M 0 -100 A 100 100 0 0 1 25.9 -96.6" stroke="rgba(36,66,232,.08)"/>
+            <path d="M -96.6 -25.9 A 100 100 0 0 1 -86.6 -50" stroke="rgba(36,66,232,.55)"/>
+            <path d="M -86.6 -50 A 100 100 0 0 1 -70.7 -70.7" stroke="rgba(36,66,232,.85)"/>
+            <path d="M -70.7 -70.7 A 100 100 0 0 1 -50 -86.6" stroke="rgba(36,66,232,1)"/>
+            <path d="M -50 -86.6 A 100 100 0 0 1 -25.9 -96.6" stroke="rgba(36,66,232,.95)"/>
+            <path d="M -25.9 -96.6 A 100 100 0 0 1 0 -100" stroke="rgba(36,66,232,.7)"/>
+            <path d="M 70.7 70.7 A 100 100 0 0 1 50 86.6" stroke="rgba(36,66,232,.22)"/>
+            <path d="M -100 0 A 100 100 0 0 1 -96.6 -25.9" stroke="rgba(36,66,232,.3)"/>
+          </g>
+          <text y="-6" text-anchor="middle" font-family="Barlow Condensed" font-weight="700" font-size="44" fill="#14172b">8–10</text>
+          <text y="20" text-anchor="middle" font-family="Bricolage Grotesque" font-size="13" fill="#575b6f">PM, busiest</text>
+          <text y="-118" text-anchor="middle" font-size="10" fill="#575b6f">12 AM</text><text x="122" y="4" text-anchor="middle" font-size="10" fill="#575b6f">6</text>
+          <text y="128" text-anchor="middle" font-size="10" fill="#575b6f">12 PM</text><text x="-122" y="4" text-anchor="middle" font-size="10" fill="#575b6f">6</text>
+        </svg></section>
+      <section class="card"><h2>Most watched</h2><ul class="rows">
+        <li><span><span class="chip" style="--c:#1d1d1d"></span>SonyLIV</span><span><span class="num">33 h 43 m</span> · 41%</span></li>
+        <li><span><span class="chip" style="--c:#ff0000"></span>YouTube</span><span><span class="num">20 h 05 m</span> · 25%</span></li>
+        <li><span><span class="chip" style="--c:#7a2fc0"></span>JioHotstar</span><span><span class="num">10 h 40 m</span> · 13%</span></li></ul></section>
+      <section class="card"><ul class="rows">
+        <li><span>Busiest day</span><span>Sunday · 5 h 10 m</span></li>
+        <li><span>Usually on</span><span>7:40 PM – 12:20 AM</span></li>
+        <li><span>Against September</span><span><span class="up">+12%</span> hours</span></li>
+        <li><span>Energy</span><span>6.9 kWh · ₹46.23</span></li></ul></section>
+    </main>
+    <nav class="tabs"><button>Day</button><button>Week</button><button>Month</button><button aria-current="page">Insights</button><button>Speed</button></nav>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
