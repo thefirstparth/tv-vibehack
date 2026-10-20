@@ -119,6 +119,21 @@ final class HomeLines {
         return HorizonBackground.Sky.valueOf(data.sky().name());
     }
 
+    /** The feed's `sky` for Bengaluru (Horizon v3: clear, partly, overcast, fog, rain, storm), or null when missing. */
+    String skyWord() {
+        JSONObject feed = data.value();
+        JSONArray w = feed == null ? null : feed.optJSONArray("weather");
+        if (w == null) return null;
+        String first = null;
+        for (int i = 0; i < w.length(); i++) {
+            JSONObject c = w.optJSONObject(i);
+            if (c == null || !c.has("sky")) continue;
+            if (first == null) first = c.optString("sky");
+            if ("Bengaluru".equalsIgnoreCase(c.optString("city"))) return c.optString("sky");
+        }
+        return first;
+    }
+
     /** The competition's colour of a match live now (believed: under ten minutes old), or null. */
     Integer liveAccent() {
         JSONObject it = data.liveItem(System.currentTimeMillis());

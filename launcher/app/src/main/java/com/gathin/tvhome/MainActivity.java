@@ -132,6 +132,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Calendar fakeAt;
     private HorizonBackground.Mood fakeMood;
     private HorizonBackground.Sky fakeSky;
+    private String fakeWx;
     private Integer fakeMatch;
     private boolean fakeOffline;
 
@@ -431,6 +432,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         fakeMood = HorizonBackground.Mood.named(i.getStringExtra("mood"));
         String sky = i.getStringExtra("sky");
+        fakeWx = sky;   // Horizon v3's sky word as given (clear, partly, overcast, fog, rain, storm)
         fakeSky = sky == null ? null : "rain".equalsIgnoreCase(sky) ? HorizonBackground.Sky.RAIN : "storm".equalsIgnoreCase(sky) ? HorizonBackground.Sky.STORM : HorizonBackground.Sky.CLEAR;
         fakeOffline = "offline".equalsIgnoreCase(i.getStringExtra("net"));
         String match = i.getStringExtra("match");
@@ -446,6 +448,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
+     * Horizon v3's text blocks, from the views' real positions (in the picture's 960-wide units, 6 px of room around
+     * each), with each block's faintest text's alpha: the clock line, the top bar, the sport lines, the weather.
+     */
+    private java.util.List<HorizonBackground.Zone> textZones() {
+        java.util.List<HorizonBackground.Zone> out = new java.util.ArrayList<>();
+        int rw = root.getWidth();
+        if (rw <= 0) return out;
+        float k = 960f / rw;
+        zone(out, "clock line", R.id.leftBlock, 0.55f, k);
+        zone(out, "top bar", R.id.topButtons, 0.86f, k);
+        zone(out, "sport lines", R.id.sport, 0.45f, k);
+        zone(out, "weather", R.id.weather, 0.45f, k);
+        return out;
+    }
+
+    private void zone(java.util.List<HorizonBackground.Zone> out, String name, int id, float alpha, float k) {
+        View v = findViewById(id);
+        if (v == null || v.getVisibility() != View.VISIBLE || v.getWidth() == 0 || !v.isShown()) return;
+        int[] at = new int[2], r0 = new int[2];
+        v.getLocationInWindow(at);
+        root.getLocationInWindow(r0);
+        out.add(new HorizonBackground.Zone(name, (at[0] - r0[0]) * k - 6, (at[1] - r0[1]) * k - 6, v.getWidth() * k + 12, v.getHeight() * k + 12, alpha));
+    }
+
+    /**
      * The Horizon image for now: the sun's mood, the season, Bengaluru's sky and a live match from the lines, and any
      * personal day. A new image only when one of those changes; drawn off the main thread and swapped in whole.
      */
@@ -454,8 +481,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         HorizonBackground.Sky sky = fakeSky != null ? fakeSky : homeLines != null ? homeLines.sky() : HorizonBackground.Sky.CLEAR;
         Integer match = fakeMatch != null ? fakeMatch : homeLines != null ? homeLines.liveAccent() : null;
         Calendar now = lightTime();
-        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, match, days);
-        if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day);
+        String wx = fakeWx != null ? fakeWx : homeLines != null ? homeLines.skyWord() : null;
+        HorizonBackground.State st = HorizonBackground.stateAt(now, sky, wx, match, days, textZones());
+        if (fakeMood != null) st = new HorizonBackground.State(fakeMood, st.season, st.sky, st.matchAccent, st.day, st.at, st.wx, st.zones, true);
         claimWeekend(now, st);
         if (!horizon.claim(st)) return;
         final HorizonBackground.State state = st;

@@ -2,13 +2,7 @@ package com.gathin.tvhome;
 
 import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.RadialGradient;
-import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 
 import com.gathin.tvshared.PersonalDays;
@@ -22,6 +16,8 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
+ * The home screen's light: its state (what the picture depends on) and the image, drawn by HorizonV3 since Horizon v3
+ * (20 Oct 2026). The notes below are v2's, whose moods, season, sky and personal days v3 still uses.
  * Horizon v2: the home screen's light. Eight moods timed by the sun at the place in config.xml (worked out on the TV:
  * SunTimes, with SunLine's timing, the same as the line above the clock), a faint
  * season, the sky of Bengaluru's weather word (rain, storm), a glow in the competition's colour while a match is live,
@@ -31,8 +27,6 @@ import java.util.TimeZone;
  * animated: a new image replaces the old one whole when the combination changes.
  */
 final class HorizonBackground {
-
-    private static final int W = 480, H = 270;
 
     /** The four colours of a look: the top tint, the band, the core glow and the spot. */
     static final class Palette {
@@ -135,6 +129,28 @@ final class HorizonBackground {
         }
     }
 
+    /** A block of text on the home screen, in the picture's 960-wide units: where it is and its faintest text's alpha. */
+    static final class Zone {
+        final float x, y, w, h, alpha;
+        final String name;
+
+        Zone(String name, float x, float y, float w, float h, float alpha) {
+            this.name = name;
+            this.x = x;
+            this.y = y;
+            this.w = w;
+            this.h = h;
+            this.alpha = alpha;
+        }
+
+        String key() {
+            return name + Math.round(x) + "," + Math.round(y) + "," + Math.round(w) + "," + Math.round(h);
+        }
+    }
+
+    /** A new picture at most every five minutes while Home shows (and when the sky, a match, the day or the text moves). */
+    static final long SLOT_MS = 5 * 60_000L;
+
     /** Everything the image depends on; a new image only when this changes. */
     static final class State {
         final Mood mood;
@@ -142,20 +158,35 @@ final class HorizonBackground {
         final Sky sky;
         final Integer matchAccent;   // the live competition's colour, or null
         final Day day;               // today's personal day, or null
+        final long at;               // the moment drawn: the start of its five-minute slot (epoch ms), 0 when unknown
+        final String wx;             // the feed's sky for Bengaluru: clear, partly, overcast, fog, rain, storm
+        final List<Zone> zones;      // the text blocks, for the stars' dimming and the readability floor
+        final boolean fixedMood;     // the "mood" test extra: that mood's colours instead of the day's blend
 
         State(Mood mood, Season season, Sky sky, Integer matchAccent, Day day) {
+            this(mood, season, sky, matchAccent, day, 0, "clear", new ArrayList<>(), true);
+        }
+
+        State(Mood mood, Season season, Sky sky, Integer matchAccent, Day day, long at, String wx, List<Zone> zones, boolean fixedMood) {
             this.mood = mood;
             this.season = season;
             this.sky = sky;
             this.matchAccent = matchAccent;
             this.day = day;
+            this.at = at;
+            this.wx = wx == null || wx.isEmpty() ? "clear" : wx;
+            this.zones = zones;
+            this.fixedMood = fixedMood;
         }
 
         String key() {
-            return mood + "|" + season + "|" + sky + "|" + matchAccent + "|" + (day == null ? "" : day.month + "-" + day.day);
+            StringBuilder z = new StringBuilder();
+            for (Zone x : zones) z.append(x.key()).append(';');
+            return mood + "|" + season + "|" + sky + "|" + matchAccent + "|" + (day == null ? "" : day.month + "-" + day.day)
+                    + "|" + at / SLOT_MS + "|" + wx + "|" + fixedMood + "|" + z;
         }
 
-        /** The colours in use: the personal day's, else the mood's; muted in rain or a storm. */
+        /** The phase's colours (the weekend look's tones come from these): the personal day's, else the mood's. */
         Palette palette() {
             Palette p = day != null ? day.palette : mood.palette;
             return sky == Sky.CLEAR ? p : p.desaturated(0.62f);
@@ -165,6 +196,12 @@ final class HorizonBackground {
     /** The state for a moment (the TV's local time), the feed's sky and live colour, and the personal days. */
     static State stateAt(Calendar now, Sky sky, Integer matchAccent, List<Day> days) {
         return new State(Mood.at(now), Season.of(now.get(Calendar.MONTH) + 1), sky, matchAccent, dayOf(now, days));
+    }
+
+    /** Horizon v3's state: as above, with the five-minute slot, the feed's sky word and the text blocks. */
+    static State stateAt(Calendar now, Sky sky, String wx, Integer matchAccent, List<Day> days, List<Zone> zones) {
+        long slot = now.getTimeInMillis() / SLOT_MS * SLOT_MS;
+        return new State(Mood.at(now), Season.of(now.get(Calendar.MONTH) + 1), sky, matchAccent, dayOf(now, days), slot, wx, zones, false);
     }
 
     /** Today's personal day, if any (the whole day, local time). */
@@ -187,27 +224,9 @@ final class HorizonBackground {
         return true;
     }
 
-    /** Draws a state's image; safe off the main thread (touches nothing shared). */
+    /** Draws a state's image (Horizon v3, HorizonV3); safe off the main thread (touches nothing shared). */
     static BitmapDrawable draw(Resources res, State s) {
-        Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(b);
-        c.drawColor(Color.BLACK);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-        Palette pal = s.palette();
-        // a) the top tint: the colour at the top, clear by 32% of the height
-        vertical(c, p, new int[]{pal.top, clear(pal.top), clear(pal.top)}, new float[]{0f, 0.32f, 1f});
-        // b) the band: clear at 18%, the colour at 44%, clear at 64%
-        band(c, p, pal.band, 0.18f, 0.44f, 0.64f);
-        // the season, faint, on top of the mood: clear at 10%, the colour at 48%, clear at 72%
-        band(c, p, s.season.colour, 0.10f, 0.48f, 0.72f);
-        // rain or a storm: a grey haze at 46%, gone by 12% and 70%
-        if (s.sky != Sky.CLEAR) band(c, p, rgba(120, 140, 165, s.sky == Sky.STORM ? .14 : .11), 0.12f, 0.46f, 0.70f);
-        // c) the core: an ellipse at (x, 60%), radii 72% x 32%, clear at 70%
-        glow(c, p, pal.core, s.mood.x, 0.60f, 0.72f, 0.32f);
-        // d) the spot: at (spot x, 55%), radii 30% x 20%, clear at 70%
-        glow(c, p, pal.spot, s.mood.spotX, 0.55f, 0.30f, 0.20f);
-        // a match on: a faint glow in the competition's colour under the sport lines
-        if (s.matchAccent != null) glow(c, p, (s.matchAccent & 0x00FFFFFF) | (41 << 24), 0.24f, 0.63f, 0.26f, 0.20f);
+        Bitmap b = HorizonV3.draw(res, s);
         BitmapDrawable d = new BitmapDrawable(res, b);
         d.setFilterBitmap(true);   // stretched to the screen, smoothly
         d.setDither(true);
@@ -216,28 +235,7 @@ final class HorizonBackground {
 
     /** The dock band's top edge: the core's colour at about 28%. */
     static int edge(State s) {
-        return (s.palette().core & 0x00FFFFFF) | (71 << 24);
-    }
-
-    private static void vertical(Canvas c, Paint p, int[] colours, float[] stops) {
-        p.setShader(new LinearGradient(0, 0, 0, H, colours, stops, Shader.TileMode.CLAMP));
-        c.drawRect(0, 0, W, H, p);
-    }
-
-    private static void band(Canvas c, Paint p, int colour, float from, float at, float to) {
-        int none = clear(colour);
-        vertical(c, p, new int[]{none, none, colour, none, none}, new float[]{0f, from, at, to, 1f});
-    }
-
-    private static void glow(Canvas c, Paint p, int colour, float x, float y, float rx, float ry) {
-        float rw = rx * W, rh = ry * H;
-        RadialGradient g = new RadialGradient(0, 0, rw, new int[]{colour, clear(colour), clear(colour)}, new float[]{0f, 0.70f, 1f}, Shader.TileMode.CLAMP);
-        Matrix m = new Matrix();
-        m.setScale(1f, rh / rw);
-        m.postTranslate(x * W, y * H);
-        g.setLocalMatrix(m);
-        p.setShader(g);
-        c.drawRect(0, 0, W, H, p);
+        return HorizonV3.edge(s);
     }
 
     private static int clear(int c) {
