@@ -60,6 +60,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 | Home on Home, GPU highlight, highlight on return (`4cec0f2`) | weekday, 3 slots, Home returns from Media Player | 586 ms (574–604) | 88.0 ms (79–101, n=30) | 0% | 66.1 MB | **pass**: −0.5 ms (allowed 17), cold −9 ms, +0.7 MB; p50/p90/p95/p99 5/6/7/10 ms (707 frames a run); Saturday test skipped (Parth); installed 06:27 |
 | 2026-10-20 07:00 | current (`4cec0f2`, on the TV) | short weekday, 2 rounds current → new | 595 ms (594, 596) | 93.5 ms (77–122, n=20) | 0% | 70.8 MB | noise taken from the 05:56 test (1.5 ms) |
 | 2026-10-20 07:00 | weather highlights (`97d3e73`) | short weekday, 2 rounds current → new | 632.5 ms (649, 616) | 92.5 ms (79–99, n=20) | 0% | 67.6 MB | **fail**: cold start +37.5 ms (allowed 20); Home return −1.0 ms, −3.2 MB; **not installed** |
+| 2026-10-20 07:17 | current (`4cec0f2`) | re-test, 3 rounds current → new, **5 cold starts a slot** | 588 ms (572–626, n=15) | 89.5 ms (82–106, n=30) | 0% | 67.4 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 07:17 | weather highlights (`97d3e73`) | re-test, 3 rounds current → new, **5 cold starts a slot** | 606 ms (574–618, n=15) | 88.5 ms (78–100, n=30) | 0% | 68.2 MB | **pass**: cold +18 ms (allowed 20), Home return −1.0 ms, +0.8 MB; p99 frame 9 vs 10 ms; installed 07:43 |
 
 ## 2026-10-20
 
@@ -76,3 +78,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   passed. Not installed; `4cec0f2` stays on the TV. The highlights are worked out after the first frame (the lines are
   built then), so the code isn't an obvious cause, but under the rule the result stands; a longer A/B (3 rounds of
   current → new → current) would be the next step if the change is wanted.
+- 07:17 re-test of the weather highlights, measured properly (Parth): 3 rounds of current → new after a restart, **five cold
+  starts per slot** (`AB_COLDS=5`), judged on the median of all 15 per build: **pass** on every point, cold start
+  +18 ms against the allowed 20 (close to the limit). The 07:00 short test's fail (+37.5 ms) came from two samples a
+  build; one slot alone tonight ranged 572–626 ms. Installed with `pm install -r` at 07:43; Home, the dock, Inputs,
+  Settings, voice and casting checked.

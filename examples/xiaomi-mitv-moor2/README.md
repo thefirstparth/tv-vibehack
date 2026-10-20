@@ -118,9 +118,10 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     ```
     Nothing else was changed: the clock and automatic time were not touched tonight (`auto_time` and
     `auto_time_zone` both 1).
-    **Not installed: the weather highlights** (`97d3e73`, the warmest/coolest temperature tinted and the
-    extremes lit, mockup option 5): its short A/B failed on cold start (+37.5 ms against the allowed 20; see
-    [BENCHMARKS.md](BENCHMARKS.md)). The code is on the branch; the TV keeps `4cec0f2`.
+    **The weather highlights** (`97d3e73`: the warmest/coolest temperature tinted, the highest high, lowest low
+    and most humid value lit; mockup option 5) are on the TV since 07:43. A short A/B first failed on cold start
+    (two samples a build); the re-test with five cold starts a slot passed (+18 ms, allowed 20; see
+    [BENCHMARKS.md](BENCHMARKS.md)). Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-rim-4cec0f2.apk`.
 
 Check the live state any time:
 
