@@ -122,6 +122,10 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     and most humid value lit; mockup option 5) are on the TV since 07:43. A short A/B first failed on cold start
     (two samples a build); the re-test with five cold starts a slot passed (+18 ms, allowed 20; see
     [BENCHMARKS.md](BENCHMARKS.md)). Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-rim-4cec0f2.apk`.
+    **Our side stands out** (`264f568`, on the TV since 08:16): in the sport lines the side Parth doesn't follow is
+    dimmed (65% white in the headline; the lines' 45% dim in the THEN/LATER rows), from the feed's new `ours` (the
+    site, house-of-1400 `638b1ff`). It passed its short A/B. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-weather-97d3e73.apk`.
 
 Check the live state any time:
 
