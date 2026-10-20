@@ -304,6 +304,18 @@ Nothing here blocks using the TV. Pick up any of it later.
 
 **The next session's plan is in [NEXT.md](NEXT.md)** (humidity layout, QA, the video lag test).
 
+- **Built, not on the TV: the next insights diary build** (`db827f3`, candidate
+  `backup/launcher-builds/tvhome-release-diary2-29477b0.apk`; site side `29477b0`, not deployed). Nothing on the TV
+  changed. (1) Each day's summary is frozen at its first send try in files/diary/sent/ (35 days) and that copy is
+  what's sent, so a day failing longer than Android keeps usage detail (~10 days) still arrives whole. (2) Picking an
+  input on Home's Inputs menu writes a diary line (`I`, e.g. `com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`, "Xbox")
+  and the summary gets per-input minutes for the input app's stretch that follows; the TV's own source button stays
+  unnamed. Unit tests and an emulator run passed (BENCHMARKS.md has no row yet). **Left for next week (Parth, 21 Oct):**
+  the short A/B against `1bb593d` (`backup/launcher-builds/tvhome-release-insights-1bb593d.apk`, memory by pid), then
+  `pm install -r` only if it passes (undo: `pm install -r` of that 1bb593d APK; the frozen copies in files/diary/sent/
+  are then just ignored); deploy `insights/` (the page and day.js take days with or without `inputs`); and check a week
+  of real days on the site and `DaySummary.SLOW_MS` (100 ms) against the real Home times (sign-in needed).
+
 - **Known issue: Home lags after watching video, until a restart.** Measured 2026-10-18: after a
   reboot Home is smooth (0% janky frames, 6 ms a frame); after 45 s of video (FanCode live) it is
   60–70% janky (38 ms a frame), and stays so after closing the app, closing every app, standby and
