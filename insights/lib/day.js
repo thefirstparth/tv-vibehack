@@ -85,3 +85,19 @@ export function lastMonths(ym, n) {
   }
   return out;
 }
+
+/**
+ * The first day of the record, kept only from a time of day: stretches before it are cut off, the minutes worked out
+ * again from what is left, and the day's home-screen numbers dropped (before it, they are tests). Days after are as sent.
+ */
+export function fromStart(day, start) {
+  if (day.date !== start.date) return day;
+  const cut = spans => (spans ?? []).filter(s => s[1] >= start.time).map(s => [s[0] < start.time ? start.time : s[0], s[1]]);
+  const mins = spans => spans.reduce((n, s) => n + (toMin(s[1]) + 1 - toMin(s[0])), 0);
+  const d = { ...day, from: start.time };
+  if (day.on) { const s = cut(day.on.spans); d.on = { minutes: mins(s), spans: s }; }
+  if (day.apps) d.apps = day.apps.map(a => { const s = cut(a.spans); return { ...a, spans: s, minutes: mins(s) }; }).filter(a => a.minutes > 0);
+  delete d.home; delete d.cold; delete d.feed;
+  return d;
+}
+const toMin = hm => +hm.slice(0, 2) * 60 + +hm.slice(3, 5);

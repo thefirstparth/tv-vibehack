@@ -93,3 +93,15 @@ test("a resend with less never replaces a fuller copy, but its send problems are
   const fuller = withDay(withDay(null, thin), full);
   assert.equal(fuller.days[0].on.minutes, 250, "a fuller copy does replace a thin one");
 });
+
+test("the first day is kept only from 04:00, without its home-screen numbers", async () => {
+  const { fromStart } = await import("../lib/day.js");
+  const start = { date: "2026-10-21", time: "04:00" };
+  const d = fromStart(cleanDay({ v: 1, date: "2026-10-21", on: { minutes: 300, spans: [["00:10", "02:59"], ["03:30", "05:59"], ["19:00", "19:59"]] },
+    apps: [{ pkg: "com.sonyliv", minutes: 170, spans: [["00:10", "02:59"]] }, { pkg: "a.b", minutes: 60, spans: [["19:00", "19:59"]] }], home: { opens: 40 } }), start);
+  assert.deepEqual(d.on.spans, [["04:00", "05:59"], ["19:00", "19:59"]]);
+  assert.equal(d.on.minutes, 180);
+  assert.deepEqual(d.apps.map(a => [a.pkg, a.minutes]), [["a.b", 60]]);
+  assert.equal(d.home, undefined);
+  assert.equal(fromStart({ date: "2026-10-22", home: { opens: 3 } }, start).home.opens, 3, "later days as sent");
+});

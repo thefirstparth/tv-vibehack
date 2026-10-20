@@ -1,8 +1,9 @@
 import { tvAllowed } from "../lib/auth.js";
-import { cleanDay, MAX_BYTES, monthPath, withDay } from "../lib/day.js";
+import { cleanDay, fromStart, MAX_BYTES, monthPath, withDay } from "../lib/day.js";
 import { archiveDay, readMonth, writeMonth, writeStatus } from "../lib/store.js";
 
-export const START = "2026-10-21";
+/** The record starts at 04:00 IST on 21 Oct 2026 (Parth, 21 Oct): after that night's tests and the install. */
+export const START = { date: "2026-10-21", time: "04:00" };
 
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.
 // First the day is archived as it arrived (never overwritten), then merged into its month file. A resend never
@@ -22,15 +23,16 @@ export async function POST(request) {
   } catch (e) {
     return refuse(400, String(e.message ?? e).slice(0, 60));
   }
-  // The record starts on 21 Oct 2026 (Parth, 21 Oct): earlier days the TV still has (Android's usage stats) are full of
-  // the A/B tests that night and are taken as sent but not kept, so the TV doesn't try them again or call it a failure.
-  if (day.date < START) return Response.json({ ok: true, date: day.date, kept: false }, { headers: { "cache-control": "no-store" } });
+  // Earlier days the TV still has (Android's usage stats) are full of that night's A/B tests: taken as sent but not
+  // kept, so the TV doesn't try them again or call it a failure. The first day is kept from 04:00.
+  if (day.date < START.date) return Response.json({ ok: true, date: day.date, kept: false }, { headers: { "cache-control": "no-store" } });
   day.received = new Date().toISOString();   // the page's "Updated" line
   try {
     await archiveDay(day);
   } catch (e) {
     return Response.json({ error: "archive failed, try again" }, { status: 503 });
   }
+  day = fromStart(day, START);   // archived as it arrived (above); the page's copy of the first day starts at 04:00
   const path = monthPath(day.date);
   for (let attempt = 0; attempt < 3; attempt++) {
     let read;
