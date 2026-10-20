@@ -159,7 +159,7 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     picture mode `0`, brightness 50, backlight 80, sharpness 10, hue 0, motion smoothing (MEMC) off, noise reduction
     and MPEG noise reduction off. Later that night (Parth's choice): AI super-resolution `3` → `2`
     (`tv_picture_video_aisr`, less sharpening when upscaling) and black stretch `0` → `1` (`picture_black_stretch`, on).
-    Contrast read 55, not 56, at 01:40 (changed outside these commands, probably in the TV's menu); left as it was. Settings made from the computer may not survive a
+    Contrast read 55, not 56, at 01:28 (changed outside these commands, probably in the TV's menu); left as it was. Settings made from the computer may not survive a
     restart; if the picture changes after one, set them again (Undo has the lines; the new values instead of the
     old). Don't change **brightness** for "more life": at 80 it greyed the blacks (tried 21 Oct, rolled back).
     Undo: see "The picture settings" under Undo.
