@@ -153,6 +153,14 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     waking the TV or pressing Home (it took about a minute at 9:21 pm); while a match is live the feed is asked every
     2 minutes instead of 15. Passed its short A/B. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-horizon3-480-a28b832.apk`.
+13. **Picture: "real, with a bit of life"** (21 Oct, 01:10–01:15, set from the computer, one step at a time with Parth
+    judging each against the old value): colour temperature `2` → `3` (warmer white: the TV's gains went from
+    R1034/G1024/B1019 to R1055/G959/B833), saturation `50` → `55`, contrast `50` → `56`. Everything else as before:
+    picture mode `0`, brightness 50, backlight 80, sharpness 10, hue 0, motion smoothing (MEMC) off, noise reduction
+    and MPEG noise reduction off, AI super-resolution on (3). Settings made from the computer may not survive a
+    restart; if the picture changes after one, set them again (Undo has the lines; the new values instead of the
+    old). Don't change **brightness** for "more life": at 80 it greyed the blacks (tried 21 Oct, rolled back).
+    Undo: see "The picture settings" under Undo.
 
 Check the live state any time:
 
@@ -201,6 +209,14 @@ $T 'settings put secure screensaver_components com.google.android.apps.tv.dreamx
 $T 'settings put secure screensaver_enabled 1'
 $T 'settings put system screen_off_timeout 600000'
 $T 'settings put secure sleep_timeout 1800000'
+```
+
+The picture settings (Current state, item 13), back to how they were before 21 Oct:
+
+```bash
+$T 'settings put global picture_color_temperature 2'
+$T 'settings put global picture_saturation 50'
+$T 'settings put global picture_contrast 50'
 ```
 
 Everything back to stock, debloat included: run the three lines above, then
