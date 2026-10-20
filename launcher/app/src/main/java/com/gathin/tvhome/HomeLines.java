@@ -166,13 +166,29 @@ final class HomeLines {
 
     // ---- loading -------------------------------------------------------------------------------------------------
 
+    /** When this screen last asked the feed (Refresh: when to ask again while Home stays on screen). */
+    private long asked;
+
     /** Each time the home screen appears: one request, on a background thread. */
     void refresh() {
+        refresh("home");
+    }
+
+    /** One request; why ("home", "saved", "15 min") goes in the log, so the TV can show when it asked. */
+    private void refresh(String why) {
+        if (!enabled()) return;
+        asked = System.currentTimeMillis();
+        android.util.Log.i("HomeLines", "feed asked: " + why);
         data.refresh(this::render);
     }
 
-    /** Every minute, with the clock: the times worded again from what is already here. */
+    /**
+     * Every minute, with the clock: the times worded again from what is already here; and, while Home stays on screen,
+     * one more request a minute after a saved copy (the site's cache answered with its old copy while it makes a fresh
+     * one, or the request failed) and every 15 minutes otherwise.
+     */
     void tick() {
+        if (enabled() && Refresh.due(System.currentTimeMillis(), asked, data.saved())) refresh(data.saved() ? "saved" : "15 min");
         render();
     }
 
