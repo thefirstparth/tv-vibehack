@@ -84,7 +84,7 @@ const seg = (s, colour, pkg) => {
 };
 
 /** Apps in their own colours, so the strip reads at a glance; others get a steady colour from their name. */
-export const OTHER = "#c9c2b3";
+export const OTHER = "#a39a88";   // 3:1 against the strip's background, so it is seen
 const BRAND = {
   "com.sonyliv": "#1d1d1d",
   "com.google.android.youtube.tv": "#ff0000",
@@ -95,7 +95,7 @@ const BRAND = {
   "com.apple.atve.androidtv.appletv": "#5b5d63",
   "com.spotify.tv.android": "#1db954",
   "com.gathin.tv1400": "#2442e8",
-  "com.formulaone.production": "#e10600",
+  "com.formulaone.production": "#8a1538",   // not YouTube's red
   "com.google.android.apps.tv.dreamx": "#a99f8c",
 };
 const SPARE = ["#147a40", "#b5650d", "#0f6e8c", "#8c2f6e", "#4b5b9a", "#6b6b2a"];

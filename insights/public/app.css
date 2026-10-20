@@ -3,7 +3,7 @@
 :root {
   --bg: #f4f1ea; --surface: #fffdf9; --sunk: #f0ebe1; --ink: #14172b; --ink2: #33384f; --muted: #575b6f;
   --line: rgba(20, 23, 43, .09); --line2: rgba(20, 23, 43, .18);
-  --cobalt: #2442e8; --tang: #ff6a2b; --red: #dc2a1f; --green: #147a40; --amber: #9a5800;
+  --cobalt: #2442e8; --tang: #ff6a2b; --tang-mark: #d9531a; --red: #b8231a; --green: #147a40; --amber: #8a4f00;
   --ui: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --num: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   color-scheme: light;
@@ -79,19 +79,23 @@ details[open] > summary span:last-child { transform: rotate(90deg); }
 
 /* month: a calendar of hours */
 .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 8px; }
-.cal .w { font-size: 11px; color: var(--muted); text-align: center; font-weight: 600; }
+.cal .w { font-size: 12px; color: var(--muted); text-align: center; font-weight: 600; }
 .cal .c { aspect-ratio: 1.3; border-radius: 8px; background: var(--sunk); display: grid; place-items: center; font-size: 12px; color: var(--ink2); }
 .cal .c.on { color: #fff; font-weight: 600; }
 .cal .c.pale { color: var(--ink); }
+.cal .c.off { background: repeating-linear-gradient(135deg, var(--sunk) 0 4px, #e2dccf 4px 6px); color: var(--muted); }
+.card.warn { border-color: rgba(138, 79, 0, .35); background: #fff8ee; }
+.card.warn p { margin: 6px 0 0; color: var(--ink2); }
 .cal .c.none { background: transparent; }
 
 /* speed bars */
 .bars { display: flex; align-items: flex-end; gap: 3px; height: 110px; margin-top: 10px; }
 .bars div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
-.barDays { display: flex; gap: 3px; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.barDays { display: flex; gap: 3px; font-size: 12px; color: var(--muted); margin-top: 3px; }
 .barDays span { flex: 1; text-align: center; overflow: visible; white-space: nowrap; }
 .bars i { display: block; width: 100%; border-radius: 3px 3px 0 0; background: var(--cobalt); min-height: 2px; }
-.bars i.slow { background: var(--tang); }
+.bars i.slow { background: var(--tang-mark); }
+.bars i.slow::after { content: "!"; display: block; text-align: center; color: #fff; font: 700 10px var(--ui); }
 .key { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 
 .dayNav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 2px 0 10px; }
@@ -132,8 +136,8 @@ dialog p { color: var(--ink2); }
 .heat i { aspect-ratio: .55; border-radius: 3px; background: rgba(36, 66, 232, max(.06, var(--a))); }
 .wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 70px; margin-top: 12px; }
 .wk i { display: block; border-radius: 4px 4px 0 0; background: var(--cobalt); min-height: 2px; }
-.wk i.best { background: var(--tang); }
-.wkl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 11px; color: var(--muted); text-align: center; margin-top: 3px; }
+.wk i.best { background: var(--tang-mark); }
+.wkl { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; font-size: 12px; color: var(--muted); text-align: center; margin-top: 3px; }
 .ink { color: var(--ink); }
 .up { color: var(--green); } .down { color: var(--red); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }

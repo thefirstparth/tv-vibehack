@@ -1,5 +1,6 @@
 import { ago, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
+document.getElementById("fonts").media = "all";   // the web fonts load without holding up the page
 const main = document.getElementById("main");
 const tabs = document.getElementById("tabs");
 const fresh = document.getElementById("fresh");
@@ -24,11 +25,11 @@ function route() {
   return { view: VIEWS.includes(v) ? v : "day", date: /^\d{4}-\d{2}-\d{2}$/.test(d ?? "") ? d : null, period: PERIODS[d] ? d : null };
 }
 /** Tabs and day steps replace the history entry, so Back is one step out of the app. */
-function go(v, d = null) {
+function go(v, d = null, keep = false) {
   if (v === "insights") { period = d || period; store.set("tv-period", period); d = period; }
   view = v; date = v === "day" ? d : null;
   history.replaceState(null, "", `#${v}${d ? "/" + d : ""}`);
-  draw(true);
+  draw(!keep);
 }
 
 const todayIST = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ });
@@ -57,7 +58,7 @@ function legend(day) {
   const shown = topApps([day]).slice(0, 4);
   const other = Math.max(0, (day.on?.minutes || 0) - shown.reduce((s, a) => s + a.minutes, 0));
   return `<ul class="legend">${shown.map(a => `<li style="--c:${colourOf(a.pkg)}">${esc(nameOf(a))} ${hm(a.minutes)}</li>`).join("")}${
-    other >= 1 ? `<li style="--c:${OTHER}">Home and other ${hm(other)}</li>` : ""}</ul>`;
+    other >= 1 ? `<li style="--c:${OTHER}">Home screen and other apps ${hm(other)}</li>` : ""}</ul>`;
 }
 
 function appRows(apps, key) {
@@ -68,21 +69,37 @@ function appRows(apps, key) {
     <summary><span>${rest.length} more app${rest.length === 1 ? "" : "s"}</span><span aria-hidden="true">›</span></summary><ul class="rows">${rest.map(row).join("")}</ul></details>` : ""}`;
 }
 
+/**
+ * When the newest summary is late, or the TV or the site reported a problem: one plain card above the day, so a gap
+ * reads as "the summary didn't arrive" and says what is known about why.
+ */
+function trouble(days) {
+  const last = days[days.length - 1], f = freshness(days, Date.now()), lines = [];
+  if (f?.late) lines.push(`No summary since ${esc(dayName(last.date))}. If the TV was on since then, its summaries will arrive the next time it can reach this site; it keeps the last 30 days.`);
+  if (last.send?.failed) lines.push(`Before its last summary got through, the TV failed to send ${count(last.send.failed, "time", "times")}. Last problem: ${esc(last.send.last || "unknown")}${last.send.at ? `, at ${esc(clockWords(+last.send.at.slice(11, 13) * 60 + +last.send.at.slice(14, 16)))} on ${esc(dayName(last.send.at.slice(0, 10)))}` : ""}.`);
+  if (data?.refused && Date.parse(data.refused.at) > Date.parse(last.received ?? 0)) lines.push(`On ${esc(dayName(data.refused.at.slice(0, 10)))} this site refused a summary from the TV: ${esc(data.refused.why)} (${data.refused.status}).`);
+  if (data?.missing?.length) lines.push(`Couldn't read ${data.missing.map(m => esc(m)).join(", ")} just now; those days are missing until the next refresh.`);
+  return lines.length ? `<section class="card warn" role="status"><h2>Something to know</h2>${lines.map(l => `<p>${l}</p>`).join("")}</section>` : "";
+}
+
 const sticker = home => (!home?.opens ? "" : `<span class="sticker">${home.slow ? `${home.slow} slow open${home.slow === 1 ? "" : "s"}` : "All fast"}</span>`);
 
 function dayView(days, watts, rate) {
   let i = date ? days.findIndex(d => d.date === date) : -1;
   if (i < 0) i = days.length - 1;
   const d = days[i], prev = days[i - 1], next = days[i + 1];
-  const label = d.date === yesterdayIST() ? "Yesterday" : d.date === todayIST() ? "Today" : `${days.length - 1 - i} days before the latest`;
-  return `<div class="dayNav">
+  const back = Math.round((Date.parse(todayIST() + "T12:00:00Z") - Date.parse(d.date + "T12:00:00Z")) / 86400000);
+  const label = back === 0 ? "Today" : back === 1 ? "Yesterday" : `${back} days ago`;
+  const off = d.on && d.on.minutes === 0 && !(d.apps ?? []).length;
+  return `${i === days.length - 1 ? trouble(days) : ""}<div class="dayNav">
       <button type="button" data-day="${prev?.date ?? ""}" ${prev ? "" : "disabled"} aria-label="The day before"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <span>Day ${i + 1} of ${days.length} recorded</span>
       <button type="button" data-day="${next?.date ?? ""}" ${next ? "" : "disabled"} aria-label="The day after"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <section class="card" aria-labelledby="h">
       <p class="label">${label}</p><h1 id="h" tabindex="-1">${esc(titleDay(d.date))}</h1>
-      ${hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
-      ${stripHtml(d)}${ticks()}${legend(d)}${sticker(d.home)}
+      ${off ? `<div class="hero"><span class="num">Off</span><span class="side">all day</span></div>` : hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
+      ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}${sticker(d.home)}
+      <p class="key">Times are India time (IST).</p>
     </section>
     <section class="card"><h2>Home screen</h2><ul class="rows">
       <li><span>Opened</span><span>${d.home?.opens ?? 0} times · ${ms(d.home?.median_ms)} median</span></li>
@@ -101,7 +118,7 @@ function weekView(days, watts, rate) {
     ? `${+first.slice(8)}–${longDay(end).replace(/^\w+ /, "")}`
     : `${longDay(first).replace(/^\w+ /, "")} – ${longDay(end).replace(/^\w+ /, "")}`;
   return `<section class="card" aria-labelledby="h"><p class="label">Last 7 days</p><h1 id="h" tabindex="-1">${esc(range)}</h1>
-      ${hero(hoursHtml(t.on), `on · ${hm(t.perDay)} a day · about ${t.kwh} kWh, ${rupees(t.kwh, rate)}`)}
+      ${hero(hoursHtml(t.on), `on · ${t.days} of 7 days recorded · ${hm(t.perDay)} a day · about ${t.kwh} kWh, ${rupees(t.kwh, rate)}`)}
       <div class="week">${week.map(d => `<span class="d">${esc(dayName(d.date).replace(",", "").split(" ").slice(0, 2).join(" "))}</span>${stripHtml(d, "thin")}<span class="h num">${hm(d.on?.minutes)}</span>`).join("")}</div>
       ${ticks("margin:4px 74px 0 58px", true)}
     </section>
@@ -119,13 +136,14 @@ function monthView(days, watts, rate) {
   for (let dd = 1; dd <= n; dd++) {
     const key = `${end.slice(0, 7)}-${String(dd).padStart(2, "0")}`, v = by[key];
     const a = .3 + .7 * ((v || 0) / max);   // white text only on the darker blues, so it stays readable
-    cells.push(v ? `<span class="c on${a < .62 ? " pale" : ""}" style="background:rgba(36,66,232,${a.toFixed(2)})">${dd}</span>` : `<span class="c">${dd}</span>`);
+    const off = key in by && !v;
+    cells.push(v ? `<span class="c on${a < .78 ? " pale" : ""}" style="background:rgba(36,66,232,${a.toFixed(2)})">${dd}</span>` : off ? `<span class="c off">${dd}</span>` : `<span class="c">${dd}</span>`);
   }
   const top = apps[0];
-  return `<section class="card" aria-labelledby="h"><p class="label">${+end.slice(8) === n ? "Wrapped" : "Wrapped so far"}</p><h1 id="h" tabindex="-1">${esc(name)}</h1>
+  return `<section class="card" aria-labelledby="h"><p class="label">${+end.slice(8) === n ? "The whole month" : "The month so far"}</p><h1 id="h" tabindex="-1">${esc(name)}</h1>
       ${hero(hoursHtml(t.on), `on · ${count(t.days, "day", "days")} recorded`)}
-      <div class="cal" role="img" aria-label="Hours on, each day of ${esc(name)}">${["M", "T", "W", "T", "F", "S", "S"].map(w => `<span class="w">${w}</span>`).join("")}${cells.join("")}</div>
-      <p class="key">Key: darker blue, more hours on; plain, no summary that day.</p>
+      <div class="cal" role="img" aria-label="Hours on, each day of ${esc(name)}">${["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(w => `<span class="w">${w}</span>`).join("")}${cells.join("")}</div>
+      <p class="key">Key: darker blue, more hours on; striped, the TV was off all day; plain, no summary that day.</p>
     </section>
     <section class="card"><ul class="rows">
       <li><span>Most watched</span><span>${top ? `<span class="chip" style="--c:${colourOf(top.pkg)}"></span>${esc(nameOf(top))} · <span class="num">${hm(top.minutes)}</span>` : "—"}</span></li>
@@ -167,9 +185,9 @@ function insightsView(days, watts, rate) {
       <li><span>An average day</span><span class="num">${hm(t.perDay)}</span></li>
       <li><span>Longest stretch on</span><span>${rec.on ? `${esc(dayName(rec.on.date))} · <span class="num">${hm(rec.on.minutes)}</span>` : "—"}</span></li>
       <li><span>Longest in one app</span><span>${rec.app ? `${esc(nameOf(rec.app))} · <span class="num">${hm(rec.app.minutes)}</span>` : "—"}</span></li>
-      ${period === "all" ? "" : `<li><span>Against ${esc(versus)}</span><span>${ch == null ? "not enough days yet" : `<b class="${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : "−"}${Math.abs(ch)}%</b> time on a day`}</span></li>`}
-      <li><span>Energy</span><span>${t.kwh} kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
-    </ul></section>`;
+      ${period === "all" ? "" : `<li><span>Against ${esc(versus)}</span><span>${ch == null ? "not enough days yet" : `${Math.abs(ch)}% ${ch >= 0 ? "more" : "less"} time on each day`}</span></li>`}
+      <li><span>Energy</span><span>about ${t.kwh} kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
+    </ul><p class="key">Times are India time (IST).</p></section>`;
 }
 
 function speedView(days) {
@@ -211,11 +229,13 @@ function draw(moved) {
   }
   tabs.hidden = false;
   const watts = data.watts || 95, rate = data.rate || 6.7;
+  document.getElementById("aboutEnergy").textContent = `Energy is an estimate: hours on times a typical ${watts} W, not a meter reading. The cost uses ₹${rate.toFixed(2)} a unit (1 unit = 1 kWh).`;
   main.innerHTML = view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "insights" ? insightsView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate);
   for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
   for (const d of main.querySelectorAll("details[data-key]")) d.ontoggle = () => store.set("open-" + d.dataset.key, d.open);
-  for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => b.dataset.day && go("day", b.dataset.day);
-  for (const b of main.querySelectorAll("[data-period]")) b.onclick = () => go("insights", b.dataset.period);
+  for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => { if (b.dataset.day) { const side = b.getAttribute("aria-label"); go("day", b.dataset.day, true); main.querySelector(`[aria-label="${side}"]:not([disabled])`)?.focus(); } };
+  for (const b of main.querySelectorAll("[data-period]")) b.onclick = () => { go("insights", b.dataset.period, true); main.querySelector(`[data-period="${b.dataset.period}"]`)?.focus(); };
+  if (view === "day" && date && !days.some(d => d.date === date)) history.replaceState(null, "", "#day");
   if (moved) { document.getElementById("h")?.focus({ preventScroll: true }); window.scrollTo(0, 0); }
   topLine();
 }
@@ -226,15 +246,15 @@ function topLine() {
   const f = freshness(data?.days ?? [], Date.now());
   fresh.className = "fresh";
   if (!navigator.onLine) {
-    fresh.textContent = f ? `Offline · last day came ${ago(f.age)} ago` : "Offline";
+    fresh.textContent = f ? `Offline · last summary arrived ${ago(f.age)} ago` : "Offline";
     fresh.classList.add("late");
   } else if (failed) {
-    fresh.textContent = f ? `Refresh failed · ${ago(f.age)} old` : "Refresh failed · tap to try again";
+    fresh.textContent = f ? `Refresh failed · ${ago(f.age)} old ↻` : "Refresh failed · tap to try again";
     fresh.classList.add("bad");
   } else if (!f) {
     fresh.textContent = data ? "No days yet" : "Loading…";
   } else {
-    fresh.textContent = f.late ? `Last day came ${ago(f.age)} ago` : `Updated ${ago(f.age)} ago`;
+    fresh.textContent = f.late ? `Last summary arrived ${ago(f.age)} ago ↻` : `Updated ${ago(f.age)} ago ↻`;
     if (f.late) fresh.classList.add("late");
   }
 }
@@ -245,7 +265,7 @@ function signin(message) {
   fresh.textContent = "";
   main.innerHTML = `<form class="signin" id="f"><h1 id="h" tabindex="-1">TV Insights</h1>
     <input type="password" name="p" placeholder="Password" aria-label="Password" autocomplete="current-password" required>
-    <button class="primary">Open</button><p class="note ${message ? "bad" : ""}" role="status">${esc(message || "For this TV's household only.")}</p></form>`;
+    <button class="primary">Sign in</button><p class="note ${message ? "bad" : ""}" role="status">${esc(message || "For this TV's household only.")}</p></form>`;
   const f = document.getElementById("f");
   f.p.focus();
   f.onsubmit = async e => {
@@ -253,8 +273,11 @@ function signin(message) {
     const btn = f.querySelector("button");
     btn.disabled = true;
     btn.textContent = "Checking…";
-    const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: f.p.value }) }).catch(() => null);
-    if (r?.ok) { signedOut = false; load(true); } else signin(r ? "Wrong password." : "Couldn't reach the server. Check the connection and try again.");
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 10000);
+    const r = await fetch("/api/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password: f.p.value }), signal: ctl.signal }).catch(() => null);
+    clearTimeout(timer);
+    if (r?.ok) { signedOut = false; load(true); }
+    else signin(!r ? "Couldn't reach the server. Check the connection and try again." : r.status === 401 ? "Wrong password." : `The server had a problem (${r.status}). Try again in a minute.`);
   };
 }
 
@@ -287,7 +310,7 @@ async function load(moved) {
 }
 
 tabs.onclick = e => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
-fresh.onclick = () => load(false);
+fresh.onclick = () => { fresh.textContent = "Refreshing…"; load(false); };
 document.getElementById("aboutBtn").onclick = () => document.getElementById("about").showModal();
 window.addEventListener("hashchange", () => { const r = route(); view = r.view; date = r.date; if (r.period) period = r.period; draw(true); });
 window.addEventListener("online", () => load(false));

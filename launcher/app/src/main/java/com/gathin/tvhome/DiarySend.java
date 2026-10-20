@@ -24,14 +24,20 @@ import java.util.Map;
  * Once a day, the day before's summary to the insights site (insights/, a separate Vercel project): only when its address
  * and key are set in launcher/local.properties (tv.diaryUrl, tv.diaryKey), only from 4 am, and only after Home has been
  * on screen a few seconds (MainActivity posts it and takes it back on pause), so never while something is watched.
- * Days missed (the TV off, the site down) are sent the next time, a week back at most. Runs on the diary's thread.
+ * Days missed (the site down, no internet) are sent the next time, 30 days back at most. A day the TV was off is sent
+ * as "on 0 minutes", so on the page a missing day means the summary never arrived. What went wrong with a send (no
+ * internet, a timeout, the site's answer) is remembered and sent with the next day that gets through. Runs on a thread
+ * of its own, so the diary never waits for the network.
  */
 final class DiarySend {
 
     static final long AFTER_HOME_MS = 5_000;
-    static final int FROM_HOUR = 4, BACK_DAYS = 7;
+    static final int FROM_HOUR = 4, BACK_DAYS = 30;
+    /** Before this the TV's clock isn't set (this feature didn't exist): nothing is sent and the diary isn't pruned. */
+    static final LocalDate CLOCK_FLOOR = LocalDate.of(2026, 10, 21);
     private static final int TIMEOUT_MS = 10_000;
     private static volatile boolean running;
+    private static final java.util.concurrent.ExecutorService NET = java.util.concurrent.Executors.newSingleThreadExecutor();
 
     private DiarySend() {
     }
@@ -44,7 +50,7 @@ final class DiarySend {
         Context c = ctx.getApplicationContext();
         if (!configured(c) || running) return;
         Diary diary = Diary.get(c);
-        diary.io.execute(() -> {
+        NET.execute(() -> {
             running = true;
             try {
                 send(c, diary);
@@ -59,27 +65,106 @@ final class DiarySend {
     private static void send(Context c, Diary diary) throws Exception {
         ZoneId zone = ZoneId.systemDefault();
         LocalDate today = LocalDate.now(zone);
-        if (LocalTime.now(zone).getHour() < FROM_HOUR) return;
+        if (today.isBefore(CLOCK_FLOOR) || LocalTime.now(zone).getHour() < FROM_HOUR) return;
         SharedPreferences prefs = c.getSharedPreferences("diary", Context.MODE_PRIVATE);
-        String last = prefs.getString("sent", "");
-        LocalDate day = today.minusDays(BACK_DAYS);
-        if (!last.isEmpty()) {
-            LocalDate next = LocalDate.parse(last).plusDays(1);
-            if (next.isAfter(day)) day = next;
+        // the first day this launcher kept a diary: before it, a day with no usage is unknown, not "off"
+        String since = prefs.getString("since", "");
+        if (since.isEmpty()) {
+            since = today.toString();
+            prefs.edit().putString("since", since).apply();
         }
+        LocalDate day = Plan.firstToSend(today, prefs.getString("sent", ""), BACK_DAYS);
         for (; day.isBefore(today); day = day.plusDays(1)) {
             String date = day.toString();
             List<String> lines = diary.lines(date);
             UsageDay usage = usage(c, day, zone);
-            if (lines.isEmpty() && (usage == null || (usage.onMs == 0 && usage.apps.isEmpty()))) {
-                prefs.edit().putString("sent", date).apply();   // nothing to say for that day (the TV was off)
+            boolean empty = lines.isEmpty() && (usage == null || (usage.onMs == 0 && usage.apps.isEmpty()));
+            if (empty && date.compareTo(since) < 0) {   // before the diary: nothing known, nothing sent
+                prefs.edit().putString("sent", date).apply();
                 continue;
             }
-            String body = DaySummary.json(date, c.getString(R.string.tv_build), lines, usage, names(c, usage), tv(c), zone);
-            if (!post(c, body)) return;
-            prefs.edit().putString("sent", date).apply();
+            if (empty && usage == null) usage = new UsageDay();   // the TV was off all day: "on 0 minutes"
+            String body = DaySummary.json(date, c.getString(R.string.tv_build), lines, usage, names(c, usage), tv(c), zone, failures(prefs));
+            int code;
+            try {
+                code = post(c, body);
+            } catch (java.net.SocketTimeoutException e) {
+                failed(prefs, "timed out");
+                return;
+            } catch (java.io.IOException e) {
+                failed(prefs, "no internet");
+                return;
+            }
+            String why = Plan.after(code);
+            if (why == null) {
+                prefs.edit().putString("sent", date).remove("failed").remove("fail_why").remove("fail_at").apply();
+            } else if (Plan.skip(code)) {
+                // the site refused this day for good: keep it on the TV and go on with the next day
+                failed(prefs, why);
+                keep(c, date, body);
+                prefs.edit().putString("sent", date).apply();
+            } else {
+                failed(prefs, why);   // the key, or the site: try again next time
+                return;
+            }
         }
-        diary.prune(today);
+        Diary.get(c).io.execute(() -> diary.prune(today));
+    }
+
+    /** Which day to send from, and what a reply means. Pure, so it is unit-tested. */
+    static final class Plan {
+        private Plan() {
+        }
+
+        /** The day after the last sent one, but never more than `back` days ago; a "sent" in the future (the clock was wrong) is ignored. */
+        static LocalDate firstToSend(LocalDate today, String sent, int back) {
+            LocalDate from = today.minusDays(back);
+            if (sent == null || sent.isEmpty()) return from;
+            LocalDate next;
+            try {
+                next = LocalDate.parse(sent).plusDays(1);
+            } catch (Exception e) {
+                return from;
+            }
+            if (next.isAfter(today)) return from;
+            return next.isAfter(from) ? next : from;
+        }
+
+        /** null when the site kept the day; otherwise what went wrong, in words for the page. */
+        static String after(int code) {
+            if (code >= 200 && code < 300) return null;
+            if (code == 401 || code == 403) return "key refused (" + code + ")";
+            if (code == 400 || code == 413 || code == 422) return "day refused (" + code + ")";
+            return "site error (" + code + ")";
+        }
+
+        /** A day the site will never take as it is: skipped, so it doesn't hold up the days after it. */
+        static boolean skip(int code) {
+            return code == 400 || code == 413 || code == 422;
+        }
+    }
+
+    private static void failed(SharedPreferences prefs, String why) {
+        prefs.edit().putInt("failed", prefs.getInt("failed", 0) + 1).putString("fail_why", why)
+                .putString("fail_at", java.time.LocalDateTime.now().withNano(0).toString()).apply();
+    }
+
+    /** The send problems since the last good send, as JSON for the summary, or null when there were none. */
+    private static String failures(SharedPreferences prefs) {
+        int n = prefs.getInt("failed", 0);
+        if (n == 0) return null;
+        return "{\"failed\":" + n + ",\"last\":" + DaySummary.q(prefs.getString("fail_why", "")) + ",\"at\":" + DaySummary.q(prefs.getString("fail_at", "")) + "}";
+    }
+
+    /** A refused day stays on the TV (files/refused/), so it can be looked at and sent again by hand. */
+    private static void keep(Context c, String date, String body) {
+        try {
+            java.io.File dir = new java.io.File(c.getFilesDir(), "refused");
+            if (!dir.isDirectory() && !dir.mkdirs()) return;
+            java.nio.file.Files.write(new java.io.File(dir, date + ".json").toPath(), body.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {
+            // best effort
+        }
     }
 
     /** null without usage access (granted once over adb; MOOR2 README). */
@@ -124,7 +209,7 @@ final class DiarySend {
         return t;
     }
 
-    private static boolean post(Context c, String body) throws Exception {
+    private static int post(Context c, String body) throws java.io.IOException {
         HttpURLConnection h = (HttpURLConnection) new URL(c.getString(R.string.tv_diary_url).trim()).openConnection();
         h.setConnectTimeout(TIMEOUT_MS);
         h.setReadTimeout(TIMEOUT_MS);
@@ -139,6 +224,6 @@ final class DiarySend {
         }
         int code = h.getResponseCode();
         h.disconnect();
-        return code >= 200 && code < 300;
+        return code;
     }
 }

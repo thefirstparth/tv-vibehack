@@ -86,14 +86,21 @@ final class Diary {
         }
     }
 
-    /** Files older than KEEP_DAYS go (call on io). */
+    /**
+     * Files older than KEEP_DAYS go (call on io): at most three a day, so a clock that jumps ahead by mistake can cost
+     * a few days of the diary, never all of it; and nothing before the clock is set.
+     */
     void prune(LocalDate today) {
+        if (today.isBefore(DiarySend.CLOCK_FLOOR)) return;
         File[] files = dir.listFiles();
         if (files == null) return;
         String oldest = today.minusDays(KEEP_DAYS).toString();
+        java.util.Arrays.sort(files);
+        int gone = 0;
         for (File f : files) {
             String n = f.getName();
-            if (n.endsWith(".tsv") && n.compareTo(oldest) < 0 && !f.delete()) f.deleteOnExit();
+            if (gone == 3 || !n.endsWith(".tsv") || n.compareTo(oldest) >= 0) continue;
+            if (f.delete()) gone++;
         }
     }
 }

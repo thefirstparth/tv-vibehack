@@ -2,22 +2,30 @@
 // but what is kept should never be more than this shape. Pure, so it is unit-tested.
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const HM = /^\d{2}:\d{2}$/;
+const HM = /^([01]\d|2[0-3]):[0-5]\d$/;
+/** A real calendar date ("2026-02-30" is not). */
+const realDate = s => {
+  if (!DATE.test(s ?? "")) return false;
+  const t = new Date(s + "T00:00:00Z");
+  return !Number.isNaN(t.getTime()) && t.toISOString().slice(0, 10) === s;
+};
 const PKG = /^[A-Za-z0-9_.]{1,120}$/;
 export const MAX_BYTES = 32 * 1024;   // 40 apps with 24 stretches each fits
 
-const int = (v, max) => (Number.isFinite(+v) ? Math.max(0, Math.min(max, Math.round(+v))) : null);
+const int = (v, max) => (v === null || v === undefined || v === "" || !Number.isFinite(+v) ? null : Math.max(0, Math.min(max, Math.round(+v))));
 const text = (v, max) => (typeof v === "string" ? v.replace(/[\u0000-\u001f]/g, "").slice(0, max) : null);
 /** [["19:40","21:05"], ...] kept as given when well formed; anything else left out. */
 const spans = (list, max) =>
-  Array.isArray(list) ? list.filter(s => Array.isArray(s) && HM.test(s[0]) && HM.test(s[1])).slice(0, max).map(s => [s[0], s[1]]) : null;
+  Array.isArray(list) ? list.filter(s => Array.isArray(s) && HM.test(s[0]) && HM.test(s[1]) && s[0] <= s[1]).slice(0, max).map(s => [s[0], s[1]]) : null;
 const drop = o => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined));
 
-/** The stored day, or throws Error with a short reason. */
-export function cleanDay(input) {
+/** The stored day, or throws Error with a short reason. `now`: nothing dated after tomorrow in India is taken. */
+export function cleanDay(input, now = new Date()) {
   if (!input || typeof input !== "object") throw new Error("not an object");
   if (input.v !== 1) throw new Error("unknown version");
-  if (!DATE.test(input.date ?? "")) throw new Error("bad date");
+  if (!realDate(input.date)) throw new Error("bad date");
+  const tomorrow = new Date(now.getTime() + (5.5 + 24) * 3600 * 1000).toISOString().slice(0, 10);
+  if (input.date > tomorrow || input.date < "2020-01-01") throw new Error("date out of range");
   const d = { v: 1, date: input.date };
   d.build = text(input.build, 40);
   d.sent = text(input.sent, 40);
@@ -46,16 +54,23 @@ export function cleanDay(input) {
     const t = input.tv;
     d.tv = drop({ boots: int(t.boots, 1000), uptime_h: int(t.uptime_h, 100000), mem_free_mb: int(t.mem_free_mb, 100000), storage_free_mb: int(t.storage_free_mb, 10000000), net_drops: int(t.net_drops, 10000) });
   }
+  if (input.send && typeof input.send === "object") {
+    d.send = drop({ failed: int(input.send.failed, 100000), last: text(input.send.last, 60), at: text(input.send.at, 25) });
+  }
   return drop(d);
 }
+
+/** How much a copy of a day holds: so a resend with less (lost usage access, a cleared TV) never replaces more. */
+const weight = d => (d.on?.minutes ?? -1) * 10 + (d.apps?.length ?? 0) * 100 + (d.home?.opens ?? 0);
 
 /** The month file's name for a day: "months/2026-10.json". */
 export const monthPath = date => `months/${date.slice(0, 7)}.json`;
 
-/** A month file with this day put in (replacing the same date), days in date order. */
+/** A month file with this day put in, days in date order. A day already there is replaced only by a copy holding as much or more. */
 export function withDay(month, day) {
+  const old = (month?.days ?? []).find(x => x.date === day.date);
   const days = (month?.days ?? []).filter(x => x.date !== day.date);
-  days.push(day);
+  days.push(old && weight(old) > weight(day) ? { ...old, send: day.send ?? old.send, resent: day.received ?? null } : day);
   days.sort((a, b) => (a.date < b.date ? -1 : 1));
   return { month: day.date.slice(0, 7), days };
 }

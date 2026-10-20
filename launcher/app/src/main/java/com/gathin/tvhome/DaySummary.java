@@ -32,6 +32,11 @@ final class DaySummary {
     }
 
     static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone) {
+        return json(date, build, diary, usage, names, tv, zone, null);
+    }
+
+    /** sendJson: the send problems since the last good send ({"failed":3,"last":"no internet","at":"..."}), or null. */
+    static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone, String sendJson) {
         List<Long> home = new ArrayList<>(), cold = new ArrayList<>();
         int asks = 0, fresh = 0, drops = 0;
         for (String line : diary) {
@@ -98,7 +103,9 @@ final class DaySummary {
             if (tv.memFreeMb >= 0) s.append(",\"mem_free_mb\":").append(tv.memFreeMb);
             if (tv.storageFreeMb >= 0) s.append(",\"storage_free_mb\":").append(tv.storageFreeMb);
         }
-        return s.append("}}").toString();
+        s.append('}');
+        if (sendJson != null) s.append(",\"send\":").append(sendJson);
+        return s.append('}').toString();
     }
 
     /** The nearest-rank percentile. */

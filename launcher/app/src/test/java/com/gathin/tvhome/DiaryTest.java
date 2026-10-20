@@ -96,6 +96,29 @@ public class DiaryTest {
     }
 
     @Test
+    public void anOffDayIsSentAsZeroMinutesAndSendProblemsRideAlong() {
+        String j = DaySummary.json("2026-10-21", "x", Collections.emptyList(), new UsageDay(), null, null, IST,
+                "{\"failed\":3,\"last\":\"no internet\",\"at\":\"2026-10-22T19:42\"}");
+        assertTrue(j, j.contains("\"on\":{\"minutes\":0,\"spans\":[]},\"apps\":[]"));
+        assertTrue(j, j.endsWith(",\"send\":{\"failed\":3,\"last\":\"no internet\",\"at\":\"2026-10-22T19:42\"}}"));
+    }
+
+    @Test
+    public void whichDayToSendFromAndWhatARefusalMeans() {
+        java.time.LocalDate today = java.time.LocalDate.of(2026, 11, 30);
+        assertEquals(today.minusDays(30), DiarySend.Plan.firstToSend(today, "", 30));
+        assertEquals(java.time.LocalDate.of(2026, 11, 28), DiarySend.Plan.firstToSend(today, "2026-11-27", 30));
+        assertEquals(today.minusDays(30), DiarySend.Plan.firstToSend(today, "2026-01-01", 30));   // long ago: 30 days back
+        assertEquals(today.minusDays(30), DiarySend.Plan.firstToSend(today, "2027-05-01", 30));   // sent "in the future": the clock was wrong
+        assertEquals(today.minusDays(30), DiarySend.Plan.firstToSend(today, "junk", 30));
+        assertEquals(null, DiarySend.Plan.after(200));
+        assertEquals("key refused (401)", DiarySend.Plan.after(401));
+        assertEquals("site error (500)", DiarySend.Plan.after(500));
+        assertTrue(DiarySend.Plan.skip(400));
+        assertTrue(!DiarySend.Plan.skip(500) && !DiarySend.Plan.skip(401));
+    }
+
+    @Test
     public void withoutUsageAccessOnlyTheLaunchersOwnNumbers() {
         String j = DaySummary.json("2026-10-21", "", Collections.emptyList(), null, null, null, IST);
         assertEquals("{\"v\":1,\"date\":\"2026-10-21\",\"build\":\"\",\"home\":{\"opens\":0},\"feed\":{\"asks\":0,\"fresh\":0,\"old\":0},\"tv\":{\"net_drops\":0}}", j);

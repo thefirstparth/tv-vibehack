@@ -1,21 +1,46 @@
 import { tvAllowed } from "../lib/auth.js";
 import { cleanDay, MAX_BYTES, monthPath, withDay } from "../lib/day.js";
-import { readMonth, writeMonth } from "../lib/store.js";
+import { archiveDay, readMonth, writeMonth, writeStatus } from "../lib/store.js";
 
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.
-// The day replaces any earlier copy of the same date, so a resend changes nothing.
+// First the day is archived as it arrived (never overwritten), then merged into its month file. A resend never
+// replaces a fuller copy with an emptier one (withDay). If the month can't be read cleanly, nothing is written and
+// the TV gets a 503, so it tries again later rather than marking the day sent.
 export async function POST(request) {
   if (!tvAllowed(request.headers.get("x-tv-key"), process.env)) return Response.json({ error: "key" }, { status: 401 });
   const body = await request.text();
-  if (body.length > MAX_BYTES) return Response.json({ error: "too big" }, { status: 413 });
+  const refuse = async (status, why) => {
+    await writeStatus({ at: new Date().toISOString(), status, why }).catch(() => {});
+    return Response.json({ error: why }, { status });
+  };
+  if (body.length > MAX_BYTES) return refuse(413, "too big");
   let day;
   try {
-    day = cleanDay(JSON.parse(body));
+    day = cleanDay(JSON.parse(body), new Date());
   } catch (e) {
-    return Response.json({ error: String(e.message ?? e).slice(0, 60) }, { status: 400 });
+    return refuse(400, String(e.message ?? e).slice(0, 60));
   }
   day.received = new Date().toISOString();   // the page's "Updated" line
+  try {
+    await archiveDay(day);
+  } catch (e) {
+    return Response.json({ error: "archive failed, try again" }, { status: 503 });
+  }
   const path = monthPath(day.date);
-  await writeMonth(path, withDay(await readMonth(path), day));
-  return Response.json({ ok: true, date: day.date }, { headers: { "cache-control": "no-store" } });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let read;
+    try {
+      read = await readMonth(path);
+    } catch {
+      return Response.json({ error: "month unreadable, try again" }, { status: 503 });
+    }
+    try {
+      await writeMonth(path, withDay(read.month, day), read.etag);
+      return Response.json({ ok: true, date: day.date }, { headers: { "cache-control": "no-store" } });
+    } catch (e) {
+      if (!/precondition|already exists|412|409/i.test(String(e?.message ?? e) + (e?.name ?? ""))) break;
+      // someone wrote the month in between: read it again and merge again
+    }
+  }
+  return Response.json({ error: "month busy, try again" }, { status: 503 });
 }

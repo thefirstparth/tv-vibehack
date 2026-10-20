@@ -16,7 +16,7 @@ const DAY = {
 test("a day keeps only the known fields, cleaned", () => {
   const d = cleanDay(DAY);
   assert.equal(d.secret, undefined);
-  assert.deepEqual(d.on, { minutes: 250, spans: [["19:40", "00:30"], ["07:00", "07:30"]] });
+  assert.deepEqual(d.on, { minutes: 250, spans: [["07:00", "07:30"]] });   // ["19:40", "00:30"] runs backwards: left out
   assert.deepEqual(d.apps, [{ pkg: "com.sonyliv", name: "SonyLIV", minutes: 125, opens: 3 }]);
   assert.deepEqual(d.home, { opens: 38, median_ms: 92, p90_ms: 140, slow: 0 });
   assert.equal(d.tv.boots, 1);
@@ -37,9 +37,9 @@ test("numbers are clamped and control characters dropped", () => {
 test("a resent day replaces its earlier copy, days stay in order", () => {
   let m = withDay(null, cleanDay({ ...DAY, date: "2026-10-22" }));
   m = withDay(m, cleanDay(DAY));
-  m = withDay(m, cleanDay({ ...DAY, on: { minutes: 10 } }));
+  m = withDay(m, cleanDay({ ...DAY, on: { minutes: 300 } }));
   assert.deepEqual(m.days.map(d => d.date), ["2026-10-21", "2026-10-22"]);
-  assert.equal(m.days[0].on.minutes, 10);
+  assert.equal(m.days[0].on.minutes, 300, "a fuller resend replaces");
   assert.equal(monthPath("2026-10-21"), "months/2026-10.json");
 });
 
@@ -65,4 +65,31 @@ test("the TV's key and the phone's cookie", () => {
   assert.ok(!signedIn(c, env, now + 400 * 86400000), "it expires after a year");
   assert.ok(!signedIn(c.replace(/.$/, c.endsWith("A") ? "B" : "A"), env, now));
   assert.ok(!signedIn(c, {}, now), "no password set: nobody is signed in");
+});
+
+test("only real dates, nothing after tomorrow in India, only real times in order", () => {
+  const now = new Date("2026-10-21T10:00:00Z");
+  assert.throws(() => cleanDay({ ...DAY, date: "2026-13-45" }, now), /bad date/);
+  assert.throws(() => cleanDay({ ...DAY, date: "2026-02-30" }, now), /bad date/);
+  assert.throws(() => cleanDay({ ...DAY, date: "2099-01-01" }, now), /range/);
+  assert.equal(cleanDay({ ...DAY, date: "2026-10-22" }, now).date, "2026-10-22");
+  const d = cleanDay({ ...DAY, on: { minutes: 60, spans: [["25:99", "26:00"], ["23:00", "01:00"], ["19:00", "19:59"]] } }, now);
+  assert.deepEqual(d.on.spans, [["19:00", "19:59"]]);
+});
+
+test("a missing number is left out, not stored as 0", () => {
+  const d = cleanDay({ ...DAY, apps: [{ pkg: "a.b", minutes: null }], home: { opens: 3, median_ms: null } });
+  assert.equal(d.apps.length, 0);
+  assert.deepEqual(d.home, { opens: 3 });
+});
+
+test("a resend with less never replaces a fuller copy, but its send problems are kept", () => {
+  const full = cleanDay(DAY);
+  const thin = cleanDay({ v: 1, date: DAY.date, home: { opens: 0 }, send: { failed: 2, last: "no internet", at: "2026-10-22T08:00" } });
+  const m = withDay(withDay(null, full), { ...thin, received: "2026-10-22T09:00:00Z" });
+  assert.equal(m.days[0].on.minutes, 250);
+  assert.equal(m.days[0].send.last, "no internet");
+  assert.equal(m.days[0].resent, "2026-10-22T09:00:00Z");
+  const fuller = withDay(withDay(null, thin), full);
+  assert.equal(fuller.days[0].on.minutes, 250, "a fuller copy does replace a thin one");
 });
