@@ -895,15 +895,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 // a port with its own name (config input_names: "HDMI 2|Xbox") reads as that, the port beside it
                 String named = inputNames.get(label);
                 int icon = named != null && CONSOLE.matcher(named).find() ? R.drawable.ic_game : hdmi ? R.drawable.ic_input : R.drawable.ic_av;
-                addInputRow(rows, popup, icon, named != null ? named : label, named != null ? label : null, device, state,
-                        () -> open(new Intent(Intent.ACTION_VIEW).setDataAndType(
-                                TvContract.buildChannelUriForPassthroughInput(id), "vnd.android.cursor.item/channel")));
+                final String title = named != null ? named : label;
+                addInputRow(rows, popup, icon, title, named != null ? label : null, device, state, () -> {
+                    // the diary names the input app's next stretch after this (InputDay); Android can't tell ports apart
+                    Diary.get(this).input(id, title);
+                    open(new Intent(Intent.ACTION_VIEW).setDataAndType(
+                            TvContract.buildChannelUriForPassthroughInput(id), "vnd.android.cursor.item/channel"));
+                });
             }
         }
         Intent liveTv = liveTvPkg.isEmpty() ? null : getPackageManager().getLeanbackLaunchIntentForPackage(liveTvPkg);
         if (liveTv != null) {
             if (rows.getChildCount() > 0) addSeparator(rows);
-            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), null, null, -1, () -> open(liveTv));
+            addInputRow(rows, popup, R.drawable.ic_livetv, getString(R.string.live_tv), null, null, -1, () -> {
+                Diary.get(this).input("livetv", getString(R.string.live_tv));
+                open(liveTv);
+            });
         }
         if (rows.getChildCount() == 0) {
             Toast.makeText(this, R.string.no_inputs, Toast.LENGTH_SHORT).show();

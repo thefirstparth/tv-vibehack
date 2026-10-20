@@ -32,11 +32,16 @@ final class DaySummary {
     }
 
     static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone) {
-        return json(date, build, diary, usage, names, tv, zone, null);
+        return json(date, build, diary, usage, names, tv, zone, (String) null);
     }
 
     /** sendJson: the send problems since the last good send ({"failed":3,"last":"no internet","at":"..."}), or null. */
     static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone, String sendJson) {
+        return withSend(json(date, build, diary, usage, names, tv, zone, Collections.emptyList()), sendJson);
+    }
+
+    /** inputs: the TV input app's time by the input chosen on the Inputs menu (InputDay); none, no "inputs". */
+    static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone, List<InputDay.Use> inputs) {
         List<Long> home = new ArrayList<>(), cold = new ArrayList<>();
         int asks = 0, fresh = 0, drops = 0;
         for (String line : diary) {
@@ -87,6 +92,27 @@ final class DaySummary {
                 s.append('}');
             }
             s.append(']');
+            if (inputs != null && !inputs.isEmpty()) {
+                s.append(",\"inputs\":[");
+                for (int i = 0; i < inputs.size() && i < 12; i++) {
+                    InputDay.Use u = inputs.get(i);
+                    if (i > 0) s.append(',');
+                    s.append("{\"id\":").append(q(u.id));
+                    if (u.name != null) s.append(",\"name\":").append(q(u.name));
+                    s.append(",\"minutes\":").append(Math.round(u.ms / 60000.0)).append(",\"opens\":").append(u.opens);
+                    if (!u.spans.isEmpty()) {
+                        s.append(",\"spans\":[");
+                        for (int k = 0; k < u.spans.size() && k < 24; k++) {
+                            long[] p = u.spans.get(k);
+                            if (k > 0) s.append(',');
+                            s.append('[').append(q(hm.format(Instant.ofEpochMilli(p[0])))).append(',').append(q(hm.format(Instant.ofEpochMilli(p[1] - 1)))).append(']');
+                        }
+                        s.append(']');
+                    }
+                    s.append('}');
+                }
+                s.append(']');
+            }
         }
         s.append(",\"home\":{\"opens\":").append(home.size());
         if (!home.isEmpty()) {
@@ -104,8 +130,13 @@ final class DaySummary {
             if (tv.storageFreeMb >= 0) s.append(",\"storage_free_mb\":").append(tv.storageFreeMb);
         }
         s.append('}');
-        if (sendJson != null) s.append(",\"send\":").append(sendJson);
         return s.append('}').toString();
+    }
+
+    /** A day's summary (as made, or as kept since its first send) with the send problems since the last good send. */
+    static String withSend(String day, String sendJson) {
+        if (sendJson == null || !day.endsWith("}")) return day;
+        return day.substring(0, day.length() - 1) + ",\"send\":" + sendJson + "}";
     }
 
     /** The nearest-rank percentile. */

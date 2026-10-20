@@ -33,6 +33,8 @@ final class UsageDay {
         int opens;
         /** When it was on screen, [start, end] in ms; stretches under a minute are left out (ms still counts them). */
         final List<long[]> spans = new ArrayList<>();
+        /** Every stretch as it was, [opened, start, end] in ms: opened can be the day before (start is then midnight). */
+        final List<long[]> runs = new ArrayList<>();
 
         App(String pkg) {
             this.pkg = pkg;
@@ -44,6 +46,14 @@ final class UsageDay {
     final List<long[]> on = new ArrayList<>();
     long onMs;
     int boots;
+    /** When the launcher came to the front (ms), the day before's evening too: a stretch after one is a new choice. */
+    final List<Long> homes = new ArrayList<>();
+
+    /** One app's day, or null when it wasn't used. */
+    App app(String pkg) {
+        for (App a : apps) if (a.pkg.equals(pkg)) return a;
+        return null;
+    }
 
     /** Not counted as apps: the launcher itself (its own numbers are separate) and the system. */
     static boolean counted(String pkg) {
@@ -65,6 +75,7 @@ final class UsageDay {
                     int n = open.getOrDefault(e.pkg, 0);
                     if (n == 0) {
                         since.put(e.pkg, e.t);
+                        if ("com.gathin.tvhome".equals(e.pkg)) d.homes.add(e.t);
                         if (e.t >= start && counted(e.pkg) && !e.pkg.equals(front)) apps.computeIfAbsent(e.pkg, App::new).opens++;
                     }
                     open.put(e.pkg, n + 1);
@@ -112,6 +123,7 @@ final class UsageDay {
         if (t <= from) return;
         App a = apps.computeIfAbsent(pkg, App::new);
         a.ms += t - from;
+        a.runs.add(new long[]{s, from, t});
         if (t - from < 60_000) return;
         long[] last = a.spans.isEmpty() ? null : a.spans.get(a.spans.size() - 1);
         if (last != null && from - last[1] < 60_000) last[1] = t;   // back within a minute: one stretch
