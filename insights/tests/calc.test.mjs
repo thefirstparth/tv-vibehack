@@ -62,3 +62,9 @@ test("ages are never rounded up, and a day over 30 h old is late", async () => {
   assert.equal(freshness([{ received: "2026-10-21T03:00:00Z" }], now).late, true);
   assert.equal(freshness([{}], now), null);
 });
+
+test("the cost in rupees", async () => {
+  const { rupees } = await import("../public/calc.js");
+  assert.equal(rupees(0.4, 6.7), "₹2.68");
+  assert.equal(rupees(0, 6.7), "₹0.00");
+});

@@ -1,4 +1,4 @@
-import { ago, colourOf, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
+import { ago, colourOf, rupees, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
 const main = document.getElementById("main");
 const tabs = document.getElementById("tabs");
@@ -67,7 +67,7 @@ function appRows(apps, key) {
 
 const sticker = home => (!home?.opens ? "" : `<span class="sticker">${home.slow ? `${home.slow} slow open${home.slow === 1 ? "" : "s"}` : "All fast"}</span>`);
 
-function dayView(days, watts) {
+function dayView(days, watts, rate) {
   let i = date ? days.findIndex(d => d.date === date) : -1;
   if (i < 0) i = days.length - 1;
   const d = days[i], prev = days[i - 1], next = days[i + 1];
@@ -78,7 +78,7 @@ function dayView(days, watts) {
       <button type="button" data-day="${next?.date ?? ""}" ${next ? "" : "disabled"} aria-label="The day after"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <section class="card" aria-labelledby="h">
       <p class="label">${label}</p><h1 id="h" tabindex="-1">${esc(titleDay(d.date))}</h1>
-      ${hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh`)}
+      ${hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
       ${stripHtml(d)}${ticks()}${legend(d)}${sticker(d.home)}
     </section>
     <section class="card"><h2>Home screen</h2><ul class="rows">
@@ -91,21 +91,21 @@ function dayView(days, watts) {
     <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}</section>`;
 }
 
-function weekView(days, watts) {
+function weekView(days, watts, rate) {
   const end = days[days.length - 1].date, week = lastDays(days, end, 7), t = totals(week, watts);
   const first = week[0].date;
   const range = first.slice(0, 7) === end.slice(0, 7)
     ? `${+first.slice(8)}–${longDay(end).replace(/^\w+ /, "")}`
     : `${longDay(first).replace(/^\w+ /, "")} – ${longDay(end).replace(/^\w+ /, "")}`;
   return `<section class="card" aria-labelledby="h"><p class="label">Last 7 days</p><h1 id="h" tabindex="-1">${esc(range)}</h1>
-      ${hero(hoursHtml(t.on), `on · ${hm(t.perDay)} a day · about ${t.kwh} kWh`)}
+      ${hero(hoursHtml(t.on), `on · ${hm(t.perDay)} a day · about ${t.kwh} kWh, ${rupees(t.kwh, rate)}`)}
       <div class="week">${week.map(d => `<span class="d">${esc(dayName(d.date).replace(",", "").split(" ").slice(0, 2).join(" "))}</span>${stripHtml(d, "thin")}<span class="h num">${hm(d.on?.minutes)}</span>`).join("")}</div>
       ${ticks("margin:4px 74px 0 58px", true)}
     </section>
     <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}</section>`;
 }
 
-function monthView(days, watts) {
+function monthView(days, watts, rate) {
   const end = days[days.length - 1].date, month = monthOf(days, end), t = totals(month, watts), apps = topApps(month);
   const name = new Date(end + "T12:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
   const y = +end.slice(0, 4), m = +end.slice(5, 7), n = new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -128,7 +128,7 @@ function monthView(days, watts) {
       <li><span>Most watched</span><span>${top ? `<span class="chip" style="--c:${colourOf(top.pkg)}"></span>${esc(nameOf(top))} · <span class="num">${hm(top.minutes)}</span>` : "—"}</span></li>
       <li><span>Busiest day</span><span>${t.busiest ? `${esc(dayName(t.busiest.date))} · <span class="num">${hm(t.busiest.minutes)}</span>` : "—"}</span></li>
       <li><span>Home opened</span><span>${t.homeOpens} times</span></li>
-      <li><span>Energy</span><span>about <span class="num">${t.kwh}</span> kWh</span></li>
+      <li><span>Energy</span><span>about <span class="num">${t.kwh}</span> kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
     </ul></section>
     <section class="card"><h2>Apps</h2>${appRows(apps, "month")}</section>`;
@@ -172,8 +172,8 @@ function draw(moved) {
     return;
   }
   tabs.hidden = false;
-  const watts = data.watts || 95;
-  main.innerHTML = view === "week" ? weekView(days, watts) : view === "month" ? monthView(days, watts) : view === "speed" ? speedView(days) : dayView(days, watts);
+  const watts = data.watts || 95, rate = data.rate || 6.7;
+  main.innerHTML = view === "week" ? weekView(days, watts, rate) : view === "month" ? monthView(days, watts, rate) : view === "speed" ? speedView(days) : dayView(days, watts, rate);
   for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
   for (const d of main.querySelectorAll("details[data-key]")) d.ontoggle = () => store.set("open-" + d.dataset.key, d.open);
   for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => b.dataset.day && go("day", b.dataset.day);

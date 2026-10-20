@@ -1,5 +1,8 @@
 // The page's sums, kept apart from the drawing so they are unit-tested (tests/calc.test.mjs).
 
+/** Rupees for some kWh at a rate a unit: "₹2.68". */
+export const rupees = (kwhs, rate) => `₹${(Math.round((kwhs || 0) * rate * 100) / 100).toFixed(2)}`;
+
 /** kWh for minutes on at a given draw: an estimate, not a meter reading. */
 export const kwh = (minutes, watts) => Math.round(((minutes || 0) * watts) / 60 / 1000 * 100) / 100;
 

@@ -9,5 +9,6 @@ export async function GET(request) {
   const ym = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }).slice(0, 7);
   const months = await Promise.all(lastMonths(ym, n).map(m => readMonth(`months/${m}.json`)));
   const days = months.filter(Boolean).flatMap(m => m.days ?? []).sort((a, b) => (a.date < b.date ? -1 : 1));
-  return Response.json({ days, watts: +process.env.TV_WATTS || 95 }, { headers: { "cache-control": "private, no-store" } });
+  // TV_RATE: rupees a unit (kWh), from the bill; 6.70 is BESCOM's 2025 flat ₹5.80 plus surcharges, an estimate (21 Oct)
+  return Response.json({ days, watts: +process.env.TV_WATTS || 95, rate: +process.env.TV_RATE || 6.7 }, { headers: { "cache-control": "private, no-store" } });
 }
