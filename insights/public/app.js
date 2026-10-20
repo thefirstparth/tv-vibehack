@@ -1,4 +1,4 @@
-import { ago, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
+import { ago, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
 document.getElementById("fonts").media = "all";   // the web fonts load without holding up the page
 const main = document.getElementById("main");
@@ -55,10 +55,17 @@ function stripHtml(day, cls = "") {
 const ticks = (style = "", few = false) => `<div class="ticks" aria-hidden="true" style="${style}">${(few ? ["12 AM", "12 PM", "12 AM"] : ["12 AM", "6 AM", "12 PM", "6 PM", "12 AM"]).map(t => `<span>${t}</span>`).join("")}</div>`;
 
 function legend(day) {
-  const shown = topApps([day]).slice(0, 4);
-  const other = Math.max(0, (day.on?.minutes || 0) - shown.reduce((s, a) => s + a.minutes, 0));
+  const shown = topApps([day]).slice(0, 4), saver = saverMinutes([day]);
+  const other = Math.max(0, (day.on?.minutes || 0) - shown.reduce((s, a) => s + a.minutes, 0) - saver);
   return `<ul class="legend">${shown.map(a => `<li style="--c:${colourOf(a.pkg)}">${esc(nameOf(a))} ${hm(a.minutes)}</li>`).join("")}${
+    saver >= 1 ? `<li style="--c:${colourOf("com.google.android.apps.tv.dreamx")}">Screensaver ${hm(saver)}</li>` : ""}${
     other >= 1 ? `<li style="--c:${OTHER}">Home screen and other apps ${hm(other)}</li>` : ""}</ul>`;
+}
+
+/** The screensaver, apart from the apps: counted in hours on and energy, not as watching. */
+function saverLine(days) {
+  const m = saverMinutes(days);
+  return m >= 1 ? `<p class="note">Also ${hm(m)} of screensaver: counted in hours on and energy, not in the apps above.</p>` : "";
 }
 
 function appRows(apps, key) {
@@ -82,7 +89,6 @@ function trouble(days) {
   return lines.length ? `<section class="card warn" role="status"><h2>Something to know</h2>${lines.map(l => `<p>${l}</p>`).join("")}</section>` : "";
 }
 
-const sticker = home => (!home?.opens ? "" : `<span class="sticker">${home.slow ? `${home.slow} slow open${home.slow === 1 ? "" : "s"}` : "All fast"}</span>`);
 
 function dayView(days, watts, rate) {
   let i = date ? days.findIndex(d => d.date === date) : -1;
@@ -98,17 +104,10 @@ function dayView(days, watts, rate) {
     <section class="card" aria-labelledby="h">
       <p class="label">${label}</p><h1 id="h" tabindex="-1">${esc(titleDay(d.date))}</h1>
       ${off ? `<div class="hero"><span class="num">Off</span><span class="side">all day</span></div>` : hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
-      ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}${sticker(d.home)}
+      ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}
       <p class="key">Times are India time (IST).</p>
     </section>
-    <section class="card"><h2>Home screen</h2><ul class="rows">
-      <li><span>Opened</span><span>${d.home?.opens ?? 0} times · ${ms(d.home?.median_ms)} median</span></li>
-      <li><span>Slow opens (over 100 ms)</span><span>${count(d.home?.slow)}</span></li>
-      <li><span>Sport and weather</span><span>${d.feed?.asks ?? 0} asks · ${count(d.feed?.old, "old copy", "old copies")}</span></li>
-      <li><span>Restarts</span><span>${count(d.tv?.boots)}</span></li>
-      ${d.tv?.net_drops ? `<li><span>Wi-Fi dropped</span><span>${count(d.tv.net_drops, "time", "times")}</span></li>` : ""}
-    </ul></section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}${saverLine([d])}</section>`;
 }
 
 function weekView(days, watts, rate) {
@@ -122,7 +121,7 @@ function weekView(days, watts, rate) {
       <div class="week">${week.map(d => `<span class="d">${esc(dayName(d.date).replace(",", "").split(" ").slice(0, 2).join(" "))}</span>${stripHtml(d, "thin")}<span class="h num">${hm(d.on?.minutes)}</span>`).join("")}</div>
       ${ticks("margin:4px 74px 0 58px", true)}
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}${saverLine(week)}</section>`;
 }
 
 function monthView(days, watts, rate) {
@@ -137,13 +136,14 @@ function monthView(days, watts, rate) {
     const key = `${end.slice(0, 7)}-${String(dd).padStart(2, "0")}`, v = by[key];
     const a = .3 + .7 * ((v || 0) / max);   // white text only on the darker blues, so it stays readable
     const off = key in by && !v;
-    cells.push(v ? `<span class="c on${a < .78 ? " pale" : ""}" style="background:rgba(36,66,232,${a.toFixed(2)})">${dd}</span>` : off ? `<span class="c off">${dd}</span>` : `<span class="c">${dd}</span>`);
+    const h = v >= 60 ? `${Math.round(v / 60)}h` : `${v}m`;
+    cells.push(v ? `<span class="c on${a < .78 ? " pale" : ""}" style="background:rgba(36,66,232,${a.toFixed(2)})"><b>${dd}</b><small>${h}</small></span>` : off ? `<span class="c off"><b>${dd}</b><small>off</small></span>` : `<span class="c"><b>${dd}</b></span>`);
   }
   const top = apps[0];
   return `<section class="card" aria-labelledby="h"><p class="label">${+end.slice(8) === n ? "The whole month" : "The month so far"}</p><h1 id="h" tabindex="-1">${esc(name)}</h1>
       ${hero(hoursHtml(t.on), `on · ${count(t.days, "day", "days")} recorded`)}
       <div class="cal" role="img" aria-label="Hours on, each day of ${esc(name)}">${["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(w => `<span class="w">${w}</span>`).join("")}${cells.join("")}</div>
-      <p class="key">Key: darker blue, more hours on; striped, the TV was off all day; plain, no summary that day.</p>
+      <p class="key">Key: each day shows its hours on (h, rounded) or minutes (m); darker blue, more hours; striped, the TV was off all day; plain, no summary that day.</p>
     </section>
     <section class="card"><ul class="rows">
       <li><span>Most watched</span><span>${top ? `<span class="chip" style="--c:${colourOf(top.pkg)}"></span>${esc(nameOf(top))} · <span class="num">${hm(top.minutes)}</span>` : "—"}</span></li>
@@ -152,7 +152,7 @@ function monthView(days, watts, rate) {
       <li><span>Energy</span><span>about <span class="num">${t.kwh}</span> kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
     </ul></section>
-    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}${saverLine(month)}</section>`;
 }
 
 function insightsView(days, watts, rate) {
@@ -169,7 +169,7 @@ function insightsView(days, watts, rate) {
   const pct = m => Math.round((m / total) * 100);
   return `<div class="seg" role="group" aria-label="Period">${Object.entries(PERIODS).map(([k, v]) => `<button type="button" data-period="${k}" aria-pressed="${k === period}">${v}</button>`).join("")}</div>
     <section class="card" aria-labelledby="h"><p class="label">${esc(label)} · ${count(t.days, "day", "days")}</p><h1 id="h" tabindex="-1">Insights</h1>
-      <h2 style="margin-top:12px">Most watched</h2>
+      <h2 style="margin-top:12px">Most watched</h2><p class="key" style="margin:0 0 2px">Share of time in apps; the screensaver is left out.</p>
       <div class="share" role="img" aria-label="${esc(top3.map(a => `${nameOf(a)} ${pct(a.minutes)}%`).join(", "))}">${top3.map(a => `<i style="width:${pct(a.minutes)}%;background:${colourOf(a.pkg)}"></i>`).join("")}${others ? `<i style="width:${pct(others)}%;background:${OTHER}"></i>` : ""}</div>
       ${apps.length ? `<ul class="rows" style="margin-top:6px">${top3.map(a => `<li><span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span> · ${pct(a.minutes)}%</span></li>`).join("")}</ul>` : appRows([], "")}
     </section>
@@ -195,6 +195,14 @@ function speedView(days) {
   const max = Math.max(50, ...recent.map(d => d.home?.median_ms || 0));
   const newest = [...recent].reverse();
   const mem = newest.find(d => d.tv?.mem_free_mb != null)?.tv?.mem_free_mb;
+  const d = days[days.length - 1];
+  const latest = `<section class="card"><h2>The latest day, ${esc(dayName(d.date))}</h2><ul class="rows">
+      <li><span>Home screen opened</span><span>${d.home?.opens ?? 0} times · ${ms(d.home?.median_ms)} usually</span></li>
+      <li><span>Slow opens (over 100 ms)</span><span>${count(d.home?.slow)}</span></li>
+      <li><span>Sport and weather checks</span><span>${d.feed?.asks ?? 0} · ${count(d.feed?.old, "came in out of date", "came in out of date")}</span></li>
+      <li><span>Restarts</span><span>${count(d.tv?.boots)}</span></li>
+      <li><span>Wi-Fi dropped</span><span>${count(d.tv?.net_drops, "time", "times")}</span></li>
+    </ul></section>${latest}`;
   return `<section class="card" aria-labelledby="h"><p class="label">Last 30 days</p><h1 id="h" tabindex="-1">Speed</h1>
       ${hero(t.homeMedian == null ? "—" : `${Math.round(t.homeMedian)}<small> ms</small>`, "Home, median time to draw")}
       <div class="bars" role="img" aria-label="Each day's median time for Home to draw">${recent.map(d => `<div><i class="${d.home?.slow ? "slow" : ""}" style="height:${((d.home?.median_ms || 0) / max) * 100}%"></i></div>`).join("")}</div>

@@ -12,10 +12,17 @@ export function hm(minutes) {
   return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} m` : `${m} m`;
 }
 
-/** Apps summed over some days, most minutes first: [{pkg, name, minutes, opens}]. */
+/** The screensaver: the screen is lit (it counts for hours on and energy) but nobody chose to watch it. */
+export const SAVER = "com.google.android.apps.tv.dreamx";
+
+/** Minutes of screensaver over some days. */
+export const saverMinutes = days => days.reduce((s, d) => s + (d.apps ?? []).filter(a => a.pkg === SAVER).reduce((t, a) => t + (a.minutes || 0), 0), 0);
+
+/** Apps summed over some days, most minutes first: [{pkg, name, minutes, opens}]. The screensaver is left out (Parth, 21 Oct). */
 export function topApps(days) {
   const by = new Map();
   for (const d of days) for (const a of d.apps ?? []) {
+    if (a.pkg === SAVER) continue;
     const t = by.get(a.pkg) ?? { pkg: a.pkg, name: a.name || a.pkg, minutes: 0, opens: 0 };
     t.minutes += a.minutes || 0;
     t.opens += a.opens || 0;

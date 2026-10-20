@@ -68,3 +68,10 @@ test("the cost in rupees", async () => {
   assert.equal(rupees(0.4, 6.7), "₹2.68");
   assert.equal(rupees(0, 6.7), "₹0.00");
 });
+
+test("the screensaver is left out of the apps but kept apart", async () => {
+  const { topApps, saverMinutes, SAVER } = await import("../public/calc.js");
+  const ds = [{ apps: [{ pkg: SAVER, minutes: 40 }, { pkg: "com.sonyliv", minutes: 30 }] }];
+  assert.deepEqual(topApps(ds).map(a => a.pkg), ["com.sonyliv"]);
+  assert.equal(saverMinutes(ds), 40);
+});
