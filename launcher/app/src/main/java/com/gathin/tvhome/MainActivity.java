@@ -85,6 +85,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int linesTop = -1, linesBottom = -1;
     /** Set once the first frame is on screen: the work kept off the startup path may begin. */
     private boolean firstFrameDone, resumed;
+    /** On screen since the last onResume (paused counts, stopped doesn't): a Home intent now is Home pressed on Home. */
+    private boolean shown;
     /** An app was installed, removed or updated while Home was in the background: the tiles and the moon are redone on return. */
     private boolean appsChanged;
     /** The app list is loaded once (onCreate) and redone only when a package changes, not on every return to Home. */
@@ -228,6 +230,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         springY = new SpringAnimation(glass, DynamicAnimation.TRANSLATION_Y);
         for (SpringAnimation s : new SpringAnimation[]{springX, springY}) {
             s.setSpring(new SpringForce().setStiffness(260f).setDampingRatio(0.58f));
+            // at rest the highlight takes its exact (fractional) position again; see GlassView
+            s.addEndListener((anim, canceled, value, velocity) -> {
+                if (!springX.isRunning() && !springY.isRunning()) glass.setMoving(false);
+            });
         }
 
         View btnInputs = findViewById(R.id.btnInputs);
@@ -283,6 +289,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onResume() {
         super.onResume();
+        shown = true;
         glassShown = false;
         glass.setAlpha(0f);
         if (appsChanged) {
@@ -340,6 +347,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         readFakes(intent);
+        // Home pressed while Home is already in front (the launcher was paused for it, never stopped): back to the
+        // top with the first dock tile focused, like the stock launcher. Home or Back from an app stops the launcher
+        // first, so focus still returns to the tile it was on (onResume).
+        if (shown && intent != null && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            grid.scrollToPosition(0);
+            lastFocused = 0;
+            lastDockFocused = 0;
+            focusMoon = false;
+        }
     }
 
     /** The Horizon background for the time of day: replaced only when the look changes, with no animation. */
@@ -430,6 +446,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        shown = false;
+    }
+
+    @Override
     public void onBackPressed() {
         // Home screen: Back goes nowhere.
     }
@@ -451,9 +473,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float y = r.exactCenterY() - h / 2f;
 
         ViewGroup.LayoutParams lp = glass.getLayoutParams();
-        if (lp.width != (int) w || lp.height != (int) h) {
-            lp.width = (int) w;
-            lp.height = (int) h;
+        if (lp.width != (int) w + GlassView.SPARE || lp.height != (int) h + GlassView.SPARE) {
+            lp.width = (int) w + GlassView.SPARE;
+            lp.height = (int) h + GlassView.SPARE;
             glass.setLayoutParams(lp);
             glass.setRadius(16f * density * AppAdapter.FOCUS_SCALE + pad);
         }
@@ -464,9 +486,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             springY.cancel();
             glass.setTranslationX(x);
             glass.setTranslationY(y);
+            glass.animate().cancel();
             glass.animate().alpha(1f).setDuration(180).start();
             glassShown = true;
         } else {
+            glass.setMoving(true);
             springX.animateToFinalPosition(x);
             springY.animateToFinalPosition(y);
         }
@@ -486,6 +510,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void hideGlass() {
         if (!glassShown) return;
         glassShown = false;
+        glass.animate().cancel();
         glass.animate().alpha(0f).setDuration(160).start();
     }
 
@@ -524,7 +549,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         final int pos = Math.max(0, Math.min(position, adapter.getItemCount() - 1));
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(pos);
         if (vh != null) {
-            vh.itemView.findViewById(R.id.card).requestFocus();
+            View card = vh.itemView.findViewById(R.id.card);
+            // Back on Home with focus still on this tile: requestFocus changes nothing, so no focus callback would bring
+            // back the highlight that onResume hid. Place it here instead.
+            if (card.isFocused()) {
+                if (!glassShown) onTileFocused(pos, card);
+            } else {
+                card.requestFocus();
+            }
             return;
         }
         // Not laid out yet: scroll there, then focus once the scroll settles.

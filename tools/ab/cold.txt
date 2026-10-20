@@ -1,0 +1,6 @@
+am start -W -n com.android.tv.settings/.MainSettings
+sleep 2
+am force-stop com.gathin.tvhome
+sleep 1
+am start -W -n com.gathin.tvhome/.MainActivity
+sleep 3

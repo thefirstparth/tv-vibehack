@@ -19,6 +19,15 @@ public class GlassView extends View {
     private final RectF rect = new RectF();
     private final float density;
     private float radius;
+    /**
+     * The layer sits on whole pixels (a layer drawn at a fractional position is filtered, which softens the rim); the
+     * fraction left over is drawn inside the layer instead, so at rest every pixel is where it was without the layer.
+     * While the spring moves it, the fraction is left out, so the layer is not redrawn on every frame.
+     */
+    private float fracX, fracY;
+    private boolean moving;
+    /** The layer is this many pixels wider and taller than the highlight, so the fraction never pushes it off the edge. */
+    static final int SPARE = 1;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -28,6 +37,38 @@ public class GlassView extends View {
         rim.setStrokeWidth(1.5f * density);
         rim.setColor(0xCCFFFFFF);
         glow.setStyle(Paint.Style.STROKE);
+        // Cache the highlight as a texture: the spring only changes its translation (and the fade its alpha), so the
+        // GPU moves the texture instead of replaying the rim and the three glow strokes on every frame. It is redrawn
+        // only when its size or radius changes. The strokes themselves are unchanged, so it looks the same.
+        setLayerType(LAYER_TYPE_HARDWARE, null);
+    }
+
+    @Override
+    public void setTranslationX(float x) {
+        float whole = (float) Math.floor(x);
+        super.setTranslationX(whole);
+        setFraction(x - whole, fracY);
+    }
+
+    @Override
+    public void setTranslationY(float y) {
+        float whole = (float) Math.floor(y);
+        super.setTranslationY(whole);
+        setFraction(fracX, y - whole);
+    }
+
+    /** True while the spring moves it (the fraction is left out), false once it has come to rest. */
+    void setMoving(boolean on) {
+        if (moving == on) return;
+        moving = on;
+        if (fracX != 0f || fracY != 0f) invalidate();
+    }
+
+    private void setFraction(float x, float y) {
+        if (x == fracX && y == fracY) return;
+        fracX = x;
+        fracY = y;
+        if (!moving) invalidate();
     }
 
     void setRadius(float px) {
@@ -37,8 +78,11 @@ public class GlassView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (!moving) canvas.translate(fracX, fracY);
+        int w = getWidth() - SPARE, h = getHeight() - SPARE;
+        canvas.clipRect(0, 0, w, h);   // the highlight's own edges, as when it was drawn without a layer
         float inset = 6f * density;   // room for the glow
-        rect.set(inset, inset, getWidth() - inset, getHeight() - inset);
+        rect.set(inset, inset, w - inset, h - inset);
 
         // Outer glow: three widening, fading strokes.
         for (int i = 1; i <= 3; i++) {

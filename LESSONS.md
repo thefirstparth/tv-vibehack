@@ -46,6 +46,15 @@ Home return varied by 40 ms between runs. Running current → candidate → curr
 per slot, measured tonight's noise (15.5 ms) and let the rule allow for it; the weekend look then passed.
 Every measurement is in [BENCHMARKS.md](examples/xiaomi-mitv-moor2/BENCHMARKS.md).
 
+**Time the Home return from a full-screen app that nobody signs in to.** On Google TV, Settings is a side panel
+over Home, so Home never leaves and `am start -W` reports the same stale time for every "return". YouTube works
+but was found signed out after a night of being force-stopped 10 times a slot (the cause wasn't proven; the
+accounts were all still there). The built-in Media Player (`com.xiaomi.mitv.mediaexplorer`) is full-screen,
+needs no account and gives real numbers.
+
+**Check every number for sense before letting a test run.** All ten Home returns reading exactly 227 ms meant the
+measurement was broken, not that the build was steady.
+
 **Decide the rules before you look at the numbers.** We wrote "keep it only if cold start is no more
 than 20 ms slower, Home return no slower, stutter and memory no worse" before testing. That made the
 keep-or-roll-back decision mechanical.

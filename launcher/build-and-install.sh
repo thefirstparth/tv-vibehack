@@ -14,9 +14,15 @@ export PATH="$JAVA_HOME/bin:$PATH"
 PY=../tools/venv/bin/python
 APK=app/build/outputs/apk/release/app-release.apk
 "$PY" -I ../tools/b64push.py "$APK" /data/local/tmp/tvhome.apk
+# Install on its own: in the batch below a failed install (e.g. "not enough space" on a full /data)
+# would not stop the stock launcher from being disabled.
+OUT=$("$PY" -I ../tools/tv.py 'pm install -r /data/local/tmp/tvhome.apk; rm -f /data/local/tmp/tvhome.apk')
+echo "$OUT"
+case "$OUT" in
+  *Success*) ;;
+  *) echo "ERROR: pm install failed; the stock launcher was left untouched." >&2; exit 1 ;;
+esac
 printf '%s\n' \
-  "pm install -r /data/local/tmp/tvhome.apk" \
-  "rm -f /data/local/tmp/tvhome.apk" \
   "pm grant com.gathin.tvhome android.permission.ACCESS_FINE_LOCATION 2>/dev/null; echo location-granted" \
   "cmd package set-home-activity --user 0 com.gathin.tvhome" \
   "pm disable-user --user 0 $STOCK_LAUNCHER" \

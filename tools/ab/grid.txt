@@ -1,0 +1,65 @@
+input keyevent KEYCODE_HOME
+sleep 3
+dumpsys gfxinfo com.gathin.tvhome reset
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_DOWN
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_DOWN
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_DOWN
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_UP
+sleep 0.4
+input keyevent KEYCODE_DPAD_UP
+sleep 0.4
+input keyevent KEYCODE_DPAD_UP
+sleep 0.4
+input keyevent KEYCODE_DPAD_UP
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_DOWN
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_RIGHT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+input keyevent KEYCODE_DPAD_LEFT
+sleep 0.4
+sleep 1
+dumpsys gfxinfo com.gathin.tvhome | grep -E 'Total frames|Janky|percentile|Slow UI|Slow issue|Frame deadline|Number Missed'
+dumpsys meminfo com.gathin.tvhome | grep -E 'TOTAL PSS|TOTAL:'
+input keyevent KEYCODE_HOME

@@ -8,7 +8,7 @@
 # Deliberately kept: update services (com.xiaomi.mitv.updateservice, com.mitv.upgrader,
 # com.mitv.ABUpdateStatus), Google Assistant voice (com.google.android.katniss), Chromecast built-in
 # (com.google.android.apps.mediashell), Live TV (com.mitv.livetv*), Netflix, Play Services, Play Store,
-# and every media/DRM/player package (videoplayer, mediaexplorer, mimusic2, gallery, Dolby).
+# and every media/DRM/player package (videoplayer, mediaexplorer, gallery, Dolby; mimusic2 went off 2026-10-20).
 # No Alexa package ships on this firmware.
 
 # Xiaomi telemetry
@@ -35,6 +35,14 @@ com.google.android.play.games
 com.google.android.feedback
 com.xiaomi.mitv.manualhelp
 fusion.android.tv.demo                 # retail store demo
+
+# Added 2026-10-20 (from upstream's MOOR2 list; researched, then disabled one at a time with Home, the
+# dock apps, Inputs, Settings, voice and casting checked after each; free RAM at rest +11 to +21 MB).
+# Upstream also disables com.mitv.toolhouse (kept: a system-level app, purpose unknown) and
+# com.xiaomi.tvqs.overseas (kept: unclear, may hold the picture/sound menu).
+com.google.android.partnersetup        # Google partner/RLZ attribution; re-enable before a factory reset
+com.xiaomo.tv.milegal                  # Xiaomi legal/privacy text screens
+com.xiaomi.mimusic2                    # Mi Music (USB music player); not used
 
 # Stock Google TV launcher, replaced by launcher/.
 # What worked on this TV (verified after a reboot on 2026-10-18). Install launcher/ by hand first
