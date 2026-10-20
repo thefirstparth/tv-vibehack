@@ -68,6 +68,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 08:21 | tabular digits (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600 ms (572–623, n=10) | 98.0 ms (84–111, n=20) | 0% | 67.4 MB | **pass**: Home return +2.5 ms, cold +11.5 ms, −2.1 MB; installed 08:39 |
 | 2026-10-20 08:57 | current (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 598.5 ms (579–612, n=10) | 99.5 ms (84–114, n=20) | 0% | 68.6 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 08:57 | icon-only top bar, Wi-Fi problems shown (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600.5 ms (579–635, n=10) | 97.0 ms (82–108, n=20) | 0% | 68.7 MB | **pass**: Home return −2.5 ms, cold +2 ms, +0.1 MB; installed 09:16 |
+| 2026-10-20 17:29 | current (`1bfd00c`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 609 ms (592–639, n=10) | 100.0 ms (75–109, n=20) | 0% | 68.4 MB | started from the screensaver (idle); noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 17:29 | feed asked again while Home stays on screen (`9bb14ef`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 613 ms (592–633, n=10) | 97.0 ms (81–108, n=20) | 0.07% | 68.3 MB | **pass**: Home return −3 ms, cold +4 ms, janky +0.07 points, −0.1 MB; installed 17:48 |
 
 ## 2026-10-20
 
@@ -99,3 +101,6 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   and "No internet" from one network callback): **pass** on every point. The TV was on the screensaver (idle), not in
   use. Installed with `pm install -r` at 09:16; Home, the dock, Inputs, Settings, voice and casting checked, and on the
   TV: Right walks 1400 → Inputs → Wi-Fi → Settings and stays, Down goes to the dock; all four pills icon only, no "!".
+- 17:29 short weekday A/B of the feed refresh (`9bb14ef`: while Home stays on screen, one more request a minute after a
+  saved copy, and every 15 minutes otherwise, on the existing minute tick): **pass** on every point. Installed with
+  `pm install -r` at 17:48; all checks passed; the TV's log shows each request (`HomeLines: feed asked: …`).

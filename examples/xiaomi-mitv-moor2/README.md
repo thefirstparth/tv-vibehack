@@ -134,6 +134,12 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     the pill says "No internet" until the connection is back (one network callback, no polling). Passed its short
     A/B. The no-internet look was checked on the emulator only (with the launch extra `net=offline`): cutting the
     TV's Wi-Fi would also cut ADB. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-tnum-7fe2268.apk`.
+    **The feed refreshes while Home stays on screen** (`9bb14ef`, on the TV since 17:48). Before, the sport and weather
+    were fetched only when Home appeared, and the site's cache answers the first request after a quiet spell with
+    its old copy (making a fresh one at the same moment), so the TV could sit on "as of" an old time (20 Oct: "as of
+    4:51 pm" at 5:18). Now one more request comes a minute after a saved copy and every 15 minutes otherwise, on the
+    minute tick, only while Home is in front. Each request is logged: `logcat -s HomeLines:I`. Passed its short A/B.
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-topbar-1bfd00c.apk`.
 
 Check the live state any time:
 
