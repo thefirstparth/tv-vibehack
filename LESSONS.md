@@ -225,6 +225,24 @@ first was working; it had to be merged. Use one session per branch, or pull befo
 **Check the claims in its own docs.** A README step written by one session (`:app1400:assembleRelease`)
 produces an APK that won't install, because that module's release build was never signed.
 
+## The insights web app (21 Oct 2026)
+
+A launch QA with nine first-time users (impatient, skeptic, slow phone, literal reader, parent, screen reader, breaker,
+data keeper, owner away) found more in the data path than in the design:
+
+- **Ask "what happens if the TV dies, or a write half-fails?" before "does it look right?"** A read-then-write month file
+  could lose days on one bad read, a resend could overwrite a full day with an empty one, and one refused day blocked
+  every later one. Archive each arrival as its own file, write the month only after a clean read and only if unchanged
+  (etag), and never let a thinner copy replace a fuller one.
+- **Make silence mean one thing.** Send a "0 minutes" record for a day the TV was off, and send the TV's send errors
+  with the next day that gets through; then a missing day can only mean "the summary didn't arrive".
+- **Literal readers and non-technical users catch the builder's words** ("0 days before the latest", "asks", "old
+  copies", "Wrapped"). Put each audience's numbers on its own screen: the family's on Day, the debugging numbers on Speed.
+- **The privacy note must list everything stored.** Check it against the code, not memory.
+- **Offline-first means the saved copy first.** Network-first with an 8 s fallback per file is 20+ s of blank screen on a
+  stalled connection.
+- **The testers read code; they don't replace a real phone with real data.** Check the screens yourself, then with Parth.
+
 ## What went badly
 
 - **Effects that looked nice made Home stutter.** Spring motion, glass tints and a colour glow were
