@@ -86,7 +86,7 @@ public class DiaryTest {
         String j = DaySummary.json("2026-10-21", "e1cc510", diary, u, names, tv, IST);
         assertTrue(j, j.startsWith("{\"v\":1,\"date\":\"2026-10-21\",\"build\":\"e1cc510\",\"on\":{\"minutes\":60,\"spans\":[[\"19:00\",\"19:59\"]]}"));
         assertTrue(j, j.contains("{\"pkg\":\"com.sonyliv\",\"name\":\"Sony \\\"LIV\\\"\",\"minutes\":60,\"opens\":1}"));
-        assertTrue(j, j.contains("\"home\":{\"opens\":3,\"median_ms\":120,\"p90_ms\":400,\"max_ms\":400,\"slow\":1}"));
+        assertTrue(j, j.contains("\"home\":{\"opens\":3,\"median_ms\":120,\"p90_ms\":400,\"max_ms\":400,\"slow\":2}"));
         assertTrue(j, j.contains("\"cold\":{\"count\":1,\"median_ms\":610}"));
         assertTrue(j, j.contains("\"feed\":{\"asks\":2,\"fresh\":1,\"old\":1}"));
         assertTrue(j, j.endsWith("\"tv\":{\"net_drops\":1,\"boots\":0,\"uptime_h\":30}}"));

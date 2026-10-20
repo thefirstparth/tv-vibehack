@@ -16,8 +16,12 @@ import java.util.Map;
  */
 final class DaySummary {
 
-    /** A Home return slower than this counts as slow. */
-    static final long SLOW_MS = 300;
+    /**
+     * A Home return slower than this counts as slow: from the launcher starting to come back (onStart) to its first
+     * drawn frame, which on the TV is the launcher's own share of a Home return (the A/B's 90-odd ms also has Android's).
+     * A first guess, to be set from a week of real days.
+     */
+    static final long SLOW_MS = 100;
 
     private DaySummary() {
     }

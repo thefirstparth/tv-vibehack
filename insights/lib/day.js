@@ -46,7 +46,7 @@ export function cleanDay(input) {
     const t = input.tv;
     d.tv = drop({ boots: int(t.boots, 1000), uptime_h: int(t.uptime_h, 100000), mem_free_mb: int(t.mem_free_mb, 100000), storage_free_mb: int(t.storage_free_mb, 10000000), net_drops: int(t.net_drops, 10000) });
   }
-  return d;
+  return drop(d);
 }
 
 /** The month file's name for a day: "months/2026-10.json". */

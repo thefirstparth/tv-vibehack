@@ -113,7 +113,7 @@ final class UsageDay {
     private void span(long from, long to, long start) {
         from = Math.max(from, start);
         if (to <= from) return;
-        on.add(new long[]{from, to});
         onMs += to - from;
+        if (to - from >= 60_000) on.add(new long[]{from, to});   // the list skips blips under a minute; the total keeps them
     }
 }

@@ -56,7 +56,7 @@ function dayView(d, watts) {
   <div class="card"><h2>Home screen</h2><div class="stats">
     <div class="stat"><b>${d.home?.opens ?? "—"}</b><small>opened</small></div>
     <div class="stat"><b>${ms(d.home?.median_ms)}</b><small>median to draw</small></div>
-    <div class="stat"><b class="${d.home?.slow ? "warm" : "good"}">${d.home?.slow ?? "—"}</b><small>slow (over 300 ms)</small></div>
+    <div class="stat"><b class="${d.home?.slow ? "warm" : "good"}">${d.home?.slow ?? "—"}</b><small>slow (over 100 ms)</small></div>
   </div></div>`;
 }
 
@@ -89,11 +89,11 @@ function speedView(days, end) {
   <div class="card"><h2>Home, median time to draw</h2><div class="big">${ms(t.homeMedian)}</div>
     ${bars(recent, d => d.home?.median_ms || 0, d => (+d.date.slice(8) % 5 === 1 ? d.date.slice(8) : ""))}</div>
   <div class="card"><h2>Slow opens and problems</h2>
-    <div class="row"><span>Home opens over 300 ms</span><span class="${t.slow ? "warm" : ""}">${t.slow}</span></div>
+    <div class="row"><span>Home opens over 100 ms</span><span class="${t.slow ? "warm" : ""}">${t.slow}</span></div>
     <div class="row"><span>Feed failed</span><span>${t.feedFailed}</span></div>
     <div class="row"><span>Restarts</span><span>${t.boots}</span></div>
     <div class="row"><span>Cold starts, latest median</span><span>${ms([...recent].reverse().find(d => d.cold?.median_ms)?.cold?.median_ms)}</span></div></div>
-  <p class="note">Times are the launcher's own, from coming back to Home to its first drawn frame.</p>`;
+  <p class="note">Times are the launcher's own share of coming back to Home: from it starting to its first drawn frame.</p>`;
 }
 
 function draw() {
