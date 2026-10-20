@@ -260,6 +260,18 @@ Nothing here blocks using the TV. Pick up any of it later.
   the TV's menu; changes from the computer don't survive a restart), and Netflix/JioHotstar full
   players beyond their previews. Workaround: restart after watching FanCode.
 
+- **The remote sometimes can't turn the TV on (Parth: for 2 to 3 months; seen again 20 Oct, 16:40–16:50);
+  the button on the TV always works.** Diagnosed from the TV's own log, nothing changed: at 14:13 the TV went into
+  quick standby by itself (30 minutes idle, `sleep_timeout`); this firmware's quick standby (Suspend-to-RAM,
+  `persist.vendor.mitv.str.framework=true`) switches Bluetooth off ("Start STR disabling bluetooth") and relies on
+  the Bluetooth/Wi-Fi chip (MediaTek MT7663) to wake on the paired remote (`bluetooth.wake_up_rc` = the one bonded
+  "Xiaomi RC"). After 2 h 37 min asleep the remote did nothing; the TV's button woke it at 16:50:12, and 4 s later the
+  chip reported a hardware error (`bt_hci: Ctlr H/w error event - code:0xf2`) and Android logged "Bluetooth crashed"
+  (16:50:18) and restarted it; the remote reconnected at 16:50:22. So the chip had stopped listening for the remote
+  during standby: a firmware/driver fault in the TV, not the launcher or the debloat (it predates both; no disabled
+  package touches Bluetooth or wake). The firmware clears its logs on boot, so earlier cases can't be read back.
+  Options, none applied yet: check for a Xiaomi system update; fresh remote batteries; re-pair the remote; a longer
+  or "never" auto-standby (fewer self-standbys, more power); a nightly restart.
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).
