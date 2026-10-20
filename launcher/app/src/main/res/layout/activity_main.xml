@@ -52,6 +52,7 @@
                         android:fontFamily="@font/outfit"
                         android:tag="w300"
                         android:letterSpacing="-0.04"
+                        android:fontFeatureSettings="tnum"
                         android:includeFontPadding="false" />
 
                     <TextClock
