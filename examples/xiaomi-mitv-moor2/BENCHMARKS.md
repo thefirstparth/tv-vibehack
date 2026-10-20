@@ -64,6 +64,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 | 2026-10-20 07:17 | weather highlights (`97d3e73`) | re-test, 3 rounds current → new, **5 cold starts a slot** | 606 ms (574–618, n=15) | 88.5 ms (78–100, n=30) | 0% | 68.2 MB | **pass**: cold +18 ms (allowed 20), Home return −1.0 ms, +0.8 MB; p99 frame 9 vs 10 ms; installed 07:43 |
 | 2026-10-20 07:58 | current (weather highlights, `97d3e73`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 604 ms (584–616, n=10) | 92.5 ms (85–101, n=20) | 0% | 69.6 MB | noise from the 05:56 test (1.5 ms) |
 | 2026-10-20 07:58 | our side stands out (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 593 ms (582–622, n=10) | 93.0 ms (84–109, n=20) | 0% | 68.9 MB | **pass**: Home return +0.5 ms, cold −11 ms, −0.6 MB; installed 08:16 |
+| 2026-10-20 08:21 | current (`264f568`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 588.5 ms (569–617, n=10) | 95.5 ms (82–112, n=20) | 0% | 69.5 MB | noise from the 05:56 test (1.5 ms) |
+| 2026-10-20 08:21 | tabular digits (`7fe2268`) | short weekday, 2 rounds current → new, 5 cold starts a slot | 600 ms (572–623, n=10) | 98.0 ms (84–111, n=20) | 0% | 67.4 MB | **pass**: Home return +2.5 ms, cold +11.5 ms, −2.1 MB; installed 08:39 |
 
 ## 2026-10-20
 
@@ -88,3 +90,6 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - 07:58 short weekday A/B of "our side stands out" (`264f568`; the feed's new `ours`, house-of-1400 `638b1ff`): 2 rounds of
   current → new after a restart, five cold starts a slot: **pass** on every point. Installed with `pm install -r` at
   08:16; Home, the dock, Inputs, Settings, voice and casting checked.
+- 08:21 short weekday A/B of Outfit's tabular digits (`7fe2268`: `tnum` on the clock, the headline scores and the
+  THEN/LATER match text): **pass** on every point. Installed with `pm install -r` at 08:39; Home, the dock, Inputs,
+  Settings, voice and casting checked.
