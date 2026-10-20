@@ -37,6 +37,11 @@ final class HomeLines {
     private static final int RED = 0xFFFF3B45, AMBER = 0xFFFFB347, DIM = 0x8CFFFFFF, WHITE = 0xFFFFFFFF;
     /** The weather highlights (mockup option 5): the warmest and coolest temperature tinted, the extremes lit. */
     private static final int WARM_TINT = 0xFFFFDCBF, COOL_TINT = 0xFFCFE2FF, LIT = 0xE0FFFFFF;
+    /**
+     * The side Parth doesn't follow (the feed's "ours" names the other): 65% white in the headline; in the THEN/LATER
+     * rows, already 70% white, 65% of that (the lines' own 45% dim), so the difference shows there too.
+     */
+    private static final int HEAD_OTHER = 0xA6FFFFFF, ROW_OTHER = 0x73FFFFFF;
     /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to 31 sp. */
     private static final float HEAD_SP = 44f;
 
@@ -278,6 +283,7 @@ final class HomeLines {
         hScoreA.setVisibility(View.GONE);
         hScoreB.setVisibility(View.GONE);
         hLoc.setVisibility(View.GONE);
+        for (TextView v : new TextView[]{hA, hB, hScoreA, hScoreB}) v.setTextColor(WHITE);
         if ("f1".equals(it.optString("sp"))) {
             JSONArray top = it.optJSONArray("top");
             hV.setVisibility(View.GONE);
@@ -319,6 +325,19 @@ final class HomeLines {
                     hV.setVisibility(oneScore || b.isEmpty() ? View.GONE : View.VISIBLE);
                     if (!scA.isEmpty()) { hScoreA.setText(scA); hScoreA.setVisibility(View.VISIBLE); }
                     if (!scB.isEmpty()) { hScoreB.setText(scB); hScoreB.setVisibility(View.VISIBLE); }
+                    // the side Parth follows stands out: the other side's name and score at 65% white
+                    String ours = b.isEmpty() ? "" : it.optString("ours", "");
+                    if ("b".equals(ours)) hA.setTextColor(HEAD_OTHER);
+                    if ("a".equals(ours)) hB.setTextColor(HEAD_OTHER);
+                    int[] other = oneScore ? Opponent.inScore(sa, sb, ours) : null;
+                    if (other != null) {
+                        SpannableString sc = new SpannableString(scA);
+                        sc.setSpan(new ForegroundColorSpan(HEAD_OTHER), other[0], other[1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        hScoreA.setText(sc);
+                    } else if (!oneScore) {
+                        if ("b".equals(ours)) hScoreA.setTextColor(HEAD_OTHER);
+                        if ("a".equals(ours)) hScoreB.setTextColor(HEAD_OTHER);
+                    }
                     // the score sits after its side's name ("India 245/3 v Australia"), the football one between them
                     LinearLayout row = (LinearLayout) hA.getParent();
                     row.removeView(hScoreA);
@@ -343,25 +362,40 @@ final class HomeLines {
         String when = Words.when(data, it, now);
         boolean scores = data.scores(it, now);
         List<String> whats = new ArrayList<>();
+        List<String[]> pairs = new ArrayList<>();   // the names behind each form (none for F1)
         if ("f1".equals(it.optString("sp"))) {
             JSONArray top = it.optJSONArray("top");
             whats.add(scores && top != null && top.length() >= 3 ? it.optString("session") + " " + top.optString(0) + " · " + top.optString(1) + " · " + top.optString(2) : it.optString("session"));
         } else {
-            for (String[] n : Words.nameForms(it)) whats.add(Words.sides(it, n[0], n[1], scores));
+            for (String[] n : Words.nameForms(it)) {
+                whats.add(Words.sides(it, n[0], n[1], scores));
+                pairs.add(n);
+            }
         }
         String[] comps = "f1".equals(it.optString("sp")) ? new String[]{it.optString("gp", ""), ""} : Words.compForms(it);
         float fixed = width(cells[0], cells[0].getText().toString()) + 12 * density + width(cells[1], when) + 14 * density;
         for (String c : new String[]{comps[0], comps[1], ""}) {
-            for (String w : whats) {
+            for (int k = 0; k < whats.size(); k++) {
+                String w = whats.get(k);
                 if (fixed + width(cells[2], w) + (c.isEmpty() ? 0 : 18 * density + width(cells[3], c)) <= room) {
                     cells[1].setText(when);
-                    cells[2].setText(w);
+                    cells[2].setText(k < pairs.size() ? withOther(it, w, pairs.get(k), scores) : w);
                     cells[3].setText(c);
                     return true;
                 }
             }
         }
         return false; // no form fits: the line is left out rather than cut
+    }
+
+    /** A THEN/LATER match with the side Parth doesn't follow dimmed (the feed's "ours"); as it was when not set. */
+    private static CharSequence withOther(JSONObject it, String line, String[] names, boolean scores) {
+        String sa = scores ? it.optString("sa", "") : "", sb = scores ? it.optString("sb", "") : "";
+        int[][] other = Opponent.inLine(it.optString("sp"), names[0], names[1], sa, sb, it.optString("ours", ""));
+        if (other.length == 0) return line;
+        SpannableString s = new SpannableString(line);
+        for (int[] r : other) s.setSpan(new ForegroundColorSpan(ROW_OTHER), r[0], r[1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return s;
     }
 
     /** The first form that fits the room (the label's countdown counted in); the last one if none does. */
