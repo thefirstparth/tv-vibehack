@@ -189,6 +189,12 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     non-negotiable"), see BENCHMARKS.md. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-insights-1bb593d.apk`.
 
+16. **The diary update and the Xbox tile's final look** (`0573edd`, on the TV since 05:06 on 22 Oct): each day's summary
+    is kept as first made (files/diary/sent/), the input picked on the Inputs menu is noted, and the Xbox tile is Parth's
+    "3B" (a controller half-risen over a horizon in a green night sky when on; greys and "Off" when off). Tested as
+    `d9c6c4b` (short A/B, pass on every point, BENCHMARKS.md); the tile's drawing changed after it, installed without its
+    own test at Parth's call. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-xbox-90cd971.apk`.
+
 Check the live state any time:
 
 ```bash

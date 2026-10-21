@@ -135,3 +135,6 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   graphics memory (15-21 MB either build); the emulator (no GPU accounting) has no-grain 2 MB *lighter*. **A single
   memory reading on this TV swings about ±8 MB**: judge memory on several readings, and don't read it as a build's
   cost from one slot.
+- 22 Oct 04:49 short A/B (2 rounds, 3 cold starts a slot), 90cd971 vs `d9c6c4b` (no grain, diary update, Xbox tile):
+  **pass** on every point. Cold 627.5 → 626 ms, Home return about the same (101 → 98), janky 0 → 0, frame p99 9-10 vs
+  10-11 ms, memory 70.4 / 68.3 vs 68.4 / 69.3 MB. Installed as `0573edd` (the same plus the tile's final drawing) at 05:06.
