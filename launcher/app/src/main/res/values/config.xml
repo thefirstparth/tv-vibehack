@@ -10,13 +10,19 @@
         <item>com.google.android.youtube.tv</item>
         <item>com.netflix.ninja</item>
         <item>in.startv.hotstar</item>
-        <item>com.fancode.tv</item>                 <!-- FanCode -->
+        <item>@input</item>                         <!-- the input tile below (dock_input): the Xbox -->
     </string-array>
+
+    <!-- A TV input as a dock tile, at "@input" in dock_apps: grey while the device on it is off, in colour while it is
+         on (the port reads "connected"); a press switches to it. Empty: no input tile. -->
+    <string name="dock_input" translatable="false">com.mediatek.tvinput/.hdmi.HDMIInputService/HW5</string>
+    <string name="dock_input_name" translatable="false">Xbox</string>
 
     <!-- Grid tiles shown first, right after the dock, in this order (4 a row). Everything else follows A–Z.
          Row 2, watched most after the dock: the other streaming apps and music. Row 3: the paper, F1, and the
          two utilities. -->
     <string-array name="grid_order">
+        <item>com.fancode.tv</item>                     <!-- FanCode (out of the dock for the Xbox, 22 Oct) -->
         <item>com.amazon.amazonvideo.livingroom</item>  <!-- Prime Video -->
         <item>com.sonyliv</item>                        <!-- Sony LIV -->
         <item>com.apple.atve.androidtv.appletv</item>   <!-- Apple TV -->
