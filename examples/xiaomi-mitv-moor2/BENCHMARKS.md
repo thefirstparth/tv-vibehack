@@ -124,3 +124,9 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   summary sent to the insights site, never while an app is open): **pass** on every point. The memory column failed in
   all four slots (see the row); measured again at 02:58 with the fixed command, two alternating installs a build:
   55.7 / 54.2 MB current, 53.8 / 56.1 MB new. Installed with `pm install -r` at 03:03; usage access granted.
+- 22 Oct, no grain (`bf2b584`, then with the Xbox tile `90cd971`), three short A/Bs after a restart, 3 cold starts a
+  slot: 03:47 (1 round: cold +37 ms, memory +8.2 MB; one sample each), 04:04 (stopped after 3 slots by a remote
+  press; memory 68.3 / 84.3 / 67.1 MB), 04:24 (2 rounds, below). Speed: cold 608 → 628.5 ms (+20.5, limit 20), Home
+  return 101 → 100 ms, janky 0 → 0. Memory: 68.4 / 65.3 MB current, 84.2 / 69.7 MB new (median +10 MB, limit 3); the
+  new build read higher in all three runs, cause not found. **Over the limits; installed at 04:42 at Parth's call**
+  (no grain was non-negotiable). Worth finding the memory cause before the next build.

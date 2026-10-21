@@ -181,6 +181,14 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     `appops set com.gathin.tvhome GET_USAGE_STATS default`. Off without undoing: remove `tv.diaryUrl` from
     `launcher/local.properties` and rebuild.
 
+15. **No grain in the light, and an Xbox tile** (`90cd971`, on the TV since 04:42 on 22 Oct). Horizon v3's baked-in grain
+    is gone (at 480x270 stretched 4x it read as blotches). The dock's 4th tile is now the Xbox (HDMI 2, input
+    `com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`): grey while the Xbox is off, Xbox green while it is on (the
+    port's state through TvInputCallback), one press switches to it; FanCode moved to the start of row 2. Its short A/B
+    was over the limits on memory (+10 MB) and by 0.5 ms on cold start; installed at Parth's call ("no-grain is
+    non-negotiable"), see BENCHMARKS.md. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-insights-1bb593d.apk`.
+
 Check the live state any time:
 
 ```bash
