@@ -222,7 +222,7 @@ final class HorizonV3 {
 
         Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas g = new Canvas(b);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);   // no dither: at 480x270 stretched 4x its fixed dot pattern shows as a grid (22 Oct)
         g.drawColor(Color.BLACK);
         vertical(g, p, new float[][]{pal[0], clr(pal[0]), clr(pal[0])}, new float[]{0, 0.32f, 1}, 1);
         band(g, p, pal[1], 0.18f, 0.44f, 0.64f);
