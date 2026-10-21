@@ -25,7 +25,7 @@ import java.util.TimeZone;
  * Horizon v3, the home screen's light, as in the approved mockup (examples/xiaomi-mitv-moor2/horizon-v3/mockup.html,
  * drawV3; its maths copied): v2's eight moods blended by the minute, the glow where the real sun is (at night where the
  * moon is), the moon as light only, 909 stars placed for the moment (a third as bright behind text), the Milky Way on
- * clear moonless nights, the feed's sky (cloud, haze, storm), fine grain, and a readability floor: the faintest text of
+ * clear moonless nights, the feed's sky (cloud, haze, storm), and a readability floor: the faintest text of
  * each block keeps 4.5:1 against its 90th-percentile background pixel, with a soft oval shadow under the block where it
  * would not. Not in this build: meteors, the match ribbon, the after-match glows. Drawn off the main thread.
  */
@@ -266,7 +266,7 @@ final class HorizonV3 {
         // a match on: v2's faint glow in the competition's colour under the sport lines (no ribbon in this build)
         if (st.matchAccent != null) glow(g, p, c((st.matchAccent & 0x00FFFFFF) | (41 << 24)), 0.24, 0.63, 0.26, 0.20, 1);
 
-        grain(b);
+        // no grain: baked in at 480x270 and stretched 4x to the screen it read as blotches, not texture (Parth, 22 Oct)
         floor(g, p, b, Z);
         return b;
     }
@@ -378,18 +378,6 @@ final class HorizonV3 {
             dot.setColor(Color.argb((int) Math.round(Math.min(1, a2) * 255), col[0], col[1], col[2]));
             g.drawCircle(X, Y, Math.max(rr, 0.35f), dot);
         }
-    }
-
-    /** Fine noise baked into the picture (the mockup's grain: the same value added to R, G and B). */
-    private static void grain(Bitmap b) {
-        int[] px = new int[W * H];
-        b.getPixels(px, 0, W, 0, 0, W, H);
-        Rng rg = new Rng(99);
-        for (int i = 0; i < px.length; i++) {
-            int v = px[i], n = (int) Math.round((rg.next() + rg.next() - 1) * 5);
-            px[i] = Color.argb(255, clampInt(((v >> 16) & 255) + n), clampInt(((v >> 8) & 255) + n), clampInt((v & 255) + n));
-        }
-        b.setPixels(px, 0, W, 0, 0, W, H);
     }
 
     private static int clampInt(int v) {
