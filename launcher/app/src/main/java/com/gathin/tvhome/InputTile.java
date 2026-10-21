@@ -17,7 +17,7 @@ import android.graphics.drawable.Drawable;
  * The banner of the dock's input tile (config dock_input, the Xbox on HDMI 2), Parth's pick "3B" (22 Oct): a controller
  * shaped like the Xbox one rises half-hidden over a horizon, like the home screen's sun. On (the device on that port is
  * on): a deep-green night sky with a few stars and a green glow, the controller white with A, B, X and Y in their
- * colours. Off: greys. Only whole controls show above the horizon (left stick, guide, ABXY); the D-pad and right stick
+ * colours, and no words for it. Off: greys, and "Off" under the name. Only whole controls show above the horizon (left stick, guide, ABXY); the D-pad and right stick
  * are below it. The name top left. Drawn, not an image; nothing moves.
  */
 final class InputTile extends Drawable {
@@ -126,7 +126,13 @@ final class InputTile extends Drawable {
 
         text.setColor(on ? 0xFFFFFFFF : 0xFF8A8F9C);
         text.setTextSize(h * 0.14f);
-        c.drawText(name, w * 0.061f, h * 0.07f - text.ascent(), text);
+        float base = h * 0.07f - text.ascent();
+        c.drawText(name, w * 0.061f, base, text);
+        if (!on) {   // off says so in words; on is said by the colour alone (Parth, 22 Oct)
+            text.setColor(0xFF6F7480);
+            text.setTextSize(h * 0.085f);
+            c.drawText("Off", w * 0.061f, base + text.getTextSize() * 1.35f, text);
+        }
         c.restore();
     }
 
