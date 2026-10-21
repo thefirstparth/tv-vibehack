@@ -112,3 +112,32 @@ export function fromStart(day, start) {
   return d;
 }
 const toMin = hm => +hm.slice(0, 2) * 60 + +hm.slice(3, 5);
+
+/**
+ * A day with test stretches cut out (TV tests, not use): the screen's and the apps' times outside them, minutes
+ * worked out again; the day's home-screen, cold-start and feed numbers dropped (they are mostly the tests'), restarts
+ * too. Days without a test are as sent.
+ */
+export function withoutTests(day, tests) {
+  const cuts = tests.filter(t => t.date === day.date);
+  if (!cuts.length) return day;
+  const cut = spans => (spans ?? []).flatMap(s => {
+    let parts = [[s[0], s[1]]];
+    for (const t of cuts) parts = parts.flatMap(([a, b]) => {
+      if (b < t.from || a >= t.to) return [[a, b]];
+      const out = [];
+      if (a < t.from) out.push([a, minus1(t.from)]);
+      if (b >= t.to) out.push([t.to, b]);
+      return out;
+    });
+    return parts;
+  });
+  const mins = spans => spans.reduce((n, s) => n + (toMin(s[1]) + 1 - toMin(s[0])), 0);
+  const d = { ...day, tests: cuts.map(t => [t.from, t.to]) };
+  if (day.on) { const s = cut(day.on.spans); d.on = { minutes: mins(s), spans: s }; }
+  if (day.apps) d.apps = day.apps.map(a => (a.spans ? { ...a, spans: cut(a.spans), minutes: mins(cut(a.spans)) } : a)).filter(a => a.minutes > 0);
+  delete d.home; delete d.cold; delete d.feed;
+  if (d.tv) d.tv = { ...d.tv, boots: 0 };
+  return d;
+}
+const minus1 = hm => { const m = toMin(hm) - 1; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };

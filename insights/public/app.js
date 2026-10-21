@@ -78,11 +78,32 @@ function inputLine(days) {
     unnamed >= 1 ? `; ${hm(unnamed)} not known (switched with the remote's source button, or already on)` : ""}.</p>`;
 }
 
-function appRows(apps, key) {
+/** "4:49–5:14 AM" for a stretch ["04:49", "05:14"]; the end is the last minute on. */
+const rangeWords = s => {
+  const a = clockWords(+s[0].slice(0, 2) * 60 + +s[0].slice(3)), b = clockWords(+s[1].slice(0, 2) * 60 + +s[1].slice(3) + 1);
+  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`;
+};
+const spanMinutes = s => +s[1].slice(0, 2) * 60 + +s[1].slice(3) + 1 - (+s[0].slice(0, 2) * 60 + +s[0].slice(3));
+
+/** Every stretch of the day in time order (each app's), then when the screen was on, as words. */
+function timesList(d) {
+  const rows = [];
+  for (const a of d.apps ?? []) for (const s of a.spans ?? []) rows.push({ s, name: nameOf(a), c: colourOf(a.pkg) });
+  rows.sort((x, y) => (x.s[0] < y.s[0] ? -1 : 1));
+  return `<ul class="rows times">${rows.map(r => `<li><span><span class="chip" style="--c:${r.c}"></span>${esc(rangeWords(r.s))}</span><span>${esc(r.name)} · <span class="num">${hm(spanMinutes(r.s))}</span></span></li>`).join("")}
+    ${(d.on?.spans ?? []).length ? `<li class="note"><span>Screen on</span><span>${esc(d.on.spans.map(rangeWords).join(", "))}</span></li>` : ""}</ul>`;
+}
+
+function appRows(apps, key, day = null) {
   if (!apps.length) return `<p class="note">No app use recorded. The TV needs "usage access" turned on for its home screen.</p>`;
-  const row = a => `<li><span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span>${a.opens ? ` · opened ${a.opens}×` : ""}</span></li>`;
+  const spansOf = a => (day?.apps ?? []).filter(x => x.pkg === a.pkg).flatMap(x => x.spans ?? []);
+  const line = a => `<span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span>${a.opens ? ` · opened ${a.opens}×` : ""}</span>`;
+  // in Day, an app with times opens to show them
+  const row = a => (day && spansOf(a).length
+    ? `<li class="app"><details><summary>${line(a)}</summary><p class="note">${esc(spansOf(a).map(rangeWords).join(", "))} IST</p></details></li>`
+    : `<li>${line(a)}</li>`);
   const top = apps.slice(0, 5), rest = apps.slice(5);
-  return `<ul class="rows">${top.map(row).join("")}</ul>${rest.length ? `<details data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
+  return `<ul class="rows">${top.map(row).join("")}</ul>${rest.length ? `<details class="more" data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
     <summary><span>${rest.length} more app${rest.length === 1 ? "" : "s"}</span><span aria-hidden="true">›</span></summary><ul class="rows">${rest.map(row).join("")}</ul></details>` : ""}`;
 }
 
@@ -114,10 +135,10 @@ function dayView(days, watts, rate) {
     <section class="card" aria-labelledby="h">
       <p class="label">${label}</p><h1 id="h" tabindex="-1">${esc(titleDay(d.date))}</h1>
       ${off ? `<div class="hero"><span class="num">Off</span><span class="side">all day</span></div>` : hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
-      ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}
+      ${off ? stripHtml(d) : `<details class="when" data-key="when"${store.get("open-when") ? " open" : ""}><summary aria-label="Show the times">${stripHtml(d)}${ticks()}</summary>${timesList(d)}</details>`}${off ? ticks() : ""}${off ? "" : legend(d)}
       <p class="key">Times are India time (IST).</p>
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}${saverLine([d])}${inputLine([d])}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day", d)}${saverLine([d])}${inputLine([d])}</section>`;
 }
 
 function weekView(days, watts, rate) {
@@ -212,7 +233,7 @@ function speedView(days) {
       <li><span>Sport and weather checks</span><span>${d.feed?.asks ?? 0} · ${count(d.feed?.old, "came in out of date", "came in out of date")}</span></li>
       <li><span>Restarts</span><span>${count(d.tv?.boots)}</span></li>
       <li><span>Wi-Fi dropped</span><span>${count(d.tv?.net_drops, "time", "times")}</span></li>
-    </ul></section>${latest}`;
+    </ul></section>`;
   return `<section class="card" aria-labelledby="h"><p class="label">Last 30 days</p><h1 id="h" tabindex="-1">Speed</h1>
       ${hero(t.homeMedian == null ? "—" : `${Math.round(t.homeMedian)}<small> ms</small>`, "Home, median time to draw")}
       <div class="bars" role="img" aria-label="Each day's median time for Home to draw">${recent.map(d => `<div><i class="${d.home?.slow ? "slow" : ""}" style="height:${((d.home?.median_ms || 0) / max) * 100}%"></i></div>`).join("")}</div>
@@ -225,7 +246,7 @@ function speedView(days) {
       <li><span>Sport and weather, old copies</span><span>${count(recent.reduce((s, d) => s + (d.feed?.old || 0), 0))}</span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
       <li><span>Free memory, latest</span><span>${mem == null ? "—" : `<span class="num">${mem}</span> MB`}</span></li>
-    </ul></section>`;
+    </ul></section>${latest}`;
 }
 
 // ---- drawing, loading, the top bar -------------------------------------------------------------------------------

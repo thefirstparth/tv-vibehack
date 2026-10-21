@@ -117,3 +117,16 @@ test("per-input minutes are kept when sent, and a day without them (build 1bb593
   assert.equal("inputs" in cleanDay(DAY), false);
   assert.deepEqual(Object.keys(cleanDay(DAY)).sort(), ["apps", "build", "date", "feed", "home", "on", "tv", "v"]);
 });
+
+test("test stretches are cut out of a day, with its home-screen numbers", async () => {
+  const { withoutTests } = await import("../lib/day.js");
+  const tests = [{ date: "2026-10-22", from: "03:45", to: "04:50" }];
+  const d = withoutTests({ date: "2026-10-22", on: { minutes: 999, spans: [["02:06", "02:37"], ["03:47", "05:10"]] },
+    apps: [{ pkg: "com.sonyliv", minutes: 22, spans: [["02:06", "02:27"]] }, { pkg: "x.media", minutes: 30, spans: [["03:50", "04:20"]] }], home: { opens: 80 }, tv: { boots: 3 } }, tests);
+  assert.deepEqual(d.on.spans, [["02:06", "02:37"], ["04:50", "05:10"]]);
+  assert.equal(d.on.minutes, 32 + 21);
+  assert.deepEqual(d.apps.map(a => a.pkg), ["com.sonyliv"]);
+  assert.equal(d.home, undefined);
+  assert.equal(d.tv.boots, 0);
+  assert.equal(withoutTests({ date: "2026-10-23", home: { opens: 5 } }, tests).home.opens, 5);
+});
