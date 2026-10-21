@@ -247,6 +247,11 @@ data keeper, owner away) found more in the data path than in the design:
   at 03:36, so nothing matched. Put the clock back (history moves back with it) and test with a throwaway build that
   also sends today.
 
+**A small picture stretched up shows every fixed pattern in it.** Horizon v3 is drawn at 480x270 and stretched 4x:
+its baked-in grain became blotches, and once the grain was removed, Skia's ordered dither (a fixed dot pattern, normally
+invisible) became a visible grid. Draw small pictures that get stretched without grain or dither; let the stretch
+(bilinear, dithered on the way to the screen) do the smoothing.
+
 ## What went badly
 
 - **Effects that looked nice made Home stutter.** Spring motion, glass tints and a colour glow were

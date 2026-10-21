@@ -197,6 +197,11 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     out of the tile's bottom edge into a bright starry green night; "Off" in grey when off. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-xbox-90cd971.apk`.
 
+17. **No dither in the light** (`43c12f9`, on the TV since 05:16 on 22 Oct): Horizon's 480x270 picture is drawn without
+    Skia's dither; its fixed dot pattern, stretched 4x, showed as a grid once the grain was gone (Parth: "worse now").
+    Installed straight away without its own A/B at Parth's call (it removes work; the picture is otherwise the same).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-starry-0d2893a.apk`.
+
 Check the live state any time:
 
 ```bash
