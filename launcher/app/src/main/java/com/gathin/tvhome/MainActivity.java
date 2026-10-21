@@ -88,6 +88,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The diary's Home timing (Diary): when Home started coming back (uptime ms; 0 once measured) and whether as a cold start. */
     private long homeAt;
     private boolean homeCold;
+    /** The dock's input tile follows its port: Android calls this when the device on it turns on or off. */
+    private android.media.tv.TvInputManager.TvInputCallback inputWatch;
+
     /** Yesterday's summary, a few seconds after Home appears (DiarySend); taken back when Home goes. */
     private final Runnable diarySend = () -> DiarySend.maybe(this);
     /** On screen since the last onResume (paused counts, stopped doesn't): a Home intent now is Home pressed on Home. */
@@ -203,6 +206,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         adapter = new AppAdapter(this, this, COLUMNS);
         grid.setAdapter(adapter);
         adapter.reload();
+        watchInput();
         grid.scheduleLayoutAnimation();   // the tiles' entrance: on a real start only, not on each return to Home
         IntentFilter pf = new IntentFilter();
         pf.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -345,6 +349,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             reloadApps();
         }
         updateWifiLabel();
+        watchInput();   // the input tile's colour now (the device may have changed while Home was away)
         // the line above the clock is kept off the startup path: on a cold start it comes just after the first
         // frame (afterFirstFrame), on every later return straight away
         if (firstFrameDone) updateGreeting();
@@ -376,9 +381,39 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.post(this::refocus);
     }
 
+    /**
+     * The dock's input tile (config dock_input): its colour from the port's state now, then from Android's callback each
+     * time the device on it turns on or off (no polling). "Connected" is on; standby or unplugged is off.
+     */
+    private void watchInput() {
+        String id = adapter.inputId();
+        android.media.tv.TvInputManager tim = (android.media.tv.TvInputManager) getSystemService(TV_INPUT_SERVICE);
+        if (id == null || tim == null) return;
+        try {
+            adapter.setInputOn(tim.getInputState(id) == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED);
+            if (inputWatch == null) {
+                inputWatch = new android.media.tv.TvInputManager.TvInputCallback() {
+                    @Override
+                    public void onInputStateChanged(String inputId, int state) {
+                        if (inputId.equals(adapter.inputId())) adapter.setInputOn(state == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED);
+                    }
+                };
+                tim.registerCallback(inputWatch, handler);
+            }
+        } catch (RuntimeException ignored) {
+            // no TV input service (the emulator): the tile stays grey and still switches
+        }
+    }
+
     @Override
     protected void onDestroy() {
         unregisterReceiver(packages);
+        if (inputWatch != null) {
+            try {
+                ((android.media.tv.TvInputManager) getSystemService(TV_INPUT_SERVICE)).unregisterCallback(inputWatch);
+            } catch (RuntimeException ignored) {
+            }
+        }
         if (netWatch != null) {
             try {
                 ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).unregisterNetworkCallback(netWatch);
