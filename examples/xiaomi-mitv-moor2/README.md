@@ -193,7 +193,7 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     is kept as first made (files/diary/sent/), the input picked on the Inputs menu is noted, and the Xbox tile is Parth's
     "3B" (a controller half-risen over a horizon in a green night sky when on; greys and "Off" when off). Tested as
     `d9c6c4b` (short A/B, pass on every point, BENCHMARKS.md); the tile's drawing changed after it, installed without its
-    own test at Parth's call. Since 05:2x the tile is his final pick, "starry rise" (`0d2893a`): a fun controller rising
+    own test at Parth's call. Since 05:13 the tile is his final pick, "starry rise" (`0d2893a`): a fun controller rising
     out of the tile's bottom edge into a bright starry green night; "Off" in grey when off. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-xbox-90cd971.apk`.
 
