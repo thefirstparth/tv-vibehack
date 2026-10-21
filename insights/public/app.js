@@ -90,8 +90,7 @@ function timesList(d) {
   const rows = [];
   for (const a of d.apps ?? []) for (const s of a.spans ?? []) rows.push({ s, name: nameOf(a), c: colourOf(a.pkg) });
   rows.sort((x, y) => (x.s[0] < y.s[0] ? -1 : 1));
-  return `<ul class="rows times">${rows.map(r => `<li><span><span class="chip" style="--c:${r.c}"></span>${esc(rangeWords(r.s))}</span><span>${esc(r.name)} · <span class="num">${hm(spanMinutes(r.s))}</span></span></li>`).join("")}
-    ${(d.on?.spans ?? []).length ? `<li class="note"><span>Screen on</span><span>${esc(d.on.spans.map(rangeWords).join(", "))}</span></li>` : ""}</ul>`;
+  return `<ul class="rows times">${rows.map(r => `<li><span><span class="chip" style="--c:${r.c}"></span>${esc(rangeWords(r.s))}</span><span>${esc(r.name)} · <span class="num">${hm(spanMinutes(r.s))}</span></span></li>`).join("")}</ul>`;
 }
 
 function appRows(apps, key, day = null) {

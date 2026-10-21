@@ -156,7 +156,7 @@ dialog form[method="dialog"] { margin-top: 14px; }
 .when > summary::-webkit-details-marker { display: none; }
 .when[open] > summary .strip { box-shadow: 0 0 0 2px var(--cobalt) inset; }
 .times { margin: 8px 0 4px; }
-.times li.note { font-size: .78rem; }
+.when[open] ~ .legend { display: none; }   /* open: the times replace the legend, never both */
 li.app { display: block; }
 li.app details > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; border-top: 0; color: inherit; }
 li.app details > summary::after { content: "›"; color: var(--muted); margin-left: 6px; }
