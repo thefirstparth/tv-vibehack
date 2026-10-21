@@ -130,3 +130,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   return 101 → 100 ms, janky 0 → 0. Memory: 68.4 / 65.3 MB current, 84.2 / 69.7 MB new (median +10 MB, limit 3); the
   new build read higher in all three runs, cause not found. **Over the limits; installed at 04:42 at Parth's call**
   (no grain was non-negotiable). Worth finding the memory cause before the next build.
+- 22 Oct 04:46, the memory question settled: both builds read **at rest on Home** (20 s after Home, by pid, alternating
+  installs): 1bb593d 55.2 / 68.5 MB, 90cd971 58.8 / 65.4 MB, medians 61.8 vs 62.1 MB (+0.3). The swing is the GPU's
+  graphics memory (15-21 MB either build); the emulator (no GPU accounting) has no-grain 2 MB *lighter*. **A single
+  memory reading on this TV swings about ±8 MB**: judge memory on several readings, and don't read it as a build's
+  cost from one slot.
