@@ -202,6 +202,12 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     Installed straight away without its own A/B at Parth's call (it removes work; the picture is otherwise the same).
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-starry-0d2893a.apk`.
 
+18. **Horizon back to its approved spec, 960x540 with fine grain and dither** (`0ad75e1`, on the TV since 05:20 on 22
+    Oct). At 480x270 the 4x stretch showed the grain as blotches, then the dither as a dot grid, then banding without
+    either. Memory, read fairly at rest (2 readings each, alternating): 52.5 MB (43c12f9) vs 60.7 MB (+8.2 MB, over the
+    3 MB limit); kept at Parth's call. Speed for 960x540 was measured on 20 Oct (Home return -5.5 ms, cold +13.5 ms).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-nodither-43c12f9.apk`.
+
 Check the live state any time:
 
 ```bash
