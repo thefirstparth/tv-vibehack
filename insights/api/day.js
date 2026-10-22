@@ -6,7 +6,7 @@ import { archiveDay, readMonth, writeMonth, writeStatus } from "../lib/store.js"
 export const START = { date: "2026-10-21", time: "04:00" };
 
 /** Stretches left out of the page's copy of a day (kept in the archive): TV tests, not use. */
-export const TESTS = [{ date: "2026-10-22", from: "03:45", to: "06:20" }];   // A/B tests: no grain, the Xbox tile, the diary update, the Horizon grain fix
+export const TESTS = [{ date: "2026-10-22", from: "03:45", to: "05:55" }];   // A/B tests: no grain, the Xbox tile, the diary update, the Horizon grain fix
 
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.
 // First the day is archived as it arrived (never overwritten), then merged into its month file. A resend never
