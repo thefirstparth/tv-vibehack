@@ -208,6 +208,13 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     3 MB limit); kept at Parth's call. Speed for 960x540 was measured on 20 Oct (Home return -5.5 ms, cold +13.5 ms).
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-nodither-43c12f9.apk`.
 
+19. **Horizon without the dot grid or contours** (`28e427c`, on the TV since 05:47 on 22 Oct). At 960x540 the ordered
+    dither still showed as a fine criss-cross above the dock. Now: no ordered dither; the grain goes on last, over the
+    readability shadows; every soft shape (clouds, glows, shadows) fades out along a cosine; and each readability shadow
+    is drawn once at its final strength (30 stacked faint passes rounded into contour lines without the dither). The
+    A/B of the step before it (`5596b2e`) passed; `28e427c` itself is not yet measured (Parth's call, BENCHMARKS.md).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-960-0ad75e1.apk`.
+
 Check the live state any time:
 
 ```bash

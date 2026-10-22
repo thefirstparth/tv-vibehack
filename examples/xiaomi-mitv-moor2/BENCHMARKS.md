@@ -141,3 +141,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - 22 Oct 05:18, Horizon at 960x540 with grain (`0ad75e1`) vs 480x270 without grain or dither (`43c12f9`), memory at
   rest (20 s after Home, by pid, alternating): 52.6 / 52.4 vs 63.4 / 58.0 MB, medians 52.5 vs 60.7 (+8.2 MB: about 2 MB
   native for the bigger picture, 4-9 MB GPU). Over the limit; installed at Parth's call for the approved look.
+- 22 Oct 05:32 short A/B (2 rounds, CN), `0ad75e1` vs `5596b2e` (no ordered dither, grain over the shadows): **pass** on
+  every point. Cold +6.5 ms, Home return -6 ms, janky +0, frame p99 10.5 vs 10 ms, memory +2.1 MB. (judge.py says FAIL
+  only for "noise known": a CN run has no noise slot.) `5596b2e` showed contour lines on the TV; its follow-up `28e427c`
+  (cosine fades, each shadow drawn once) changes only the background drawing, off the main thread, and was installed at
+  05:47 without its own A/B at Parth's call (he wanted the TV back). To be measured when the TV is next free.
