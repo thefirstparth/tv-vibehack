@@ -215,10 +215,12 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     A/B of the step before it (`5596b2e`) passed; `28e427c` itself is not yet measured (Parth's call, BENCHMARKS.md).
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-960-0ad75e1.apk`.
 
-20. **THEN/LATER kept clear of the weather** (`053f2e3`, on the TV since 05:52 on 22 Oct): lined up, "Today 12:30 pm, in
-    6h" above "United States GP" pushed the GP name into the weather; now a row's competition steps down to its short
-    form, or is left out, when lining up would push it past. Layout only; installed without an A/B at Parth's call
-    (owed with 19's). Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-oneshade-28e427c.apk`.
+20. **THEN/LATER kept clear of the weather** (`38586f4`, on the TV since 05:55 on 22 Oct): lined up, "Today 12:30 pm, in
+    6h" above "United States GP" pushed the GP name into the weather. Now, when lining up would push a competition
+    past, the times lose their ", in 6h" first (the headline keeps its countdown); only if still over does a
+    competition step down to its short form, or is left out. (`053f2e3`, 05:52, dropped the GP name straight away;
+    Parth didn't like it.) Layout only; installed without an A/B at Parth's call (owed with 19's). Undo: `pm install -r`
+    of `backup/launcher-builds/tvhome-release-oneshade-28e427c.apk`.
 
 Check the live state any time:
 
