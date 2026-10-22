@@ -146,3 +146,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   only for "noise known": a CN run has no noise slot.) `5596b2e` showed contour lines on the TV; its follow-up `28e427c`
   (cosine fades, each shadow drawn once) changes only the background drawing, off the main thread, and was installed at
   05:47 without its own A/B at Parth's call (he wanted the TV back). To be measured when the TV is next free.
+- 22 Oct 06:05, on the emulator (tv1400qa, not the TV), the background drawing alone (HorizonBackground.draw, timed in
+  throwaway builds): `0ad75e1` vs `28e427c`'s Horizon, storm sky, 3 alternating rounds of 10 draws (the first after each
+  install discarded). Median **95.6 → 42.5 ms**; every round lower (109/94/89 vs 45/42/42). The shadows now reach the
+  floor in fewer passes (the cosine fade is fuller) and nothing is dithered. It runs off the main thread, so cold start
+  and Home return are not touched; with `38586f4` (layout only) Parth chose this check over another TV A/B.
