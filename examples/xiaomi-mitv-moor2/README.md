@@ -219,7 +219,7 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     6h" above "United States GP" pushed the GP name into the weather. Now, when lining up would push a competition
     past, the times lose their ", in 6h" first (the headline keeps its countdown); only if still over does a
     competition step down to its short form, or is left out. (`053f2e3`, 05:52, dropped the GP name straight away;
-    Parth didn't like it.) Layout only; installed without an A/B at Parth's call (layout only). Undo: `pm install -r`
+    Parth didn't like it.) Layout only; installed without an A/B at Parth's call. Undo: `pm install -r`
     of `backup/launcher-builds/tvhome-release-oneshade-28e427c.apk`.
 
 Check the live state any time:
