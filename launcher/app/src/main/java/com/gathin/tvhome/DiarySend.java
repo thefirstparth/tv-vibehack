@@ -26,7 +26,8 @@ import java.util.Map;
  * on screen a few seconds (MainActivity posts it and takes it back on pause), so never while something is watched.
  * Days missed (the site down, no internet) are sent the next time, 30 days back at most. A day the TV was off is sent
  * as "on 0 minutes", so on the page a missing day means the summary never arrived. What went wrong with a send (no
- * internet, a timeout, the site's answer) is remembered and sent with the next day that gets through. Runs on a thread
+ * internet, a timeout, the site's answer) is remembered and sent with the next day that gets through. Each day's summary
+ * is made once, at its first try, and kept (Diary.freeze): a day that fails for weeks is still sent whole. Runs on a thread
  * of its own, so the diary never waits for the network.
  */
 final class DiarySend {
@@ -76,15 +77,21 @@ final class DiarySend {
         LocalDate day = Plan.firstToSend(today, prefs.getString("sent", ""), BACK_DAYS);
         for (; day.isBefore(today); day = day.plusDays(1)) {
             String date = day.toString();
-            List<String> lines = diary.lines(date);
-            UsageDay usage = usage(c, day, zone);
-            boolean empty = lines.isEmpty() && (usage == null || (usage.onMs == 0 && usage.apps.isEmpty()));
-            if (empty && date.compareTo(since) < 0) {   // before the diary: nothing known, nothing sent
-                prefs.edit().putString("sent", date).apply();
-                continue;
+            // made once, at the day's first try, and sent as it was: Android keeps a day's app detail only ~10 days
+            String summary = diary.frozen(date);
+            if (summary == null) {
+                List<String> lines = diary.lines(date);
+                UsageDay usage = usage(c, day, zone);
+                boolean empty = lines.isEmpty() && (usage == null || (usage.onMs == 0 && usage.apps.isEmpty()));
+                if (empty && date.compareTo(since) < 0) {   // before the diary: nothing known, nothing sent
+                    prefs.edit().putString("sent", date).apply();
+                    continue;
+                }
+                if (empty && usage == null) usage = new UsageDay();   // the TV was off all day: "on 0 minutes"
+                summary = DaySummary.json(date, c.getString(R.string.tv_build), lines, usage, names(c, usage), tv(c), zone, inputs(c, diary, day, lines, usage));
+                diary.freeze(date, summary);
             }
-            if (empty && usage == null) usage = new UsageDay();   // the TV was off all day: "on 0 minutes"
-            String body = DaySummary.json(date, c.getString(R.string.tv_build), lines, usage, names(c, usage), tv(c), zone, failures(prefs));
+            String body = DaySummary.withSend(summary, failures(prefs));
             int code;
             try {
                 code = post(c, body);
@@ -165,6 +172,16 @@ final class DiarySend {
         } catch (Exception ignored) {
             // best effort
         }
+    }
+
+    /** The input app's time by Inputs-menu choice: the day before's late choices too, for a stretch over midnight. */
+    private static List<InputDay.Use> inputs(Context c, Diary diary, LocalDate day, List<String> lines, UsageDay usage) {
+        if (usage == null) return null;
+        UsageDay.App app = usage.app(c.getString(R.string.live_tv_package).trim());
+        if (app == null) return null;
+        List<String> both = new ArrayList<>(diary.lines(day.minusDays(1).toString()));
+        both.addAll(lines);
+        return InputDay.of(InputDay.choices(both), app, usage.homes);
     }
 
     /** null without usage access (granted once over adb; MOOR2 README). */

@@ -242,6 +242,15 @@ data keeper, owner away) found more in the data path than in the design:
 - **Offline-first means the saved copy first.** Network-first with an 8 s fallback per file is 20+ s of blank screen on a
   stalled connection.
 - **The testers read code; they don't replace a real phone with real data.** Check the screens yourself, then with Parth.
+- **Don't test a "yesterday" feature on the emulator by moving its clock.** Android moves its whole usage history
+  with the clock: a stretch at 03:36 read as 04:58 the next day after a jump, while the launcher's own diary line stayed
+  at 03:36, so nothing matched. Put the clock back (history moves back with it) and test with a throwaway build that
+  also sends today.
+
+**A small picture stretched up shows every fixed pattern in it.** Horizon v3 is drawn at 480x270 and stretched 4x:
+its baked-in grain became blotches, and once the grain was removed, Skia's ordered dither (a fixed dot pattern, normally
+invisible) became a visible grid. Draw small pictures that get stretched without grain or dither; let the stretch
+(bilinear, dithered on the way to the screen) do the smoothing.
 
 ## What went badly
 

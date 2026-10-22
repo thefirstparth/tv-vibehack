@@ -105,3 +105,28 @@ test("the first day is kept only from 04:00, without its home-screen numbers", a
   assert.equal(d.home, undefined);
   assert.equal(fromStart({ date: "2026-10-22", home: { opens: 3 } }, start).home.opens, 3, "later days as sent");
 });
+
+test("per-input minutes are kept when sent, and a day without them (build 1bb593d) is as before", () => {
+  const XBOX = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
+  const d = cleanDay({ ...DAY, inputs: [
+    { id: XBOX, name: "Xbox", minutes: 95, opens: 2, spans: [["19:40", "21:15"]], extra: 1 },
+    { id: "livetv", name: "Live TV", minutes: 10 },
+    { id: "bad id with spaces", minutes: 5 },
+    { id: XBOX, name: "no minutes" }] });
+  assert.deepEqual(d.inputs, [{ id: XBOX, name: "Xbox", minutes: 95, opens: 2, spans: [["19:40", "21:15"]] }, { id: "livetv", name: "Live TV", minutes: 10 }]);
+  assert.equal("inputs" in cleanDay(DAY), false);
+  assert.deepEqual(Object.keys(cleanDay(DAY)).sort(), ["apps", "build", "date", "feed", "home", "on", "tv", "v"]);
+});
+
+test("test stretches are cut out of a day, with its home-screen numbers", async () => {
+  const { withoutTests } = await import("../lib/day.js");
+  const tests = [{ date: "2026-10-22", from: "03:45", to: "04:50" }];
+  const d = withoutTests({ date: "2026-10-22", on: { minutes: 999, spans: [["02:06", "02:37"], ["03:47", "05:10"]] },
+    apps: [{ pkg: "com.sonyliv", minutes: 22, spans: [["02:06", "02:27"]] }, { pkg: "x.media", minutes: 30, spans: [["03:50", "04:20"]] }], home: { opens: 80 }, tv: { boots: 3 } }, tests);
+  assert.deepEqual(d.on.spans, [["02:06", "02:37"], ["04:50", "05:10"]]);
+  assert.equal(d.on.minutes, 32 + 21);
+  assert.deepEqual(d.apps.map(a => a.pkg), ["com.sonyliv"]);
+  assert.equal(d.home, undefined);
+  assert.equal(d.tv.boots, 0);
+  assert.equal(withoutTests({ date: "2026-10-23", home: { opens: 5 } }, tests).home.opens, 5);
+});

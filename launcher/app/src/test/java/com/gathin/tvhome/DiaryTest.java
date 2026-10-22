@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -116,6 +117,103 @@ public class DiaryTest {
         assertEquals("site error (500)", DiarySend.Plan.after(500));
         assertTrue(DiarySend.Plan.skip(400));
         assertTrue(!DiarySend.Plan.skip(500) && !DiarySend.Plan.skip(401));
+    }
+
+    private static final String TVIN = "com.mitv.livetv", XBOX = "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5";
+
+    private static UsageDay inputDay(UsageDay.Ev... more) {
+        List<UsageDay.Ev> evs = new java.util.ArrayList<>(Arrays.asList(
+                ev(at(21, 19, 0), UsageDay.SCREEN_ON, "android"),
+                ev(at(21, 19, 0), UsageDay.RESUMED, "com.gathin.tvhome")));
+        evs.addAll(Arrays.asList(more));
+        evs.add(ev(at(21, 23, 0), UsageDay.SCREEN_OFF, "android"));
+        return UsageDay.of(evs, START, END);
+    }
+
+    @Test
+    public void anInputChosenOnHomeNamesTheInputAppsNextStretch() {
+        UsageDay u = inputDay(
+                ev(at(21, 19, 1) + 1500, UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 19, 1) + 1500, UsageDay.RESUMED, TVIN),
+                // a quick pause and back (the input app re-opening its player): the same input
+                ev(at(21, 19, 30), UsageDay.PAUSED, TVIN),
+                ev(at(21, 19, 30) + 3000, UsageDay.RESUMED, TVIN),
+                ev(at(21, 20, 31), UsageDay.PAUSED, TVIN),
+                ev(at(21, 20, 31), UsageDay.RESUMED, "com.gathin.tvhome"),
+                // Home, then the input app again with no choice (the remote's source button): not named
+                ev(at(21, 20, 32), UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 20, 32), UsageDay.RESUMED, TVIN),
+                ev(at(21, 21, 2), UsageDay.PAUSED, TVIN),
+                ev(at(21, 21, 2), UsageDay.RESUMED, "com.gathin.tvhome"));
+        List<String> lines = Arrays.asList(at(21, 19, 1) + "\tI\t" + XBOX + "\tXbox", at(21, 19, 1) + "\tH\t80", "junk\tI\tx\ty");
+        List<InputDay.Use> in = InputDay.of(InputDay.choices(lines), u.app(TVIN), u.homes);
+        assertEquals(1, in.size());
+        assertEquals(XBOX, in.get(0).id);
+        assertEquals("Xbox", in.get(0).name);
+        assertEquals(1, in.get(0).opens);
+        assertEquals(90 * MIN - 1500 - 3000, in.get(0).ms);
+        assertEquals(1, in.get(0).spans.size());   // back within a minute: one stretch
+        assertEquals(120 * MIN - 1500 - 3000, u.app(TVIN).ms);   // the input app's own total keeps the unnamed half hour
+    }
+
+    @Test
+    public void aChoiceWithNoStretchAfterItNamesNothing() {
+        UsageDay u = inputDay(
+                ev(at(21, 20, 0), UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 20, 0), UsageDay.RESUMED, TVIN),
+                ev(at(21, 21, 0), UsageDay.PAUSED, TVIN));
+        // chosen a minute before: too long before to be this stretch's
+        List<InputDay.Use> in = InputDay.of(InputDay.choices(Arrays.asList(at(21, 19, 59) + "\tI\t" + XBOX + "\tXbox")), u.app(TVIN), u.homes);
+        assertTrue(in.isEmpty());
+        assertTrue(InputDay.of(InputDay.choices(Collections.emptyList()), u.app(TVIN), u.homes).isEmpty());
+        assertTrue(InputDay.of(InputDay.choices(Arrays.asList(at(21, 20, 0) + "\tI\tlivetv\tLive TV")), null, u.homes).isEmpty());
+    }
+
+    @Test
+    public void aStretchOverMidnightIsNamedByTheEveningsChoice() {
+        List<UsageDay.Ev> evs = Arrays.asList(
+                ev(at(20, 23, 30), UsageDay.SCREEN_ON, "android"),
+                ev(at(20, 23, 30), UsageDay.RESUMED, TVIN),
+                ev(at(21, 0, 45), UsageDay.PAUSED, TVIN),
+                ev(at(21, 0, 45), UsageDay.SCREEN_OFF, "android"));
+        UsageDay u = UsageDay.of(evs, START, END);
+        List<InputDay.Use> in = InputDay.of(InputDay.choices(Arrays.asList((at(20, 23, 30) - 2000) + "\tI\t" + XBOX + "\tXbox")), u.app(TVIN), u.homes);
+        assertEquals(45 * MIN, in.get(0).ms);   // only this day's part
+        assertEquals(0, in.get(0).opens);   // opened the day before: counted on that day
+    }
+
+    @Test
+    public void theInputsGoInTheJson() {
+        UsageDay u = inputDay(
+                ev(at(21, 19, 1), UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 19, 1), UsageDay.RESUMED, TVIN),
+                ev(at(21, 20, 1), UsageDay.PAUSED, TVIN));
+        List<InputDay.Use> in = InputDay.of(InputDay.choices(Arrays.asList(at(21, 19, 1) + "\tI\t" + XBOX + "\tXbox")), u.app(TVIN), u.homes);
+        String j = DaySummary.json("2026-10-21", "x", Collections.emptyList(), u, null, null, IST, in);
+        assertTrue(j, j.contains("],\"inputs\":[{\"id\":\"" + XBOX + "\",\"name\":\"Xbox\",\"minutes\":60,\"opens\":1,\"spans\":[[\"19:01\",\"20:00\"]]}],\"home\""));
+        assertTrue(DaySummary.json("2026-10-21", "x", Collections.emptyList(), u, null, null, IST, Collections.emptyList()).indexOf("inputs") < 0);
+    }
+
+    @Test
+    public void aFrozenDayIsSentAsFirstMadeWithTodaysSendProblems() throws Exception {
+        java.io.File dir = java.nio.file.Files.createTempDirectory("diary").toFile();
+        Diary d = new Diary(dir);
+        String day = DaySummary.json("2026-10-21", "x", Collections.emptyList(), new UsageDay(), null, null, IST, (String) null);
+        assertEquals(null, d.frozen("2026-10-21"));
+        d.freeze("2026-10-21", day);
+        assertEquals(day, d.frozen("2026-10-21"));
+        assertEquals(day.substring(0, day.length() - 1) + ",\"send\":{\"failed\":12}}", DaySummary.withSend(d.frozen("2026-10-21"), "{\"failed\":12}"));
+        assertEquals(day, DaySummary.withSend(day, null));
+        // a copy cut short is made again, not sent
+        java.nio.file.Files.write(new java.io.File(dir, "sent/2026-10-22.json").toPath(), "{\"v\":1,\"date\":\"2026-10-22\",\"on\":{".getBytes(StandardCharsets.UTF_8));
+        assertEquals(null, d.frozen("2026-10-22"));
+        // kept 35 days, like the diary
+        d.freeze("2026-09-01", day.replace("2026-10-21", "2026-09-01"));
+        d.prune(java.time.LocalDate.of(2026, 11, 25));   // 35 days after the 21st: still kept
+        assertEquals(null, d.frozen("2026-09-01"));
+        assertEquals(day, d.frozen("2026-10-21"));
+        d.prune(java.time.LocalDate.of(2026, 11, 26));
+        assertEquals(null, d.frozen("2026-10-21"));
     }
 
     @Test

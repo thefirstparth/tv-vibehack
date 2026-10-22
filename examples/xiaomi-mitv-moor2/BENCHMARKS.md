@@ -124,3 +124,25 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   summary sent to the insights site, never while an app is open): **pass** on every point. The memory column failed in
   all four slots (see the row); measured again at 02:58 with the fixed command, two alternating installs a build:
   55.7 / 54.2 MB current, 53.8 / 56.1 MB new. Installed with `pm install -r` at 03:03; usage access granted.
+- 22 Oct, no grain (`bf2b584`, then with the Xbox tile `90cd971`), three short A/Bs after a restart, 3 cold starts a
+  slot: 03:47 (1 round: cold +37 ms, memory +8.2 MB; one sample each), 04:04 (stopped after 3 slots by a remote
+  press; memory 68.3 / 84.3 / 67.1 MB), 04:24 (2 rounds, below). Speed: cold 608 → 628.5 ms (+20.5, limit 20), Home
+  return 101 → 100 ms, janky 0 → 0. Memory: 68.4 / 65.3 MB current, 84.2 / 69.7 MB new (median +10 MB, limit 3); the
+  new build read higher in all three runs, cause not found. **Over the limits; installed at 04:42 at Parth's call**
+  (no grain was non-negotiable). Worth finding the memory cause before the next build.
+- 22 Oct 04:46, the memory question settled: both builds read **at rest on Home** (20 s after Home, by pid, alternating
+  installs): 1bb593d 55.2 / 68.5 MB, 90cd971 58.8 / 65.4 MB, medians 61.8 vs 62.1 MB (+0.3). The swing is the GPU's
+  graphics memory (15-21 MB either build); the emulator (no GPU accounting) has no-grain 2 MB *lighter*. **A single
+  memory reading on this TV swings about ±8 MB**: judge memory on several readings, and don't read it as a build's
+  cost from one slot.
+- 22 Oct 04:49 short A/B (2 rounds, 3 cold starts a slot), 90cd971 vs `d9c6c4b` (no grain, diary update, Xbox tile):
+  **pass** on every point. Cold 627.5 → 626 ms, Home return about the same (101 → 98), janky 0 → 0, frame p99 9-10 vs
+  10-11 ms, memory 70.4 / 68.3 vs 68.4 / 69.3 MB. Installed as `0573edd` (the same plus the tile's final drawing) at 05:06.
+- 22 Oct 05:18, Horizon at 960x540 with grain (`0ad75e1`) vs 480x270 without grain or dither (`43c12f9`), memory at
+  rest (20 s after Home, by pid, alternating): 52.6 / 52.4 vs 63.4 / 58.0 MB, medians 52.5 vs 60.7 (+8.2 MB: about 2 MB
+  native for the bigger picture, 4-9 MB GPU). Over the limit; installed at Parth's call for the approved look.
+- 22 Oct 05:32 short A/B (2 rounds, CN), `0ad75e1` vs `5596b2e` (no ordered dither, grain over the shadows): **pass** on
+  every point. Cold +6.5 ms, Home return -6 ms, janky +0, frame p99 10.5 vs 10 ms, memory +2.1 MB. (judge.py says FAIL
+  only for "noise known": a CN run has no noise slot.) `5596b2e` showed contour lines on the TV; its follow-up `28e427c`
+  (cosine fades, each shadow drawn once) changes only the background drawing, off the main thread, and was installed at
+  05:47 without its own A/B at Parth's call (he wanted the TV back). To be measured when the TV is next free.

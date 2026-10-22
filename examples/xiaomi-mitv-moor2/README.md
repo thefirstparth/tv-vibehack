@@ -181,6 +181,47 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     `appops set com.gathin.tvhome GET_USAGE_STATS default`. Off without undoing: remove `tv.diaryUrl` from
     `launcher/local.properties` and rebuild.
 
+15. **No grain in the light, and an Xbox tile** (`90cd971`, on the TV since 04:42 on 22 Oct). Horizon v3's baked-in grain
+    is gone (at 480x270 stretched 4x it read as blotches). The dock's 4th tile is now the Xbox (HDMI 2, input
+    `com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`): grey while the Xbox is off, Xbox green while it is on (the
+    port's state through TvInputCallback), one press switches to it; FanCode moved to the start of row 2. Its short A/B
+    was over the limits on memory (+10 MB) and by 0.5 ms on cold start; installed at Parth's call ("no-grain is
+    non-negotiable"), see BENCHMARKS.md. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-insights-1bb593d.apk`.
+
+16. **The diary update and the Xbox tile's final look** (`0573edd`, on the TV since 05:06 on 22 Oct): each day's summary
+    is kept as first made (files/diary/sent/), the input picked on the Inputs menu is noted, and the Xbox tile is Parth's
+    "3B" (a controller half-risen over a horizon in a green night sky when on; greys and "Off" when off). Tested as
+    `d9c6c4b` (short A/B, pass on every point, BENCHMARKS.md); the tile's drawing changed after it, installed without its
+    own test at Parth's call. Since 05:13 the tile is his final pick, "starry rise" (`0d2893a`): a fun controller rising
+    out of the tile's bottom edge into a bright starry green night; "Off" in grey when off. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-xbox-90cd971.apk`.
+
+17. **No dither in the light** (`43c12f9`, on the TV since 05:16 on 22 Oct): Horizon's 480x270 picture is drawn without
+    Skia's dither; its fixed dot pattern, stretched 4x, showed as a grid once the grain was gone (Parth: "worse now").
+    Installed straight away without its own A/B at Parth's call (it removes work; the picture is otherwise the same).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-starry-0d2893a.apk`.
+
+18. **Horizon back to its approved spec, 960x540 with fine grain and dither** (`0ad75e1`, on the TV since 05:20 on 22
+    Oct). At 480x270 the 4x stretch showed the grain as blotches, then the dither as a dot grid, then banding without
+    either. Memory, read fairly at rest (2 readings each, alternating): 52.5 MB (43c12f9) vs 60.7 MB (+8.2 MB, over the
+    3 MB limit); kept at Parth's call. Speed for 960x540 was measured on 20 Oct (Home return -5.5 ms, cold +13.5 ms).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-nodither-43c12f9.apk`.
+
+19. **Horizon without the dot grid or contours** (`28e427c`, on the TV since 05:47 on 22 Oct). At 960x540 the ordered
+    dither still showed as a fine criss-cross above the dock. Now: no ordered dither; the grain goes on last, over the
+    readability shadows; every soft shape (clouds, glows, shadows) fades out along a cosine; and each readability shadow
+    is drawn once at its final strength (30 stacked faint passes rounded into contour lines without the dither). The
+    A/B of the step before it (`5596b2e`) passed; `28e427c` itself is not yet measured (Parth's call, BENCHMARKS.md).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-960-0ad75e1.apk`.
+
+20. **THEN/LATER kept clear of the weather** (`38586f4`, on the TV since 05:55 on 22 Oct): lined up, "Today 12:30 pm, in
+    6h" above "United States GP" pushed the GP name into the weather. Now, when lining up would push a competition
+    past, the times lose their ", in 6h" first (the headline keeps its countdown); only if still over does a
+    competition step down to its short form, or is left out. (`053f2e3`, 05:52, dropped the GP name straight away;
+    Parth didn't like it.) Layout only; installed without an A/B at Parth's call (owed with 19's). Undo: `pm install -r`
+    of `backup/launcher-builds/tvhome-release-oneshade-28e427c.apk`.
+
 Check the live state any time:
 
 ```bash
@@ -303,6 +344,23 @@ The 1400 app the same way: `./gradlew :app1400:assembleRelease`, then push and `
 Nothing here blocks using the TV. Pick up any of it later.
 
 **The next session's plan is in [NEXT.md](NEXT.md)** (humidity layout, QA, the video lag test).
+
+- **Built, not on the TV: the next insights diary build** (`db827f3`, candidate
+  `backup/launcher-builds/tvhome-release-diary2-29477b0.apk`; site side `29477b0`, not deployed). Nothing on the TV
+  changed. (1) Each day's summary is frozen at its first send try in files/diary/sent/ (35 days) and that copy is
+  what's sent, so a day failing longer than Android keeps usage detail (~10 days) still arrives whole. (2) Picking an
+  input on Home's Inputs menu writes a diary line (`I`, e.g. `com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`, "Xbox")
+  and the summary gets per-input minutes for the input app's stretch that follows; the TV's own source button stays
+  unnamed. Unit tests and an emulator run passed (BENCHMARKS.md has no row yet). **Left for next week (Parth, 21 Oct):**
+  the short A/B against `1bb593d` (`backup/launcher-builds/tvhome-release-insights-1bb593d.apk`, memory by pid), then
+  `pm install -r` only if it passes (undo: `pm install -r` of that 1bb593d APK; the frozen copies in files/diary/sent/
+  are then just ignored); deploy `insights/` (the page and day.js take days with or without `inputs`); and check a week
+  of real days on the site and `DaySummary.SLOW_MS` (100 ms) against the real Home times (sign-in needed).
+  **The site's address:** since 21 Oct the insights app also answers at `https://tv.bhatia.page` (custom domain, CNAME
+  at Spaceship). The TV sends to `https://tv-insights-chi.vercel.app/api/day` (`tv.diaryUrl` in `launcher/local.properties`),
+  and the saved candidate has that address built in. When this build is A/B'd and installed, `tv.diaryUrl` may become
+  `https://tv.bhatia.page/api/day` (then rebuild, and A/B that build, not the saved one). Keep the vercel.app alias
+  working regardless: an older build put back with `pm install -r` still sends there.
 
 - **Known issue: Home lags after watching video, until a restart.** Measured 2026-10-18: after a
   reboot Home is smooth (0% janky frames, 6 ms a frame); after 45 s of video (FanCode live) it is

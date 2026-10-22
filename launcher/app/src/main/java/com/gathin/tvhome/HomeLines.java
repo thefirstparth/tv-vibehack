@@ -286,15 +286,26 @@ final class HomeLines {
         for (int i = 0; i < 2; i++) {
             JSONObject it = i + 1 < items.size() ? items.get(i + 1) : null;
             shown[i] = it != null && thenLine(it, i, thenCells[i], now, room);
-            rowViews[i].setVisibility(shown[i] ? View.VISIBLE : View.GONE);
         }
-        // line the columns up: each column as wide as its widest cell in the rows shown (a gap after each)
-        float[] gaps = {12 * density, 14 * density, 18 * density, 0};
-        for (int c = 0; c < 4; c++) {
-            int w = 0;
-            for (int i = 0; i < 2; i++) if (shown[i]) w = Math.max(w, Math.round(width(thenCells[i][c], thenCells[i][c].getText().toString()) + gaps[c]));
-            for (int i = 0; i < 2; i++) thenCells[i][c].setMinWidth(c == 3 ? 0 : w);
+        // each row fits alone, but lined up a row's competition can start further right ("Today 12:30 pm, in 6h" above
+        // "United States GP" reached the weather, 22 Oct): then the times lose their ", in 6h" first (the headline keeps
+        // its countdown), and only then does a competition step down to its short form, or is left out
+        int base = alignThen(shown);
+        if (over(shown, base, room)) {
+            for (int i = 0; i < 2; i++) {
+                String t = thenCells[i][1].getText().toString();
+                int at = t.indexOf(", in ");
+                if (shown[i] && at > 0) thenCells[i][1].setText(t.substring(0, at));
+            }
+            base = alignThen(shown);
         }
+        for (int i = 0; i < 2; i++) {
+            if (!shown[i] || base + width(thenCells[i][3], thenCells[i][3].getText().toString()) <= room) continue;
+            String fit = "";
+            for (String c : rowComps[i]) if (!c.isEmpty() && base + width(thenCells[i][3], c) <= room) { fit = c; break; }
+            thenCells[i][3].setText(fit);
+        }
+        for (int i = 0; i < 2; i++) rowViews[i].setVisibility(shown[i] ? View.VISIBLE : View.GONE);
         return true;
     }
 
@@ -411,6 +422,28 @@ final class HomeLines {
     }
 
     // "THEN   Thu 12:30 am   Real Madrid v RB Leipzig   UCL": label, time, match, competition in four cells
+    /** Lines the THEN/LATER columns up, each as wide as its widest cell in the rows shown (a gap after each); returns
+     *  where the competition column starts. */
+    private int alignThen(boolean[] shown) {
+        float[] gaps = {12 * density, 14 * density, 18 * density};
+        int base = 0;
+        for (int c = 0; c < 3; c++) {
+            int w = 0;
+            for (int i = 0; i < 2; i++) if (shown[i]) w = Math.max(w, Math.round(width(thenCells[i][c], thenCells[i][c].getText().toString()) + gaps[c]));
+            for (int i = 0; i < 2; i++) thenCells[i][c].setMinWidth(w);
+            base += w;
+        }
+        return base;
+    }
+
+    private boolean over(boolean[] shown, int base, int room) {
+        for (int i = 0; i < 2; i++) if (shown[i] && base + width(thenCells[i][3], thenCells[i][3].getText().toString()) > room) return true;
+        return false;
+    }
+
+    /** Each THEN/LATER row's competition forms, longest first, for stepping down once the columns are lined up. */
+    private final String[][] rowComps = new String[2][];
+
     private boolean thenLine(JSONObject it, int index, TextView[] cells, long now, int room) {
         boolean live = data.liveNow(it, now);
         String l = live ? "Also live" : index == 0 ? "Then" : "Later";
@@ -429,6 +462,7 @@ final class HomeLines {
             }
         }
         String[] comps = "f1".equals(it.optString("sp")) ? new String[]{it.optString("gp", ""), ""} : Words.compForms(it);
+        rowComps[index] = comps;
         float fixed = width(cells[0], cells[0].getText().toString()) + 12 * density + width(cells[1], when) + 14 * density;
         for (String c : new String[]{comps[0], comps[1], ""}) {
             for (int k = 0; k < whats.size(); k++) {

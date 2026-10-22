@@ -49,6 +49,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         final String pkg;
         final Drawable banner;
         final Drawable icon;
+        /** A TV input's id for the input tile (its banner is an InputTile); null for an app. */
+        final String inputId;
 
         Entry(String label, ComponentName component, Drawable banner, Drawable icon) {
             this.label = label;
@@ -56,8 +58,22 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             this.pkg = component.getPackageName();
             this.banner = banner;
             this.icon = icon;
+            this.inputId = null;
+        }
+
+        Entry(String label, String inputId, InputTile banner) {
+            this.label = label;
+            this.component = null;
+            this.pkg = INPUT;
+            this.banner = banner;
+            this.icon = null;
+            this.inputId = inputId;
         }
     }
+
+    /** The place of the input tile in dock_apps. */
+    static final String INPUT = "@input";
+    private InputTile inputBanner;
 
     static final float FOCUS_SCALE = 1.10f;
 
@@ -94,6 +110,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             Drawable icon = ri.loadIcon(pm);
             String label = String.valueOf(ri.loadLabel(pm));
             fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name), banner, icon));
+        }
+        String input = ctx.getString(R.string.dock_input).trim();
+        if (!input.isEmpty() && favourites.contains(INPUT)) {
+            String name = ctx.getString(R.string.dock_input_name).trim();
+            boolean on = inputBanner != null && inputBanner.isOn();
+            inputBanner = new InputTile(ctx, name);
+            inputBanner.setOn(on);
+            fresh.add(new Entry(name, input, inputBanner));
         }
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
@@ -140,6 +164,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
+            if (e.inputId != null) return false;
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
@@ -150,7 +175,30 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         });
     }
 
+    /** The input tile's device turned on or off: its tile turns colour or grey, nothing else is redrawn. */
+    void setInputOn(boolean on) {
+        if (inputBanner == null || !inputBanner.setOn(on)) return;
+        for (int p = 0; p < items.size(); p++) if (items.get(p).inputId != null) notifyItemChanged(p);
+    }
+
+    /** The input tile's id, or null when there is none. */
+    String inputId() {
+        for (Entry e : items) if (e.inputId != null) return e.inputId;
+        return null;
+    }
+
     private void launch(Entry e) {
+        if (e.inputId != null) {
+            Intent v = new Intent(Intent.ACTION_VIEW).setDataAndType(
+                    android.media.tv.TvContract.buildChannelUriForPassthroughInput(e.inputId), "vnd.android.cursor.item/channel")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            try {
+                ctx.startActivity(v);
+            } catch (Exception ex) {
+                Toast.makeText(ctx, "Can't open " + e.label, Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
                 .setComponent(e.component)

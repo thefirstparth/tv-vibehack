@@ -70,7 +70,7 @@ h2 { font-size: .72rem; letter-spacing: .09em; text-transform: uppercase; color:
 .chip { display: inline-block; width: 12px; height: 12px; border-radius: 4px; background: var(--c); margin-right: 10px; vertical-align: -1px; }
 details > summary { list-style: none; cursor: pointer; border-top: .5px solid var(--line); color: var(--muted); display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
 details > summary::-webkit-details-marker { display: none; }
-details[open] > summary span:last-child { transform: rotate(90deg); }
+details.more[open] > summary span:last-child { transform: rotate(90deg); }
 
 /* week: seven strips */
 .week { display: grid; grid-template-columns: 48px 1fr 64px; align-items: center; gap: 8px 10px; margin-top: 10px; }
@@ -152,4 +152,14 @@ dialog { max-height: 88vh; overflow: auto; }
 dialog form[method="dialog"] { margin-top: 14px; }
 .toast { position: fixed; left: 16px; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); max-width: 528px; margin: 0 auto; z-index: 9; background: var(--ink); color: var(--surface); padding: 12px 14px; border-radius: 12px; font-weight: 600; }
 .toast[hidden] { display: none; }
+.when > summary { display: block; list-style: none; cursor: pointer; border: 0; min-height: 0; }
+.when > summary::-webkit-details-marker { display: none; }
+.when[open] > summary .strip { box-shadow: 0 0 0 2px var(--cobalt) inset; }
+.times { margin: 8px 0 4px; }
+.when[open] ~ .legend { display: none; }   /* open: the times replace the legend, never both */
+li.app { display: block; }
+li.app details > summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; border-top: 0; color: inherit; }
+li.app details > summary::after { content: "›"; color: var(--muted); margin-left: 6px; }
+li.app details[open] > summary::after { transform: rotate(90deg); }
+li.app details > p { margin: 0 0 10px 22px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }

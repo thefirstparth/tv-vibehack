@@ -31,8 +31,11 @@ import java.util.TimeZone;
  */
 final class HorizonV3 {
 
-    /** The picture's size (stretched to the screen): 480x270, since 960x540 failed the A/B on memory (+11.4 MB, 20 Oct). */
-    static final int W = 480, H = 270;
+    /**
+     * The picture's size (stretched to the screen): 960x540, the approved spec. 480x270 (20 Oct, for memory) stretched
+     * the grain and the dither 4x into blotches and a dot grid, and without them showed banding (Parth, 22 Oct).
+     */
+    static final int W = 960, H = 540;
     private static final float S = W / 960f, HOR = 0.66f;
     private static final double R = Astro.R;
     /** The floor: the faintest text keeps this contrast against its block's 90th-percentile background pixel. */
@@ -140,8 +143,40 @@ final class HorizonV3 {
     private static void glow(Canvas g, Paint p, float[] col, double x, double y, double rx, double ry, double k) {
         float rw = (float) (rx * W), rh = (float) (ry * H);
         if (rw <= 0 || k <= 0) return;
-        int in = argb(col, (float) k), out = argb(clr(col), 1);
-        RadialGradient rg = new RadialGradient(0, 0, rw, new int[]{in, out, out}, new float[]{0f, 0.7f, 1f}, Shader.TileMode.CLAMP);
+        RadialGradient rg = new RadialGradient(0, 0, rw, fade(col, k, 0.8f), FADE_AT, Shader.TileMode.CLAMP);
+        Matrix m = new Matrix();
+        m.setScale(1f, rh / rw);
+        m.postTranslate((float) (x * W), (float) (y * H));
+        rg.setLocalMatrix(m);
+        p.setShader(rg);
+        float cx = (float) (x * W), cy = (float) (y * H);
+        g.drawRect(cx - rw, cy - rh, cx + rw, cy + rh, p);
+        p.setShader(null);
+    }
+
+    /** Where fade's stops sit, 0 to 1 of the radius. */
+    private static final float[] FADE_AT = new float[13];
+
+    static {
+        for (int i = 0; i < 13; i++) FADE_AT[i] = i / 12f;
+    }
+
+    /** A colour at k, fading out along a cosine to nothing at `end` of the radius: no edge anywhere. A straight fade
+     *  stopping short, as v3 first had, left a faint line at every cloud's and glow's rim once the ordered dither that
+     *  blurred it was gone ("contours", Parth, 22 Oct). */
+    private static int[] fade(float[] col, double k, float end) {
+        int[] out = new int[13];
+        for (int i = 0; i < 13; i++) {
+            float t = Math.min(1f, FADE_AT[i] / end);
+            out[i] = argb(col, (float) (k * (0.5 + 0.5 * Math.cos(Math.PI * t))));
+        }
+        return out;
+    }
+
+    /** A readability shadow pass: black, fading out to 0.9 of the radius (a little wider than glow, as these stack). */
+    private static void shade(Canvas g, Paint p, double x, double y, double rx, double ry, double k) {
+        float rw = (float) (rx * W), rh = (float) (ry * H);
+        RadialGradient rg = new RadialGradient(0, 0, rw, fade(c(0, 0, 0, 1), k, 0.9f), FADE_AT, Shader.TileMode.CLAMP);
         Matrix m = new Matrix();
         m.setScale(1f, rh / rw);
         m.postTranslate((float) (x * W), (float) (y * H));
@@ -222,7 +257,7 @@ final class HorizonV3 {
 
         Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas g = new Canvas(b);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);   // no ordered dither: its fixed dot pattern shows as a grid once stretched; the grain dithers instead (22 Oct)
         g.drawColor(Color.BLACK);
         vertical(g, p, new float[][]{pal[0], clr(pal[0]), clr(pal[0])}, new float[]{0, 0.32f, 1}, 1);
         band(g, p, pal[1], 0.18f, 0.44f, 0.64f);
@@ -266,8 +301,8 @@ final class HorizonV3 {
         // a match on: v2's faint glow in the competition's colour under the sport lines (no ribbon in this build)
         if (st.matchAccent != null) glow(g, p, c((st.matchAccent & 0x00FFFFFF) | (41 << 24)), 0.24, 0.63, 0.26, 0.20, 1);
 
-        grain(b);
         floor(g, p, b, Z);
+        grain(b);   // after the readability shadows, so they are grained too (a smooth shadow over grain showed steps)
         return b;
     }
 
@@ -450,12 +485,23 @@ final class HorizonV3 {
         for (HorizonBackground.Zone z : Z) {
             double before = ratio(b, z), r = before;
             int pass = 0;
-            for (; pass < 30 && r < FLOOR; pass++) {
-                glow(g, p, c(0, 0, 0, 1), (z.x + z.w / 2) * S / W, (z.y + z.h / 2) * S / H,
-                        (z.w / 2 + 70) * S / W / 0.62, (z.h / 2 + 50) * S / H / 0.62, 0.05);
-                r = ratio(b, z);
+            if (r < FLOOR) {
+                // one shadow at the strength of `pass` stacked 5% ones, drawn again from the saved pixels each time: 30
+                // stacked passes rounded every pixel 30 times, which showed as contour lines once the dither was gone
+                double x = (z.x + z.w / 2) * S / W, y = (z.y + z.h / 2) * S / H;
+                double rx = (z.w / 2 + 70) * S / W / 0.62, ry = (z.h / 2 + 50) * S / H / 0.62;
+                int l = Math.max(0, (int) ((x - rx) * W)), t = Math.max(0, (int) ((y - ry) * H));
+                int rr = Math.min(W, (int) Math.ceil((x + rx) * W)), bb = Math.min(H, (int) Math.ceil((y + ry) * H));
+                int[] keep = new int[(rr - l) * (bb - t)];
+                b.getPixels(keep, 0, rr - l, l, t, rr - l, bb - t);
+                while (pass < 30 && r < FLOOR) {
+                    if (pass++ > 0) b.setPixels(keep, 0, rr - l, l, t, rr - l, bb - t);
+                    shade(g, p, x, y, rx, ry, 1 - Math.pow(0.95, pass));
+                    r = ratio(b, z);
+                }
             }
             Log.i(TAG, String.format(java.util.Locale.ENGLISH, "floor %s: %.2f:1 -> %.2f:1 (%d shadow passes)", z.name, before, r, pass));
         }
     }
+
 }

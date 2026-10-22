@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
+<style>
+  body { margin: 0; background: #e9e4d8; font-family: "Bricolage Grotesque", system-ui; color: #14172b; padding: 28px; }
+  .row { display: flex; gap: 26px; }
+  .opt { width: 236px; text-align: center; }
+  .opt svg.big { width: 200px; height: 200px; border-radius: 46px; box-shadow: 0 10px 26px rgba(20,23,43,.22); }
+  .opt h2 { font-size: 17px; margin: 14px 0 2px; font-weight: 800; }
+  .opt p { font-size: 13px; color: #575b6f; margin: 0 0 12px; line-height: 1.35; min-height: 36px; }
+  .phone { display: inline-flex; gap: 12px; background: #2b2f45; padding: 12px 14px; border-radius: 16px; }
+  .phone svg { width: 48px; height: 48px; border-radius: 13px; }
+  .phone span { font-size: 10px; color: #dfe2ee; display: block; margin-top: 4px; }
+  .rec { display: inline-block; background: #ff6a2b; font-weight: 700; font-size: 12px; padding: 2px 8px; border-radius: 99px; transform: rotate(-3deg); margin-left: 4px; }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- 1 Horizon -->
+    <symbol id="i1" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#f4f1ea"/>
+      <defs><radialGradient id="g1" cx="50%" cy="62%" r="55%"><stop offset="0" stop-color="#ffb070" stop-opacity=".9"/><stop offset="1" stop-color="#f4f1ea" stop-opacity="0"/></radialGradient></defs>
+      <rect width="512" height="512" fill="url(#g1)"/>
+      <circle cx="256" cy="318" r="104" fill="#ff6a2b"/>
+      <rect x="0" y="318" width="512" height="194" fill="#14172b"/>
+      <rect x="96" y="356" width="320" height="10" rx="5" fill="#2442e8" opacity=".9"/>
+    </symbol>
+    <!-- 2 Strip -->
+    <symbol id="i2" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#2442e8"/>
+      <rect x="86" y="206" width="340" height="100" rx="22" fill="#fffdf9"/>
+      <rect x="104" y="224" width="40" height="64" rx="8" fill="#ff6a2b"/>
+      <rect x="250" y="224" width="70" height="64" rx="8" fill="#14172b"/>
+      <rect x="320" y="224" width="44" height="64" rx="8" fill="#ff0000"/>
+      <rect x="364" y="224" width="44" height="64" rx="8" fill="#7a2fc0"/>
+      <rect x="150" y="332" width="212" height="12" rx="6" fill="#fffdf9" opacity=".55"/>
+    </symbol>
+    <!-- 3 TV + sun -->
+    <symbol id="i3" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#14172b"/>
+      <rect x="104" y="146" width="304" height="196" rx="34" fill="none" stroke="#f4f1ea" stroke-width="22"/>
+      <circle cx="256" cy="268" r="46" fill="#ff6a2b"/>
+      <rect x="140" y="266" width="232" height="14" rx="7" fill="#14172b"/>
+      <rect x="196" y="374" width="120" height="20" rx="10" fill="#f4f1ea"/>
+    </symbol>
+    <!-- 4 Sticker monogram -->
+    <symbol id="i4" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#f4f1ea"/>
+      <g transform="rotate(-7 256 256)">
+        <rect x="92" y="150" width="328" height="212" rx="106" fill="#ff6a2b" stroke="#fffdf9" stroke-width="16"/>
+        <text x="256" y="304" text-anchor="middle" font-family="Bricolage Grotesque" font-weight="800" font-size="150" fill="#14172b" letter-spacing="-6">tv</text>
+      </g>
+    </symbol>
+    <!-- 5 Dial -->
+    <symbol id="i5" viewBox="0 0 512 512">
+      <rect width="512" height="512" fill="#fffdf9"/>
+      <circle cx="256" cy="256" r="132" fill="none" stroke="#f0ebe1" stroke-width="56"/>
+      <path d="M 141.7 190 A 132 132 0 0 1 256 124" fill="none" stroke="#2442e8" stroke-width="56"/>
+      <path d="M 124 256 A 132 132 0 0 1 141.7 190" fill="none" stroke="#2442e8" stroke-width="56" opacity=".55"/>
+      <circle cx="256" cy="256" r="30" fill="#ff6a2b"/>
+    </symbol>
+  </defs>
+</svg>
+<div class="row">
+  <div class="opt"><svg class="big"><use href="#i1"/></svg><h2>1 · Horizon <span class="rec">Recommended</span></h2><p>A sun on the horizon: the light your home screen follows</p>
+    <div class="phone"><div><svg><use href="#i1"/></svg><span>TV</span></div></div></div>
+  <div class="opt"><svg class="big"><use href="#i2"/></svg><h2>2 · Strip</h2><p>The day's timeline in app colours, on cobalt</p>
+    <div class="phone"><div><svg><use href="#i2"/></svg><span>TV</span></div></div></div>
+  <div class="opt"><svg class="big"><use href="#i3"/></svg><h2>3 · TV and sun</h2><p>A TV with its sun setting inside, on night navy</p>
+    <div class="phone"><div><svg><use href="#i3"/></svg><span>TV</span></div></div></div>
+  <div class="opt"><svg class="big"><use href="#i4"/></svg><h2>4 · Sticker</h2><p>"tv" on a tilted tangerine sticker, like the app's labels</p>
+    <div class="phone"><div><svg><use href="#i4"/></svg><span>TV</span></div></div></div>
+  <div class="opt"><svg class="big"><use href="#i5"/></svg><h2>5 · Dial</h2><p>A 24-hour dial with the busy evening hours lit</p>
+    <div class="phone"><div><svg><use href="#i5"/></svg><span>TV</span></div></div></div>
+</div>
+</body></html>

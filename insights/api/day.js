@@ -1,9 +1,12 @@
 import { tvAllowed } from "../lib/auth.js";
-import { cleanDay, fromStart, MAX_BYTES, monthPath, withDay } from "../lib/day.js";
+import { cleanDay, fromStart, MAX_BYTES, monthPath, withDay, withoutTests } from "../lib/day.js";
 import { archiveDay, readMonth, writeMonth, writeStatus } from "../lib/store.js";
 
 /** The record starts at 04:00 IST on 21 Oct 2026 (Parth, 21 Oct): after that night's tests and the install. */
 export const START = { date: "2026-10-21", time: "04:00" };
+
+/** Stretches left out of the page's copy of a day (kept in the archive): TV tests, not use. */
+export const TESTS = [{ date: "2026-10-22", from: "03:45", to: "05:55" }];   // A/B tests: no grain, the Xbox tile, the diary update, the Horizon grain fix
 
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.
 // First the day is archived as it arrived (never overwritten), then merged into its month file. A resend never
@@ -33,6 +36,7 @@ export async function POST(request) {
     return Response.json({ error: "archive failed, try again" }, { status: 503 });
   }
   day = fromStart(day, START);   // archived as it arrived (above); the page's copy of the first day starts at 04:00
+  day = withoutTests(day, TESTS);
   const path = monthPath(day.date);
   for (let attempt = 0; attempt < 3; attempt++) {
     let read;

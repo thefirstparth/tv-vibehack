@@ -1,4 +1,4 @@
-import { ago, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
+import { ago, inputSplit, saverMinutes, busiestHours, change, clockWords, colourOf, hourHeat, hoursWords, periodBefore, periodOf, records, rupees, usualOnOff, weekdays, dayName, freshness, hm, kwh, lastDays, monthOf, nameOf, OTHER, strip, topApps, totals } from "./calc.js";
 
 const fontsLink = document.getElementById("fonts");   // the web fonts load without holding up the page
 if (fontsLink) fontsLink.media = "all";
@@ -70,11 +70,39 @@ function saverLine(days) {
   return m >= 1 ? `<p class="note">Also ${hm(m)} of screensaver: counted in hours on and energy, not in the apps above.</p>` : "";
 }
 
-function appRows(apps, key) {
+/** The TV input's time by what was picked on Home's Inputs menu; shown only once the TV has named some. */
+function inputLine(days) {
+  const { named, unnamed } = inputSplit(days);
+  if (!named.length) return "";
+  return `<p class="note">Xbox (TV input), by what was picked on the home screen's Inputs menu: ${named.map(i => `${esc(i.name)} ${hm(i.minutes)}`).join(", ")}${
+    unnamed >= 1 ? `; ${hm(unnamed)} not known (switched with the remote's source button, or already on)` : ""}.</p>`;
+}
+
+/** "4:49–5:14 AM" for a stretch ["04:49", "05:14"]; the end is the last minute on. */
+const rangeWords = s => {
+  const a = clockWords(+s[0].slice(0, 2) * 60 + +s[0].slice(3)), b = clockWords(+s[1].slice(0, 2) * 60 + +s[1].slice(3) + 1);
+  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`;
+};
+const spanMinutes = s => +s[1].slice(0, 2) * 60 + +s[1].slice(3) + 1 - (+s[0].slice(0, 2) * 60 + +s[0].slice(3));
+
+/** Every stretch of the day in time order (each app's), then when the screen was on, as words. */
+function timesList(d) {
+  const rows = [];
+  for (const a of d.apps ?? []) for (const s of a.spans ?? []) rows.push({ s, name: nameOf(a), c: colourOf(a.pkg) });
+  rows.sort((x, y) => (x.s[0] < y.s[0] ? -1 : 1));
+  return `<ul class="rows times">${rows.map(r => `<li><span><span class="chip" style="--c:${r.c}"></span>${esc(rangeWords(r.s))}</span><span>${esc(r.name)} · <span class="num">${hm(spanMinutes(r.s))}</span></span></li>`).join("")}</ul>`;
+}
+
+function appRows(apps, key, day = null) {
   if (!apps.length) return `<p class="note">No app use recorded. The TV needs "usage access" turned on for its home screen.</p>`;
-  const row = a => `<li><span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span>${a.opens ? ` · opened ${a.opens}×` : ""}</span></li>`;
+  const spansOf = a => (day?.apps ?? []).filter(x => x.pkg === a.pkg).flatMap(x => x.spans ?? []);
+  const line = a => `<span><span class="chip" style="--c:${colourOf(a.pkg)}"></span>${esc(nameOf(a))}</span><span><span class="num">${hm(a.minutes)}</span>${a.opens ? ` · opened ${a.opens}×` : ""}</span>`;
+  // in Day, an app with times opens to show them
+  const row = a => (day && spansOf(a).length
+    ? `<li class="app"><details><summary>${line(a)}</summary><p class="note">${esc(spansOf(a).map(rangeWords).join(", "))} IST</p></details></li>`
+    : `<li>${line(a)}</li>`);
   const top = apps.slice(0, 5), rest = apps.slice(5);
-  return `<ul class="rows">${top.map(row).join("")}</ul>${rest.length ? `<details data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
+  return `<ul class="rows">${top.map(row).join("")}</ul>${rest.length ? `<details class="more" data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
     <summary><span>${rest.length} more app${rest.length === 1 ? "" : "s"}</span><span aria-hidden="true">›</span></summary><ul class="rows">${rest.map(row).join("")}</ul></details>` : ""}`;
 }
 
@@ -106,10 +134,10 @@ function dayView(days, watts, rate) {
     <section class="card" aria-labelledby="h">
       <p class="label">${label}</p><h1 id="h" tabindex="-1">${esc(titleDay(d.date))}</h1>
       ${off ? `<div class="hero"><span class="num">Off</span><span class="side">all day</span></div>` : hero(hoursHtml(d.on?.minutes), `on · about ${kwh(d.on?.minutes, watts)} kWh, ${rupees(kwh(d.on?.minutes, watts), rate)}`)}
-      ${stripHtml(d)}${ticks()}${off ? "" : legend(d)}
+      ${off ? stripHtml(d) : `<details class="when" data-key="when"${store.get("open-when") ? " open" : ""}><summary aria-label="Show the times">${stripHtml(d)}${ticks()}</summary>${timesList(d)}</details>`}${off ? ticks() : ""}${off ? "" : legend(d)}
       <p class="key">Times are India time (IST).</p>
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day")}${saverLine([d])}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps([d]), "day", d)}${saverLine([d])}${inputLine([d])}</section>`;
 }
 
 function weekView(days, watts, rate) {
@@ -123,7 +151,7 @@ function weekView(days, watts, rate) {
       <div class="week">${week.map(d => `<span class="d">${esc(dayName(d.date).replace(",", "").split(" ").slice(0, 2).join(" "))}</span>${stripHtml(d, "thin")}<span class="h num">${hm(d.on?.minutes)}</span>`).join("")}</div>
       ${ticks("margin:4px 74px 0 58px", true)}
     </section>
-    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}${saverLine(week)}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(topApps(week), "week")}${saverLine(week)}${inputLine(week)}</section>`;
 }
 
 function monthView(days, watts, rate) {
@@ -154,7 +182,7 @@ function monthView(days, watts, rate) {
       <li><span>Energy</span><span>about <span class="num">${t.kwh}</span> kWh · <span class="num">${rupees(t.kwh, rate)}</span></span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
     </ul></section>
-    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}${saverLine(month)}</section>`;
+    <section class="card"><h2>Apps</h2>${appRows(apps, "month")}${saverLine(month)}${inputLine(month)}</section>`;
 }
 
 function insightsView(days, watts, rate) {
@@ -204,7 +232,7 @@ function speedView(days) {
       <li><span>Sport and weather checks</span><span>${d.feed?.asks ?? 0} · ${count(d.feed?.old, "came in out of date", "came in out of date")}</span></li>
       <li><span>Restarts</span><span>${count(d.tv?.boots)}</span></li>
       <li><span>Wi-Fi dropped</span><span>${count(d.tv?.net_drops, "time", "times")}</span></li>
-    </ul></section>${latest}`;
+    </ul></section>`;
   return `<section class="card" aria-labelledby="h"><p class="label">Last 30 days</p><h1 id="h" tabindex="-1">Speed</h1>
       ${hero(t.homeMedian == null ? "—" : `${Math.round(t.homeMedian)}<small> ms</small>`, "Home, median time to draw")}
       <div class="bars" role="img" aria-label="Each day's median time for Home to draw">${recent.map(d => `<div><i class="${d.home?.slow ? "slow" : ""}" style="height:${((d.home?.median_ms || 0) / max) * 100}%"></i></div>`).join("")}</div>
@@ -217,7 +245,7 @@ function speedView(days) {
       <li><span>Sport and weather, old copies</span><span>${count(recent.reduce((s, d) => s + (d.feed?.old || 0), 0))}</span></li>
       <li><span>Restarts</span><span>${count(t.boots)}</span></li>
       <li><span>Free memory, latest</span><span>${mem == null ? "—" : `<span class="num">${mem}</span> MB`}</span></li>
-    </ul></section>`;
+    </ul></section>${latest}`;
 }
 
 // ---- drawing, loading, the top bar -------------------------------------------------------------------------------
@@ -341,7 +369,9 @@ function exampleDays() {
         { pkg: "com.sonyliv", name: "SonyLIV", minutes: a, opens: 2, spans: [[hm(start + 5), hm(start + 4 + a)]] },
         { pkg: "com.google.android.youtube.tv", name: "YouTube", minutes: b, opens: 3, spans: [[hm(start + 6 + a), hm(start + 5 + a + b)]] },
         { pkg: "in.startv.hotstar", name: "JioHotstar", minutes: c, opens: 1, spans: [[hm(start + 7 + a + b), hm(Math.min(1439, start + 6 + a + b + c))]] },
+        { pkg: "com.mitv.livetv", name: "Live TV", minutes: 15, opens: 1, spans: [[hm(start - 20), hm(start - 6)]] },
         { pkg: "com.google.android.apps.tv.dreamx", name: "Backdrop", minutes: 8 }],
+      inputs: [{ id: "com.mediatek.tvinput/.hdmi.HDMIInputService/HW5", name: "Xbox", minutes: 10 + k % 5, opens: 1 }],
       home: { opens: 30 + k, median_ms: 40 + (k * 11) % 30, slow: k % 6 === 0 ? 1 : 0 }, feed: { asks: 40, fresh: 38, old: 2 }, tv: { boots: 0, mem_free_mb: 420 } });
   }
   return out;
