@@ -155,6 +155,27 @@ final class HorizonV3 {
         p.setShader(null);
     }
 
+    /** A readability shadow pass: black, fading out along a cosine to 0.9 of the radius. glow's straight fade ending at 0.7,
+     *  stacked up to 30 times, drew a visible ring once the ordered dither was gone (22 Oct). */
+    private static void shade(Canvas g, Paint p, double x, double y, double rx, double ry, double k) {
+        float rw = (float) (rx * W), rh = (float) (ry * H);
+        int[] cols = new int[7];
+        float[] at = new float[7];
+        for (int i = 0; i < 7; i++) {
+            at[i] = i * 0.15f;
+            cols[i] = Math.round((float) k * 255 * (0.5f + 0.5f * (float) Math.cos(Math.PI * at[i] / 0.9))) << 24;
+        }
+        RadialGradient rg = new RadialGradient(0, 0, rw, cols, at, Shader.TileMode.CLAMP);
+        Matrix m = new Matrix();
+        m.setScale(1f, rh / rw);
+        m.postTranslate((float) (x * W), (float) (y * H));
+        rg.setLocalMatrix(m);
+        p.setShader(rg);
+        float cx = (float) (x * W), cy = (float) (y * H);
+        g.drawRect(cx - rw, cy - rh, cx + rw, cy + rh, p);
+        p.setShader(null);
+    }
+
     /** The sky's projection: hour angle across, altitude up (the horizon at 66% of the height). */
     private static float[] proj(double hourAngle, double alt) {
         return new float[]{(float) (0.5 + hourAngle / Math.PI), (float) (HOR - (alt / (Math.PI / 2)) * (HOR - 0.02))};
@@ -225,7 +246,7 @@ final class HorizonV3 {
 
         Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas g = new Canvas(b);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);   // no ordered dither: its fixed dot pattern shows as a grid once stretched; the grain dithers instead (22 Oct)
         g.drawColor(Color.BLACK);
         vertical(g, p, new float[][]{pal[0], clr(pal[0]), clr(pal[0])}, new float[]{0, 0.32f, 1}, 1);
         band(g, p, pal[1], 0.18f, 0.44f, 0.64f);
@@ -269,8 +290,8 @@ final class HorizonV3 {
         // a match on: v2's faint glow in the competition's colour under the sport lines (no ribbon in this build)
         if (st.matchAccent != null) glow(g, p, c((st.matchAccent & 0x00FFFFFF) | (41 << 24)), 0.24, 0.63, 0.26, 0.20, 1);
 
-        grain(b);
         floor(g, p, b, Z);
+        grain(b);   // after the readability shadows, so they are grained too (a smooth shadow over grain showed steps)
         return b;
     }
 
@@ -454,7 +475,7 @@ final class HorizonV3 {
             double before = ratio(b, z), r = before;
             int pass = 0;
             for (; pass < 30 && r < FLOOR; pass++) {
-                glow(g, p, c(0, 0, 0, 1), (z.x + z.w / 2) * S / W, (z.y + z.h / 2) * S / H,
+                shade(g, p, (z.x + z.w / 2) * S / W, (z.y + z.h / 2) * S / H,
                         (z.w / 2 + 70) * S / W / 0.62, (z.h / 2 + 50) * S / H / 0.62, 0.05);
                 r = ratio(b, z);
             }
