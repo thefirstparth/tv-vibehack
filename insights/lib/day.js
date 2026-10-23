@@ -135,7 +135,9 @@ export function withoutTests(day, tests) {
   const mins = spans => spans.reduce((n, s) => n + (toMin(s[1]) + 1 - toMin(s[0])), 0);
   const d = { ...day, tests: cuts.map(t => [t.from, t.to]) };
   if (day.on) { const s = cut(day.on.spans); d.on = { minutes: mins(s), spans: s }; }
-  if (day.apps) d.apps = day.apps.map(a => (a.spans ? { ...a, spans: cut(a.spans), minutes: mins(cut(a.spans)) } : a)).filter(a => a.minutes > 0);
+  // an app sent without its stretches (the TV leaves them out when there are too many: the A/B's media player, opened
+  // 143 times) can't be shown to be outside the tests, so on a test day it is left out
+  if (day.apps) d.apps = day.apps.flatMap(a => (a.spans ? [{ ...a, spans: cut(a.spans), minutes: mins(cut(a.spans)) }] : [])).filter(a => a.minutes > 0);
   delete d.home; delete d.cold; delete d.feed;
   if (d.tv) d.tv = { ...d.tv, boots: 0 };
   return d;

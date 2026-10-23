@@ -129,4 +129,8 @@ test("test stretches are cut out of a day, with its home-screen numbers", async 
   assert.equal(d.home, undefined);
   assert.equal(d.tv.boots, 0);
   assert.equal(withoutTests({ date: "2026-10-23", home: { opens: 5 } }, tests).home.opens, 5);
+  // an app without stretches can't be placed outside the tests: left out on a test day, kept on other days
+  const noSpans = { pkg: "com.xiaomi.mitv.mediaexplorer", minutes: 10, opens: 143 };
+  assert.deepEqual(withoutTests({ date: "2026-10-22", apps: [noSpans] }, tests).apps, []);
+  assert.deepEqual(withoutTests({ date: "2026-10-23", apps: [noSpans] }, tests).apps, [noSpans]);
 });

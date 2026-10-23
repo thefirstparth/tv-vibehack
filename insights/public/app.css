@@ -162,4 +162,8 @@ li.app details > summary { display: flex; justify-content: space-between; align-
 li.app details > summary::after { content: "›"; color: var(--muted); margin-left: 6px; }
 li.app details[open] > summary::after { transform: rotate(90deg); }
 li.app details > p { margin: 0 0 10px 22px; }
+/* app rows: name, time, then a slot for the "›" (empty when the row doesn't open), so every time lines up at the right */
+.rows.apps > li:not(.app), .rows.apps li.app > details > summary { display: grid; grid-template-columns: minmax(0, 1fr) auto 14px; }
+.rows.apps > li:not(.app)::after { content: ""; }
+.rows.apps li.app > details > summary::after { margin-left: 0; text-align: right; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .tabs button[aria-current="page"], .sticker { transform: none; } }
