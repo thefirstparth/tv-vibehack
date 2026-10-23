@@ -71,16 +71,25 @@ export function cleanDay(input, now = new Date()) {
 }
 
 /** How much a copy of a day holds: so a resend with less (lost usage access, a cleared TV) never replaces more. */
-const weight = d => (d.on?.minutes ?? -1) * 10 + (d.apps?.length ?? 0) * 100 + (d.home?.opens ?? 0);
+/** A day's contents without how it travelled (when it arrived, the TV's send notes, what this site noted on it). */
+const contents = d => JSON.stringify(Object.fromEntries(Object.entries(d).filter(([k]) => !["received", "send", "resent", "ignored"].includes(k)).sort(([x], [y]) => (x < y ? -1 : 1))));
 
 /** The month file's name for a day: "months/2026-10.json". */
 export const monthPath = date => `months/${date.slice(0, 7)}.json`;
 
-/** A month file with this day put in, days in date order. A day already there is replaced only by a copy holding as much or more. */
+/**
+ * A month file with this day put in, days in date order. The first copy of a day is the one kept. The TV makes a day's
+ * summary once and sends that same copy again if a send fails, so a resend is identical: it only updates the send
+ * notes. A later copy that differs is not the TV's and is not used (only noted, with when it came and its build; the
+ * archive keeps it whole). Until 23 Oct the fuller-looking copy won, and the emulator's made-up 22 Oct (on all day, no
+ * apps) replaced the TV's real one.
+ */
 export function withDay(month, day) {
   const old = (month?.days ?? []).find(x => x.date === day.date);
   const days = (month?.days ?? []).filter(x => x.date !== day.date);
-  days.push(old && weight(old) > weight(day) ? { ...old, send: day.send ?? old.send, resent: day.received ?? null } : day);
+  if (!old) days.push(day);
+  else if (contents(old) === contents(day)) days.push({ ...old, send: day.send ?? old.send, resent: day.received ?? null });
+  else days.push({ ...old, ignored: { at: day.received ?? null, build: day.build ?? null, count: (old.ignored?.count ?? 0) + 1 } });
   days.sort((a, b) => (a.date < b.date ? -1 : 1));
   return { month: day.date.slice(0, 7), days };
 }

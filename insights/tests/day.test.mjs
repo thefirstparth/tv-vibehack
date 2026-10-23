@@ -34,12 +34,13 @@ test("numbers are clamped and control characters dropped", () => {
   assert.deepEqual(d.apps, [{ pkg: "a.b", name: "XY", minutes: 0 }]);
 });
 
-test("a resent day replaces its earlier copy, days stay in order", () => {
+test("the first copy of a day is kept; a different later copy is only noted; days stay in order", () => {
   let m = withDay(null, cleanDay({ ...DAY, date: "2026-10-22" }));
   m = withDay(m, cleanDay(DAY));
-  m = withDay(m, cleanDay({ ...DAY, on: { minutes: 300 } }));
+  m = withDay(m, { ...cleanDay({ ...DAY, on: { minutes: 1226 }, build: "d145324" }), received: "2026-10-23T00:51:21Z" });
   assert.deepEqual(m.days.map(d => d.date), ["2026-10-21", "2026-10-22"]);
-  assert.equal(m.days[0].on.minutes, 300, "a fuller resend replaces");
+  assert.equal(m.days[0].on.minutes, 250, "the first copy stays");
+  assert.deepEqual(m.days[0].ignored, { at: "2026-10-23T00:51:21Z", build: "d145324", count: 1 });
   assert.equal(monthPath("2026-10-21"), "months/2026-10.json");
 });
 
@@ -86,12 +87,15 @@ test("a missing number is left out, not stored as 0", () => {
 test("a resend with less never replaces a fuller copy, but its send problems are kept", () => {
   const full = cleanDay(DAY);
   const thin = cleanDay({ v: 1, date: DAY.date, home: { opens: 0 }, send: { failed: 2, last: "no internet", at: "2026-10-22T08:00" } });
-  const m = withDay(withDay(null, full), { ...thin, received: "2026-10-22T09:00:00Z" });
+  // the same copy again (a resend after a failed send) updates only the send notes
+  const m = withDay(withDay(null, full), { ...full, send: thin.send, received: "2026-10-22T09:00:00Z" });
   assert.equal(m.days[0].on.minutes, 250);
   assert.equal(m.days[0].send.last, "no internet");
   assert.equal(m.days[0].resent, "2026-10-22T09:00:00Z");
-  const fuller = withDay(withDay(null, thin), full);
-  assert.equal(fuller.days[0].on.minutes, 250, "a fuller copy does replace a thin one");
+  assert.equal(m.days[0].ignored, undefined);
+  // a different copy, fuller or thinner, never replaces the first
+  assert.equal(withDay(withDay(null, thin), full).days[0].on, undefined, "a fuller copy doesn't replace the first");
+  assert.equal(withDay(withDay(null, full), thin).days[0].on.minutes, 250, "nor does a thinner one");
 });
 
 test("the first day is kept only from 04:00, without its home-screen numbers", async () => {
