@@ -2,7 +2,7 @@
 // background for next time (so a stalled connection never holds the page up). The days: from the network first, the
 // kept copy if that fails or stalls for 8 s. Sign-in is never cached. The days live only in this phone's cache and in
 // the page's own storage.
-const CACHE = "tv-insights-v5";
+const CACHE = "tv-insights-v6";
 const SHELL = ["/", "/app.js", "/calc.js", "/app.css", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())));

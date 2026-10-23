@@ -102,8 +102,8 @@ function appRows(apps, key, day = null) {
     ? `<li class="app"><details><summary>${line(a)}</summary><p class="note">${esc(spansOf(a).map(rangeWords).join(", "))} IST</p></details></li>`
     : `<li>${line(a)}</li>`);
   const top = apps.slice(0, 5), rest = apps.slice(5);
-  return `<ul class="rows">${top.map(row).join("")}</ul>${rest.length ? `<details class="more" data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
-    <summary><span>${rest.length} more app${rest.length === 1 ? "" : "s"}</span><span aria-hidden="true">›</span></summary><ul class="rows">${rest.map(row).join("")}</ul></details>` : ""}`;
+  return `<ul class="rows apps">${top.map(row).join("")}</ul>${rest.length ? `<details class="more" data-key="${key}"${store.get("open-" + key) ? " open" : ""}>
+    <summary><span>${rest.length} more app${rest.length === 1 ? "" : "s"}</span><span aria-hidden="true">›</span></summary><ul class="rows apps">${rest.map(row).join("")}</ul></details>` : ""}`;
 }
 
 /**
