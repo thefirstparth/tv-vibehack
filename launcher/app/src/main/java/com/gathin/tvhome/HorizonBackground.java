@@ -160,7 +160,7 @@ final class HorizonBackground {
         final Day day;               // today's personal day, or null
         final long at;               // the moment drawn: the start of its five-minute slot (epoch ms), 0 when unknown
         final String wx;             // the feed's sky for Bengaluru: clear, partly, overcast, fog, rain, storm
-        final List<Zone> zones;      // the text blocks, for the stars' dimming and the readability floor
+        final List<Zone> zones;      // the text blocks, for the readability floor
         final boolean fixedMood;     // the "mood" test extra: that mood's colours instead of the day's blend
 
         State(Mood mood, Season season, Sky sky, Integer matchAccent, Day day) {

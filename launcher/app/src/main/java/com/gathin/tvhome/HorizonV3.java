@@ -13,10 +13,6 @@ import android.util.Log;
 
 import com.gathin.tvshared.SunTimes;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
@@ -24,10 +20,11 @@ import java.util.TimeZone;
 /**
  * Horizon v3, the home screen's light, as in the approved mockup (examples/xiaomi-mitv-moor2/horizon-v3/mockup.html,
  * drawV3; its maths copied): v2's eight moods blended by the minute, the glow where the real sun is (at night where the
- * moon is), the moon as light only, 909 stars placed for the moment (a third as bright behind text), the Milky Way on
- * clear moonless nights, the feed's sky (cloud, haze, storm), fine grain, and a readability floor: the faintest text of
- * each block keeps 4.5:1 against its 90th-percentile background pixel, with a soft oval shadow under the block where it
- * would not. Not in this build: meteors, the match ribbon, the after-match glows. Drawn off the main thread.
+ * moon is), the moon as light only, the feed's sky (cloud, haze, storm), fine grain, and a readability floor: the
+ * faintest text of each block keeps 4.5:1 against its 90th-percentile background pixel, with a soft oval shadow under
+ * the block where it would not. Horizon v4 (23 Oct, examples/xiaomi-mitv-moor2/horizon-v4): the same with nothing solid
+ * in the sky, so no stars and no Milky Way (Parth: they hampered readability). Not built: meteors, the match ribbon,
+ * the after-match glows. Drawn off the main thread.
  */
 final class HorizonV3 {
 
@@ -41,8 +38,6 @@ final class HorizonV3 {
     /** The floor: the faintest text keeps this contrast against its block's 90th-percentile background pixel. */
     static final double FLOOR = 4.5;
     private static final String TAG = "Horizon";
-
-    private static float[] stars;   // RA°, Dec°, magnitude, B-V; read once from res/raw/stars.txt
 
     private HorizonV3() {
     }
@@ -192,35 +187,6 @@ final class HorizonV3 {
         return new float[]{(float) (0.5 + hourAngle / Math.PI), (float) (HOR - (alt / (Math.PI / 2)) * (HOR - 0.02))};
     }
 
-    private static int[] starColour(float bv) {
-        if (bv < -0.1) return new int[]{170, 196, 255};
-        if (bv < 0.2) return new int[]{205, 220, 255};
-        if (bv < 0.6) return new int[]{246, 246, 255};
-        if (bv < 1.0) return new int[]{255, 238, 210};
-        if (bv < 1.4) return new int[]{255, 212, 160};
-        return new int[]{255, 186, 128};
-    }
-
-    private static synchronized float[] stars(Resources res) {
-        if (stars != null) return stars;
-        List<Float> v = new ArrayList<>();
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(res.openRawResource(R_STARS), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = r.readLine()) != null) {
-                if (line.startsWith("#") || line.trim().isEmpty()) continue;
-                for (String x : line.trim().split("\\s+")) v.add(Float.parseFloat(x));
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "stars not read", e);
-        }
-        float[] out = new float[v.size()];
-        for (int i = 0; i < out.length; i++) out[i] = v.get(i);
-        stars = out;
-        return out;
-    }
-
-    private static final int R_STARS = com.gathin.tvhome.R.raw.stars;
-
     // ---- the picture ---------------------------------------------------------------------------------------------
 
     static Bitmap draw(Resources res, HorizonBackground.State st) {
@@ -265,18 +231,15 @@ final class HorizonV3 {
         glow(g, p, pal[2], cx, cy, 0.72, 0.32, kCore);
         glow(g, p, pal[3], spx, spy, 0.30, 0.20, kSpot);
 
-        // the night: moonlight, the Milky Way, stars (no moon disc, no planets)
+        // the night: moonlight only (v4, 23 Oct: no stars, no Milky Way, no moon disc; nothing solid in the sky)
         float night = 1 - sstep(-14, -4, sAlt);
         double moonWash = moonUp ? lit * sstep(0, 30, mAlt) : 0;
-        double starVis = night * (1 - cloud);
         if (moonUp && !"storm".equals(wx)) {
             double mk = lit * sstep(-1, 12, mAlt) * (1 - 0.6 * cloud);
             float[] mc = c(70, 92, 150, (float) (.10 * moonWash * (1 - cloud))), m0 = c(70, 92, 150, 0);
             vertical(g, p, new float[][]{mc, m0, m0}, new float[]{0, 0.5f, 1}, 1);
             glow(g, p, c(190, 205, 255, .16f), mp[0], mp[1], 0.16, 0.24, mk * night + 0.25 * mk * (1 - night));
         }
-        if (starVis > 0.3 && moonWash < 0.35) milkyWay(g, p, astro, d, starVis * (1 - moonWash / 0.35), Z);
-        if (starVis > 0.01) starsOn(g, p, res, astro, d, starVis, 4.5 - 2.2 * moonWash, Z);
 
         // weather
         if ("overcast".equals(wx) || "storm".equals(wx)) {
@@ -353,66 +316,6 @@ final class HorizonV3 {
         v = new int[]{rs[0] < 0 ? 6 * 60 : (int) ((rs[0] - day.getTimeInMillis()) / 60000), rs[1] < 0 ? 18 * 60 : (int) ((rs[1] - day.getTimeInMillis()) / 60000)};
         RISE_SET.put(k, v);
         return v;
-    }
-
-    /** 1 inside a text block, fading to 0 within 16 px (at 960 wide) outside it. */
-    private static float cover(List<HorizonBackground.Zone> Z, float X, float Y) {
-        float c = 0;
-        for (HorizonBackground.Zone z : Z) {
-            float zx = z.x * S, zy = z.y * S, zw = z.w * S, zh = z.h * S;
-            float dx = Math.max(Math.max(zx - X, 0), X - zx - zw), dy = Math.max(Math.max(zy - Y, 0), Y - zy - zh);
-            c = Math.max(c, 1 - sstep(0, 16 * S, Math.sqrt(dx * dx + dy * dy)));
-        }
-        return c;
-    }
-
-    private static void milkyWay(Canvas g, Paint p, Astro astro, double d, double mwk, List<HorizonBackground.Zone> Z) {
-        double aG = 192.85948 * R, dG = 27.12825 * R, lN = 122.93192 * R;
-        Rng rnd = new Rng(7);
-        Paint dot = new Paint();
-        for (double l = 0; l < 360; l += 1.5) {
-            double q = lN - l * R, dec = Math.asin(Math.cos(dG) * Math.cos(q)), ra = aG + Math.atan2(Math.sin(q), -Math.sin(dG) * Math.cos(q));
-            double[] hz = astro.horiz(ra, dec, d);
-            if (hz[1] < 0) continue;
-            float[] pp = proj(hz[0], hz[1]);
-            if (pp[0] < -0.1 || pp[0] > 1.1) continue;
-            double dl = Math.min(l, 360 - l), wl = 0.45 + 1.0 * Math.exp(-Math.pow(dl / 35, 2)) + 0.45 * Math.exp(-Math.pow((l - 75) / 25, 2));
-            double a = 0.022 * wl * mwk * sstep(4, 25, hz[1] / R);
-            glow(g, p, c(186, 192, 220, 1), pp[0], pp[1], 0.10, 0.10 * W / H * 0.9, a);
-            for (int j = 0; j < 4; j++) {   // a little texture: faint grains of light along the band
-                double ox = (rnd.next() - 0.5) * 0.09, oy = (rnd.next() - 0.5) * 0.12;
-                float gx = (float) ((pp[0] + ox) * W), gy = (float) ((pp[1] + oy) * H);
-                dot.setColor(argb(c(220, 225, 245, 1), (float) (0.10 * wl * mwk * (1 - 0.67 * cover(Z, gx, gy)))));
-                g.drawRect(gx, gy, gx + 1, gy + 1, dot);
-            }
-        }
-    }
-
-    private static void starsOn(Canvas g, Paint p, Resources res, Astro astro, double d, double starVis, double lim, List<HorizonBackground.Zone> Z) {
-        float[] S4 = stars(res);
-        Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
-        for (int i = 0; i + 3 < S4.length; i += 4) {
-            float mag = S4[i + 2];
-            if (mag > lim) continue;
-            double[] hz = astro.horiz(S4[i] * R, S4[i + 1] * R, d);
-            if (hz[1] <= 0) continue;
-            float[] q = proj(hz[0], hz[1]);
-            if (q[0] < 0 || q[0] > 1 || q[1] < 0) continue;
-            double a2 = starVis * sstep(2, 14, hz[1] / R) * Math.max(0, Math.min(1, 0.16 + 0.84 * Math.pow((lim - mag) / (lim + 1.5), 0.9)));
-            if (a2 < 0.02) continue;
-            int[] col = starColour(S4[i + 3]);
-            float rr = (float) ((0.55 + 0.38 * Math.max(0, 2.6 - mag)) * S * 1.15);
-            float X = q[0] * W, Y = q[1] * H;
-            a2 *= 1 - 0.67 * cover(Z, X, Y);   // a third as bright behind text
-            if (mag < 1.6) {
-                int in = Color.argb((int) Math.round(Math.min(1, a2 * 0.28) * 255), col[0], col[1], col[2]);
-                p.setShader(new RadialGradient(X, Y, rr * 4.2f, in, Color.argb(0, col[0], col[1], col[2]), Shader.TileMode.CLAMP));
-                g.drawRect(X - rr * 5, Y - rr * 5, X + rr * 5, Y + rr * 5, p);
-                p.setShader(null);
-            }
-            dot.setColor(Color.argb((int) Math.round(Math.min(1, a2) * 255), col[0], col[1], col[2]));
-            g.drawCircle(X, Y, Math.max(rr, 0.35f), dot);
-        }
     }
 
     /** Fine noise baked into the picture (the mockup's grain: the same value added to R, G and B). */
