@@ -115,6 +115,8 @@ function trouble(days) {
   if (f?.late) lines.push(`No summary since ${esc(dayName(last.date))}. If the TV was on since then, its summaries will arrive the next time it can reach this site; it keeps the last 30 days.`);
   if (last.send?.failed) lines.push(`Before its last summary got through, the TV failed to send ${count(last.send.failed, "time", "times")}. Last problem: ${esc(last.send.last || "unknown")}${last.send.at ? `, at ${esc(clockWords(+last.send.at.slice(11, 13) * 60 + +last.send.at.slice(14, 16)))} on ${esc(dayName(last.send.at.slice(0, 10)))}` : ""}.`);
   if (data?.refused && Date.parse(data.refused.at) > Date.parse(last.received ?? 0)) lines.push(`On ${esc(dayName(data.refused.at.slice(0, 10)))} this site refused a summary from the TV: ${esc(data.refused.why)} (${data.refused.status}).`);
+  // a different copy of a recent day came in and was not used (the first one is kept; lib/day.js withDay)
+  for (const d of days.slice(-7).filter(x => x.ignored)) lines.push(`A different copy of ${esc(dayName(d.date))} came in${d.ignored.at ? ` on ${esc(dayName(new Date(Date.parse(d.ignored.at) + 19800000).toISOString().slice(0, 10)))}` : ""} and wasn't used: the TV's first copy is kept${d.ignored.build ? ` (that copy was from build ${esc(d.ignored.build)})` : ""}.`);
   if (data?.missing?.length) lines.push(`Couldn't read ${data.missing.map(m => esc(m)).join(", ")} just now; those days are missing until the next refresh.`);
   return lines.length ? `<section class="card warn" role="status"><h2>Something to know</h2>${lines.map(l => `<p>${l}</p>`).join("")}</section>` : "";
 }
