@@ -95,7 +95,7 @@ export const OTHER = "#a39a88";   // 3:1 against the strip's background, so it i
 const BRAND = {
   "com.sonyliv": "#1d1d1d",
   "com.google.android.youtube.tv": "#ff0000",
-  "com.netflix.ninja": "#8f0a12",
+  "com.netflix.ninja": "#e50914",   // Netflix red (Parth, 23 Oct; was a darker red to stay apart from YouTube's)
   "in.startv.hotstar": "#7a2fc0",
   "com.fancode.tv": "#ff5a00",
   "com.amazon.amazonvideo.livingroom": "#00a8e1",
