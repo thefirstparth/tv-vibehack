@@ -261,6 +261,12 @@ its baked-in grain became blotches, and once the grain was removed, Skia's order
 invisible) became a visible grid. Draw small pictures that get stretched without grain or dither; let the stretch
 (bilinear, dithered on the way to the screen) do the smoothing.
 
+- **The emulator sent its own day to the real site (23 Oct).** It runs the same release build as the TV, with the
+  site's address and key built in, so after 4 am it sent "yesterday", a made-up emulator day (screen on 03:34-23:59,
+  no apps), and the site kept it over the TV's real copy because it looked fuller. Fixed three ways: the real copy
+  put back from the archive, the emulator's web access blocked (`settings put global http_proxy 127.0.0.1:9` on the
+  AVD), and builds from `4f6c94e` send only on a `MiTV-MOOR2`. Before any emulator test, check its proxy is still set.
+
 ## What went badly
 
 - **Effects that looked nice made Home stutter.** Spring motion, glass tints and a colour glow were

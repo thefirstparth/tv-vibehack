@@ -43,8 +43,13 @@ final class DiarySend {
     private DiarySend() {
     }
 
+    /** The TV the diary describes: only it sends. The emulator runs the same build, address and key, and on 23 Oct sent
+     *  its own made-up 22 Oct to the site (on all day, no apps), which replaced the real one. */
+    static final String TV_MODEL = "MiTV-MOOR2";
+
     static boolean configured(Context c) {
-        return !c.getString(R.string.tv_diary_url).trim().isEmpty() && !c.getString(R.string.tv_diary_key).trim().isEmpty();
+        return TV_MODEL.equals(android.os.Build.MODEL)
+                && !c.getString(R.string.tv_diary_url).trim().isEmpty() && !c.getString(R.string.tv_diary_key).trim().isEmpty();
     }
 
     static void maybe(Context ctx) {
