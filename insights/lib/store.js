@@ -12,7 +12,9 @@ export async function readMonth(path) {
   const r = await get(path, { access: "private", useCache: false });
   if (r === null) return { month: null, etag: null };
   if (!r?.stream) throw new Error("month file without a body");
-  return { month: await new Response(r.stream).json(), etag: r.blob?.etag || null };
+  // the read can come back with a weak etag (W/"…"), which a conditional write refuses (23 Oct 2026: "ETag mismatch"
+  // on a month that hadn't changed); the strong one is the same value without the W/
+  return { month: await new Response(r.stream).json(), etag: String(r.blob?.etag || "").replace(/^W\//, "") || null };
 }
 
 /** Writes a month file only if it is still as read (etag), or only if it still doesn't exist (no etag). */
