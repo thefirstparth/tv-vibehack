@@ -8,7 +8,7 @@ export const START = { date: "2026-10-21", time: "04:00" };
 /** Stretches left out of the page's copy of a day (kept in the archive): TV tests, not use. */
 export const TESTS = [
   { date: "2026-10-22", from: "03:45", to: "05:55" },   // A/B tests: no grain, the Xbox tile, the diary update, the Horizon grain fix
-  { date: "2026-10-23", from: "07:00", to: "10:30" },   // Horizon v4's A/B (closed to the real end when done)
+  { date: "2026-10-23", from: "07:00", to: "08:05" },   // Horizon v4's A/B (07:04-08:00) and its install
 ];
 
 // POST /api/day   from the TV, once a day: one day's summary as JSON, with its key in the X-TV-Key header.

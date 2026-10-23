@@ -222,6 +222,13 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     Parth didn't like it.) Layout only; installed without an A/B at Parth's call. Undo: `pm install -r`
     of `backup/launcher-builds/tvhome-release-oneshade-28e427c.apk`.
 
+21. **Horizon v4: nothing solid in the sky** (`a480b49`, on the TV since 08:01 on 23 Oct): v3 as it was (`38586f4`,
+    960x540) with the stars, their list (`res/raw/stars.txt`) and the Milky Way removed, nothing else changed (spec:
+    `horizon-v4/README.md`; Parth: they hampered readability). Full A/B, 5 rounds of old/v4/old after a restart:
+    pass on every point (BENCHMARKS.md). Readability floor after install (08:00, overcast morning): clock 5.15:1, top
+    bar 13.55:1, sport lines 3.70 -> 4.47:1 (30 passes, the cap; as v3 in this light), weather 4.24 -> 4.52:1.
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-cols-38586f4.apk`.
+
 Check the live state any time:
 
 ```bash

@@ -151,3 +151,8 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   install discarded). Median **95.6 → 42.5 ms**; every round lower (109/94/89 vs 45/42/42). The shadows now reach the
   floor in fewer passes (the cosine fade is fuller) and nothing is dithered. It runs off the main thread, so cold start
   and Home return are not touched; with `38586f4` (layout only) Parth chose this check over another TV A/B.
+- 23 Oct 07:04, Horizon v4 (`a480b49`, no stars or Milky Way) vs `38586f4` (v3 at 960x540, on the TV): full weekday
+  test after a restart, **5 rounds of current → v4 → current**, 5 cold starts a slot. **Pass on every point.**
+  Home return 99.5 vs 99.5 ms (n=100 / 50; noise C1 98.0 vs C2 100.0 = 2.0 ms); cold start 621.5 → 619 ms (n=50 / 25);
+  janky 0% → 0%; frame p50/p90/p95/p99 5/7/8/10 ms both; memory 77.4 → 76.9 MB; no crash or freeze. Installed at
+  08:01 with `pm install -r`.

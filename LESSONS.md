@@ -208,6 +208,15 @@ the test stopped, put the old build back and pressed Home.
 **Ask before anything that touches the TV while someone wants to watch.** Testing moved to an
 emulator on the Mac so the TV stayed free.
 
+**On the emulator, a test time (`--es at …`) can arrive too late.** After `am force-stop`, Android restarts the
+default launcher by itself, so the test intent lands on the running Home (onNewIntent) and the picture may already be
+drawn for the real time. Six "different times" came out identical on 23 Oct. Send the intent three times a few
+seconds apart, and check the screenshots differ (or the clock line's label) before comparing anything.
+
+**Removing drawing work doesn't show in the A/B when the drawing is off the main thread.** Horizon v4 dropped 909
+stars and the Milky Way: Home return, cold start, stutter and memory were all within a millisecond or a megabyte of v3
+(23 Oct). Judge such changes on the picture, and still run the A/B.
+
 ## Working with an AI coding assistant
 
 **Give it the rules, not just the task:** "never slower", "pm install -r only", "record before you
