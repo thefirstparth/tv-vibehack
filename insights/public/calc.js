@@ -93,13 +93,13 @@ const seg = (s, colour, pkg) => {
 /** Apps in their own colours, so the strip reads at a glance; others get a steady colour from their name. */
 export const OTHER = "#a39a88";   // 3:1 against the strip's background, so it is seen
 const BRAND = {
-  "com.sonyliv": "#1d1d1d",
-  "com.google.android.youtube.tv": "#ff0000",
-  "com.netflix.ninja": "#e50914",   // Netflix red (Parth, 23 Oct; was a darker red to stay apart from YouTube's)
-  "in.startv.hotstar": "#7a2fc0",
+  "com.sonyliv": "#7b2cbf",   // purple (Parth, 24 Oct: not black)
+  "com.google.android.youtube.tv": "#ff0033",   // YouTube's newer pink-red, a little apart from Netflix
+  "com.netflix.ninja": "#e50914",   // Netflix red (Parth, 23 Oct)
+  "in.startv.hotstar": "#e4007c",   // the pink end of its logo's gradient (its purple is now Sony LIV's)
   "com.fancode.tv": "#ff5a00",
   "com.amazon.amazonvideo.livingroom": "#00a8e1",
-  "com.apple.atve.androidtv.appletv": "#5b5d63",
+  "com.apple.atve.androidtv.appletv": "#000000",   // black, now that Sony LIV isn't
   "com.spotify.tv.android": "#1db954",
   "com.gathin.tv1400": "#2442e8",
   "com.formulaone.production": "#8a1538",   // not YouTube's red

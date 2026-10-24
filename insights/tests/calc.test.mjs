@@ -46,7 +46,7 @@ test("a day's strip: on time first, apps on top in their colours", async () => {
   assert.equal(s[0].colour, OTHER);
   assert.ok(Math.abs(s[0].left - (1180 / 1440) * 100) < 1e-9);
   assert.ok(Math.abs(s[0].width - (260 / 1440) * 100) < 1e-9, "to the end of the day");
-  assert.equal(s[1].colour, "#1d1d1d");
+  assert.equal(s[1].colour, "#7b2cbf");
   assert.ok(Math.abs(s[1].width - (60 / 1440) * 100) < 1e-9);
   assert.equal(colourOf("com.example.x"), colourOf("com.example.x"), "the same colour every time");
 });
