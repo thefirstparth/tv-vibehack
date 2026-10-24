@@ -238,14 +238,23 @@ tools/venv/bin/python -I tools/tv.py 'cmd package resolve-activity -a android.in
 
 ## Undo
 
-Back to the stock Google TV home (keeps the debloat). Run each line separately:
+Back to the stock Google TV home (keeps the debloat). Run each line separately, **in this order**:
+launcherx first and made Home, setupwraith last. The other way round passes through setupwraith on with launcherx off,
+which on this TV is setupwraith's black `RecoveryActivity` taking Home; on a MiTV-MOSR4 (same firmware family) a
+reboot in that state re-ran setup and factory-reset the TV, and on an MZTU0 it dropped Wi-Fi every minute, which
+would cut ADB halfway (upstream cleanyourtv `docs/devices/xiaomi-mitv-mosr4.md` and TROUBLESHOOTING, 24 Oct review).
 
 ```bash
 T="tools/venv/bin/python -I tools/tv.py"
-$T 'pm enable com.google.android.tungsten.setupwraith'
 $T 'pm enable com.google.android.apps.tv.launcherx'
 $T 'cmd package set-home-activity --user 0 com.google.android.apps.tv.launcherx/.home.HomeActivity'
+$T 'pm enable com.google.android.tungsten.setupwraith'
 ```
+
+- If `dumpsys activity activities | grep mResumedActivity` ever shows `.RecoveryActivity`: run
+  `pm enable com.google.android.apps.tv.launcherx` first, and **do not reboot**.
+- Wait 15 s after the last `pm` command before any reboot: Android writes package state about 10 s later.
+- `tools/restore.sh` enables in list order (setupwraith before launcherx): don't use it for this TV; use the lines above.
 
 The 1400 app (the moon pill hides itself when it is gone; then take `com.gathin.tv1400` out of
 `grid_order` in `launcher/app/src/main/res/values/config.xml` and reinstall the launcher):
