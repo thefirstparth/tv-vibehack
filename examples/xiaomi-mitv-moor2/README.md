@@ -411,6 +411,18 @@ Nothing here blocks using the TV. Pick up any of it later.
   (`mitv_go_suspend=0`; undo `settings put global mitv_go_suspend 1`): slower to turn on, and whether the remote can
   then turn it on is unknown. A longer auto-standby was considered and not recommended (it only changes how often
   the TV sleeps by itself; the remote's power button uses the same standby).
+- **The TV froze in quick standby (25 Oct, about 04:40).** Neither the remote nor the TV's own button woke it; only
+  unplugging it did. Read afterwards, nothing changed: the start was `bootreason=warm` with no Android shutdown or
+  reboot before it (boot history: the previous full start was the A/B restart on 23 Oct 07:03, about 46 h and 8-10
+  quick standbys earlier, so not the 30-standby forced restart). The last app before it slept was FanCode, whose
+  player leaves the video driver broken until a restart (LESSONS); the 24 Oct report already showed slow Home
+  returns (110 ms median, 431 ms worst, against 36 ms). Most likely a Xiaomi firmware/driver fault on resume, set off
+  by that; not provable, as the firmware wipes the log, the drop box and usage events on every start (saved what
+  survived in `backup/diag-1025-*`). Not the launcher (it doesn't run in standby; v4 woke 5 times on 24 Oct).
+  Fix offered and declined for now (Parth, 25 Oct): full shutdown instead of quick standby (`settings put global
+  mitv_go_suspend 0` and `sleep_mode_mitv_go_suspend 0`; undo both back to `1`), about 30-40 s to turn on, remote
+  wake from fully off untested. Workaround meanwhile: restart the TV (hold power → Restart) after watching FanCode.
+  Seen on 25 Oct: `global go_to_str_direct` reads 0 (it was 1 on 20 Oct; nobody changed it, so the firmware does).
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).
