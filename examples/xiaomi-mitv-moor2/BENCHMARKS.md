@@ -156,3 +156,6 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
   Home return 99.5 vs 99.5 ms (n=100 / 50; noise C1 98.0 vs C2 100.0 = 2.0 ms); cold start 621.5 → 619 ms (n=50 / 25);
   janky 0% → 0%; frame p50/p90/p95/p99 5/7/8/10 ms both; memory 77.4 → 76.9 MB; no crash or freeze. Installed at
   08:01 with `pm install -r`.
+- From 24 Oct the A/B's cold start is started as Home (`am start -W -a MAIN -c HOME -n …`, tools/ab/cold.txt): a plain
+  `-n` start made a non-Home task, so the next Home press added a second Home task (upstream cleanyourtv #888). Cold-start
+  figures before and after this change are not directly comparable; compare within one test, as always.

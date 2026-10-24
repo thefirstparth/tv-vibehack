@@ -99,7 +99,8 @@ Install: push with `tools/b64push.py <apk> /data/local/tmp/x.apk`, then
 - `tv.py` gives up after 120 s; a long command (a compile) may still be running on the TV. Check.
 - Run scripts with `</dev/null` and a time limit; background ADB jobs that wait on input hang.
 - Feed the TV keys with `input keyevent KEYCODE_DPAD_DOWN` and so on; take screenshots with
-  `screencap -p /data/local/tmp/x.png` then `--pull`.
+  `tools/tv.py --screenshot <local.png>` (or `screencap -p /data/local/tmp/x.png` then `--pull`). `tv.py --reboot`
+  restarts the TV cleanly. (tv.py and b64push.py are upstream cleanyourtv's versions from 24 Oct.)
 
 ## The feed
 

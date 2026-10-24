@@ -11,9 +11,11 @@ touched && { echo "$(ts) $label TOUCHED (before the slot)"; exit 3; }
 "$AB/put.sh" "$apk" >/dev/null || { echo "$(ts) $label INSTALL FAILED"; exit 4; }
 t "logcat -b crash -c" >/dev/null
 tb "$AB/grid.txt" >/dev/null
+# The cold start is started as Home (-a MAIN -c HOME): a plain -n start makes a non-Home task, and the next Home press
+# then adds a second Home task beside it (upstream cleanyourtv #888, 24 Oct review).
 # AB_COLDS cold starts in a row (default 1); cold= is their median, colds=[...] every one (judge.py pools them)
 : > "$OUT/colds.txt"; for i in $(seq 1 "${AB_COLDS:-1}"); do cat "$AB/cold.txt" >> "$OUT/colds.txt"; done
-colds=$(tb "$OUT/colds.txt" | awk '/^\$ am start -W -n com.gathin.tvhome/{m=1; next} /^\$ /{m=0} /TotalTime/{if(m) printf "%s,", $2}')
+colds=$(tb "$OUT/colds.txt" | awk '/^\$ am start -W .*-n com.gathin.tvhome\//{m=1; next} /^\$ /{m=0} /TotalTime/{if(m) printf "%s,", $2}')
 cold=$(echo "$colds" | tr ',' '\n' | grep . | sort -n | awk '{v[NR]=$1} END{if(NR%2) print v[(NR+1)/2]; else print int((v[NR/2]+v[NR/2+1])/2)}')
 nav=$(tb "$AB/grid.txt" | awk '/^Total frames/{n=$NF} /^Janky frames:/{j=$4} /^50th percentile/{p50=$3} /^90th percentile/{p90=$3}
   /^95th percentile/{p95=$3} /^99th percentile/{p99=$3} /TOTAL PSS/{m=$3}
