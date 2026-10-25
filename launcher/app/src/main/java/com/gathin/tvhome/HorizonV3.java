@@ -254,8 +254,8 @@ final class HorizonV3 {
             {{10, 16, 52, .58f}, {40, 60, 160, .22f}, {72, 82, 204, .24f}, {92, 52, 154, .16f}, {.50f, .62f, .62f, .60f}},
     };
 
-    /** The night's stars (0 none, 1 a few, 2 many); a test extra on the emulator, the chosen one in a real build. */
-    static volatile int stars = 1;
+    /** The night's stars (0 none, 1 a few, 2 many): many, Parth's pick (26 Oct); the emulator's "stars" extra overrides it. */
+    static volatile int stars = 2;
 
     /** Which look a moment gets, by its minute and the day's sunrise and sunset (the TV's time zone). */
     static int lookAt(long t) {
@@ -273,12 +273,12 @@ final class HorizonV3 {
         return EVENING;
     }
 
-    /** The feed's sky as one of three weathers: clear (clear, partly), cloudy (overcast, fog), rain (rain, storm). */
+    /** The feed's sky as one of two weathers: clear (clear, partly) or cloudy (overcast, fog, rain, storm). A third,
+     *  rain, was tried and dropped: it looked the same as cloudy (Parth, 26 Oct). */
     static String sky(String w) {
         if (w == null) return "clear";
         switch (w) {
-            case "overcast": case "fog": return "cloudy";
-            case "rain": case "storm": return "rain";
+            case "overcast": case "fog": case "rain": case "storm": return "cloudy";
             default: return "clear";
         }
     }
