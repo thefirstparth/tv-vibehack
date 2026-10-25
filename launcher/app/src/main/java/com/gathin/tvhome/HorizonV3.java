@@ -245,9 +245,9 @@ final class HorizonV3 {
 
     /** Each look: sky, band, sun glow, accent (r, g, b, a), then the glow's and the accent's place (x, y). */
     private static final float[][][] LOOK = {
-            {{14, 18, 48, .55f}, {60, 50, 130, .22f}, {150, 80, 120, .22f}, {60, 90, 150, .14f}, {.25f, .64f, .45f, .58f}},
+            {{16, 18, 58, .58f}, {72, 52, 150, .26f}, {190, 90, 140, .31f}, {80, 100, 175, .18f}, {.25f, .64f, .45f, .58f}},   // richer (colour review 2, 26 Oct)
             {{40, 26, 72, .50f}, {190, 90, 110, .24f}, {245, 140, 96, .34f}, {255, 190, 130, .22f}, {.20f, .62f, .32f, .57f}},
-            {{30, 36, 70, .45f}, {200, 150, 100, .20f}, {250, 200, 140, .30f}, {140, 180, 225, .18f}, {.32f, .52f, .45f, .48f}},
+            {{30, 36, 70, .45f}, {205, 150, 95, .24f}, {250, 195, 130, .36f}, {140, 180, 225, .18f}, {.32f, .52f, .45f, .48f}},   // stronger gold (colour review 2)
             {{14, 40, 72, .50f}, {50, 120, 180, .24f}, {90, 180, 215, .30f}, {170, 225, 235, .16f}, {.52f, .45f, .62f, .42f}},
             {{54, 28, 30, .50f}, {215, 105, 60, .28f}, {255, 150, 70, .36f}, {225, 90, 110, .24f}, {.72f, .60f, .60f, .56f}},
             {{22, 22, 72, .55f}, {90, 66, 170, .26f}, {70, 110, 206, .28f}, {200, 90, 150, .18f}, {.70f, .60f, .58f, .58f}},
@@ -295,7 +295,8 @@ final class HorizonV3 {
         float[][] pal = st.day != null ? pal(st.day.palette) : new float[][]{L[0], L[1], L[2], L[3]};
         String wx = sky(st.wx);
         double kCore = 1, kSpot = 1;
-        if ("cloudy".equals(wx)) { pal = satAll(pal, 0.6f); kCore = 0.65; kSpot = 0.55; }
+        // cloudy keeps 75% of the colour and most of the glow (was 60% and 0.65/0.55, which left it nearly grey)
+        if ("cloudy".equals(wx)) { pal = satAll(pal, 0.75f); kCore = 0.85; kSpot = 0.75; }
         if ("rain".equals(wx)) {
             pal = satAll(pal, 0.5f);
             pal = new float[][]{slate(pal[0], .35f), slate(pal[1], .35f), slate(pal[2], .35f), slate(pal[3], .35f)};
@@ -313,10 +314,19 @@ final class HorizonV3 {
         glow(g, p, pal[2], cx, cy, 0.72, 0.32, kCore);
         glow(g, p, pal[3], spx, spy, 0.30, 0.20, kSpot);
 
-        if (look == NIGHT && "clear".equals(wx) && stars > 0) starsAwayFromText(g, Z, stars);
+        // stars (colour review 2, 26 Oct): clear nights full; cloudy nights only the brightest, faint, as if through gaps;
+        // clear evenings the first few bright ones. The same fixed positions every time, never near text.
+        if (stars > 0) {
+            if (look == NIGHT && "clear".equals(wx)) starsAwayFromText(g, Z, stars, 0, 1f, 0.80);
+            if (look == NIGHT && "cloudy".equals(wx)) starsAwayFromText(g, Z, stars, 0.78, 0.5f, 2);
+            if (look == EVENING && "clear".equals(wx)) starsAwayFromText(g, Z, stars, 0.86, 0.9f, 0.95);
+        }
         if ("cloudy".equals(wx)) {
             Rng rc = new Rng(5);
-            for (int i = 0; i < 7; i++) glow(g, p, c(70, 74, 88, .16f), rc.next(), 0.10 + rc.next() * 0.42, 0.18 + rc.next() * 0.24, 0.035 + rc.next() * 0.04, 1);
+            // lighter, softer clouds in the look's own colour (a grey cloud turned every cloudy look grey)
+            float[] tint = mix(pal[1], c(120, 124, 136, 1), 0.5f);
+            float[] cloud = new float[]{tint[0], tint[1], tint[2], .12f};
+            for (int i = 0; i < 7; i++) glow(g, p, cloud, rc.next(), 0.10 + rc.next() * 0.42, 0.18 + rc.next() * 0.24, 0.035 + rc.next() * 0.04, 1);
         }
         if ("rain".equals(wx)) {
             vertical(g, p, new float[][]{c(8, 12, 20, .30f), c(8, 12, 20, 0), c(8, 12, 20, 0)}, new float[]{0, 0.45f, 1}, 1);
@@ -333,7 +343,7 @@ final class HorizonV3 {
 
     /** Stars for a clear night, fixed (not the real sky), never within 22 px (at 960 wide) of any text block or below
      *  the horizon line, so they can't touch readability: the floor still checks every block afterwards. */
-    private static void starsAwayFromText(Canvas g, List<HorizonBackground.Zone> Z, int variant) {
+    private static void starsAwayFromText(Canvas g, List<HorizonBackground.Zone> Z, int variant, double minBright, float alphaMul, double haloAbove) {
         Rng r = new Rng(11);
         int n = variant == 2 ? 150 : 45;
         Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -347,15 +357,15 @@ final class HorizonV3 {
                 float zx = z.x * S, zy = z.y * S, zw = z.w * S, zh = z.h * S;
                 if (x > zx - margin && x < zx + zw + margin && y > zy - margin && y < zy + zh + margin) { near = true; break; }
             }
-            if (near) continue;
+            if (near || br < minBright) continue;
             int col = tint < 0.2 ? 0xFFFFE6C8 : tint < 0.4 ? 0xFFD2DCFF : 0xFFFFFFFF;
-            float rad = (float) (0.55 + 0.75 * sz * sz) * S;
-            int a = (int) Math.round(255 * (0.30 + 0.55 * br));
-            if (variant == 2 && br > 0.93) {   // a few brighter ones, each with a soft halo
+            float rad = 1.6f * (float) (0.55 + 0.75 * sz * sz) * S;   // 1.6x (colour review 2): they have to read from the sofa
+            int a = (int) Math.round(255 * Math.min(1, alphaMul * (0.45 + 0.55 * br)));
+            if (br > haloAbove) {   // the brighter ones, each with a soft halo
                 halo.setShader(new RadialGradient(x, y, rad * 5, Color.argb(60, 255, 255, 255), Color.argb(0, 255, 255, 255), Shader.TileMode.CLAMP));
                 g.drawCircle(x, y, rad * 5, halo);
-                rad *= 1.5f;
-                a = 240;
+                rad *= 1.3f;
+                a = Math.round(240 * alphaMul);
             }
             dot.setColor((col & 0x00FFFFFF) | (a << 24));
             g.drawCircle(x, y, rad, dot);
