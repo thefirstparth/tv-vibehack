@@ -18,6 +18,14 @@ public class RefreshTest {
     }
 
     @Test
+    public void theNetworkComingBackAsksAgainOnlyForAnOldCopyAndNotRightAfterARequest() {
+        assertTrue(Refresh.onNetworkBack(T + 10_000L, T, true));     // stale lines, Wi-Fi just back: ask
+        assertFalse(Refresh.onNetworkBack(T + 10_000L, T, false));   // a good copy: nothing to do
+        assertFalse(Refresh.onNetworkBack(T + 1_000L, T, true));     // Home's own request just went: don't double it
+        assertTrue(Refresh.onNetworkBack(T, 0, true));               // never asked (a saved copy from storage): ask
+    }
+
+    @Test
     public void aGoodCopyIsAskedForAgainAfterFifteenMinutes() {
         assertFalse(Refresh.due(T + MIN, T, false));
         assertFalse(Refresh.due(T + 14 * MIN, T, false));

@@ -194,6 +194,14 @@ final class HomeLines {
         refresh("home");
     }
 
+    /** The network has come back while Home is on screen: one request now if the lines show an old or failed copy. */
+    void networkBack() {
+        if (!enabled() || !Refresh.onNetworkBack(System.currentTimeMillis(), asked, data.saved())) return;
+        quickTries = 0;
+        lines.removeCallbacks(quick);
+        refresh("network back");
+    }
+
     /** Home has gone (an app, the screensaver): no pending quick try. */
     void pause() {
         lines.removeCallbacks(quick);

@@ -290,6 +290,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 @Override
                 public void onAvailable(@NonNull Network network) {
                     updateWifiLabel();
+                    if (resumed && homeLines != null) homeLines.networkBack();   // stale lines after a wake: ask again now
                 }
 
                 @Override
