@@ -229,6 +229,18 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     bar 13.55:1, sport lines 3.70 -> 4.47:1 (30 passes, the cap; as v3 in this light), weather 4.24 -> 4.52:1.
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-cols-38586f4.apk`.
 
+22. **Horizon v5: fourteen designed looks** (`ca97ee8`, on the TV since 26 Oct, installed while the Xbox was on;
+    the picture wasn't touched). Replaces v3/v4's continuous sky (thousands of in-between looks, near grey: colour 2-20
+    of 255, and 9 am blended orange into teal through grey). Now 7 fixed looks a day (pre-dawn 04:30, sunrise from
+    sunrise-30 min, morning from sunrise+60, day from 11:00, golden hour from sunset-75, evening from sunset+20,
+    night from 22:00) x 2 weathers (clear: clear, partly; cloudy: overcast, fog, rain, storm). Redrawn only when the
+    look, weather or text changes. The faintest text is brighter (45% -> 65% white), so the readability floor rarely
+    needs shadow (every look measured 4.59:1 or better on the emulator, most 6-8:1). Clear nights get about 150 small
+    fixed stars, never within 22 px of text. No season tint, moon light or moving sun glow; personal days and the
+    match glow kept. **No TV A/B, at Parth's call** (26 Oct): drawing timed on the emulator at 16 ms vs v4's 74 ms
+    (BENCHMARKS), drawn off the main thread after the first frame. Mock renders and the decision: the 26 Oct colour
+    review. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-v4-a480b49.apk`.
+
 Check the live state any time:
 
 ```bash
