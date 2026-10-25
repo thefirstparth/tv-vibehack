@@ -52,17 +52,11 @@ final class HorizonV3 {
         return new float[]{r, g, b, a};
     }
 
-    /** Two colours blended through their hues (OKLCH: lightness, chroma, hue), not channel by channel: a straight mix of
-     *  the warm morning and the teal midday passed through grey around 9 am (colour review, 26 Oct). */
-    static float[] mixHue(float[] a, float[] b, float t) {
-        double[] p = lch(a), q = lch(b);
-        double hp = p[2], hq = q[2];
-        if (p[1] < 0.01) hp = hq;   // a grey has no hue of its own: take the other's
-        if (q[1] < 0.01) hq = hp;
-        double dh = hq - hp;
-        if (dh > Math.PI) dh -= 2 * Math.PI;
-        if (dh < -Math.PI) dh += 2 * Math.PI;
-        float[] rgb = fromLch(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, hp + dh * t);
+    /** Two colours blended in OKLab, a perceptually even space: a step can only get softer, never invent a colour
+     *  neither end has (going round the hue wheel turned 9 am pink and green, colour review, 26 Oct). */
+    static float[] mixLab(float[] a, float[] b, float t) {
+        double[] p = lab(a), q = lab(b);
+        float[] rgb = fromLab(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t);
         return new float[]{rgb[0], rgb[1], rgb[2], a[3] + (b[3] - a[3]) * t};
     }
 
@@ -76,7 +70,7 @@ final class HorizonV3 {
         return (float) (255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055));
     }
 
-    private static double[] lch(float[] x) {
+    private static double[] lab(float[] x) {
         double r = lin(x[0]), g = lin(x[1]), b = lin(x[2]);
         double l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
         double m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
@@ -84,11 +78,10 @@ final class HorizonV3 {
         double L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
         double A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
         double B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
-        return new double[]{L, Math.hypot(A, B), Math.atan2(B, A)};
+        return new double[]{L, A, B};
     }
 
-    private static float[] fromLch(double L, double C, double h) {
-        double A = C * Math.cos(h), B = C * Math.sin(h);
+    private static float[] fromLab(double L, double A, double B) {
         double l = Math.pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
         double m = Math.pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
         double s = Math.pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
@@ -97,10 +90,10 @@ final class HorizonV3 {
                 gam(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)};
     }
 
-    /** The light painted stronger while the sun is up: 1x at night, rising to 2.3x once the sun is 20° up. v3 painted
-     *  every hour at night strength, so day was as dark as night (colour review, 26 Oct). */
+    /** The light painted stronger while the sun is up: 1x at night, rising to 1.6x once the sun is 20° up. v3 painted
+     *  every hour at night strength, so day was as dark as night; 2.3x was too much (Parth, colour review, 26 Oct). */
     private static float[][] dayBoost(float[][] pal, double sunAltDeg) {
-        float k = 1 + 1.3f * sstep(-6, 20, sunAltDeg);
+        float k = 1 + 0.6f * sstep(-6, 20, sunAltDeg);
         float[][] out = new float[pal.length][];
         for (int i = 0; i < pal.length; i++) out[i] = new float[]{pal[i][0], pal[i][1], pal[i][2], Math.min(1f, pal[i][3] * k)};
         return out;
@@ -154,8 +147,9 @@ final class HorizonV3 {
     /** The mockup's v3Palette: anchors relative to sunrise (r) and sunset (s), in minutes of the local day. */
     static float[][] palette(int min, int r, int s) {
         int n = (r + s) / 2;
-        Object[][] A = {{90, "LATE_NIGHT"}, {r - 110, "LATE_NIGHT"}, {r - 35, "DAWN"}, {r + 70, "MORNING"}, {n - 60, "MIDDAY"},
-                {n + 60, "MIDDAY"}, {s - 55, "GOLDEN_HOUR"}, {s - 5, "SUNSET"}, {s + 45, "BLUE_HOUR"}, {s + 130, "NIGHT"},
+        Object[][] A = {{90, "LATE_NIGHT"}, {r - 110, "LATE_NIGHT"}, {r - 35, "DAWN"}, {r + 70, "MORNING"}, {(r + 70 + n - 60) / 2, "LATE_MORNING"},
+                {n - 60, "MIDDAY"}, {n + 60, "MIDDAY"}, {(n + 60 + s - 55) / 2, "AFTERNOON"}, {s - 55, "GOLDEN_HOUR"}, {s - 5, "SUNSET"},
+                {s + 45, "BLUE_HOUR"}, {s + 130, "NIGHT"},
                 {1410, "NIGHT"}, {90 + 1440, "LATE_NIGHT"}};
         int m = min < 90 ? min + 1440 : min;
         for (int i = 0; i < A.length - 1; i++) {
@@ -164,7 +158,7 @@ final class HorizonV3 {
                 float t = sstep(a0, a1, m);
                 float[][] pa = pal(HorizonBackground.Mood.valueOf((String) A[i][1]).palette);
                 float[][] pb = pal(HorizonBackground.Mood.valueOf((String) A[i + 1][1]).palette);
-                return new float[][]{mixHue(pa[0], pb[0], t), mixHue(pa[1], pb[1], t), mixHue(pa[2], pb[2], t), mixHue(pa[3], pb[3], t)};
+                return new float[][]{mixLab(pa[0], pb[0], t), mixLab(pa[1], pb[1], t), mixLab(pa[2], pb[2], t), mixLab(pa[3], pb[3], t)};
             }
         }
         return pal(HorizonBackground.Mood.NIGHT.palette);
