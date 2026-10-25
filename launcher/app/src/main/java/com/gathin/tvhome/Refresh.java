@@ -35,6 +35,16 @@ final class Refresh {
         return now - asked >= (saved ? AFTER_SAVED : live ? AFTER_LIVE : AFTER_GOOD);
     }
 
+    /** The network has just come back (or changed): ask now if what's shown is an old or failed copy, unless a request
+     *  went out in the last NETWORK_GAP (the callback also fires once when Home starts, right after its own request).
+     *  After standby the TV's Wi-Fi often reconnects after Home's request and its quick tries (26 Oct: 30-50% of real
+     *  requests got an old copy), which left the lines stale until the next minute tick. */
+    static boolean onNetworkBack(long now, long asked, boolean saved) {
+        return saved && now - asked >= NETWORK_GAP;
+    }
+
+    static final long NETWORK_GAP = 3_000L;
+
     /** Ask again in QUICK_MS: the answer was an old or failed copy, and fewer than QUICK_TRIES quick tries were made. */
     static boolean quickAgain(boolean saved, int triesSoFar) {
         return saved && triesSoFar < QUICK_TRIES;
