@@ -250,6 +250,14 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     drawing is the same kind and amount of work as `ca97ee8` (16 ms on the emulator), once per look change.
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-v5-ca97ee8.apk`.
 
+24. **Fresh sport and weather after a wake** (`d7d4c09`, on the TV since 26 Oct, installed while the Xbox was on).
+    When the network comes back while Home shows an old or failed feed copy, Home asks again at once (not before 3 s
+    after its own request). The insights showed 30-50% of real-use feed requests getting an old copy (24-25 Oct):
+    after standby the Wi-Fi reconnects after Home's first request and its two quick tries. Unit-tested; not
+    exercised end to end (the emulator's network is wired and can't be dropped). No TV A/B: one guarded request on
+    a callback the Wi-Fi pill already uses, off the main thread. Undo: `pm install -r` of
+    `backup/launcher-builds/tvhome-release-v5b-759be62.apk`.
+
 Check the live state any time:
 
 ```bash
