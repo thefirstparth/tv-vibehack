@@ -67,7 +67,7 @@
         <item name="android:tag">w600</item>
         <item name="android:letterSpacing">0.14</item>
         <item name="android:textAllCaps">true</item>
-        <item name="android:textColor">#73FFFFFF</item>
+        <item name="android:textColor">#A6FFFFFF</item>
         <item name="android:layout_marginStart">14dp</item>
         <item name="android:layout_marginEnd">14dp</item>
     </style>
@@ -97,7 +97,7 @@
     <style name="ThenTime" parent="LineBase">
         <item name="android:textSize">15sp</item>
         <item name="android:tag">w400</item>
-        <item name="android:textColor">#73FFFFFF</item>
+        <item name="android:textColor">#A6FFFFFF</item>
     </style>
     <style name="ThenMatch" parent="ThenTime">
         <item name="android:textColor">#B3FFFFFF</item>
@@ -120,7 +120,7 @@
     <style name="CitySmall" parent="LineBase">
         <item name="android:textSize">13sp</item>
         <item name="android:tag">w400</item>
-        <item name="android:textColor">#73FFFFFF</item>
+        <item name="android:textColor">#A6FFFFFF</item>
         <item name="android:layout_marginTop">2dp</item>
     </style>
     <style name="CityWord" parent="CitySmall">

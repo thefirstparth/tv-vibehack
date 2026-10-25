@@ -41,7 +41,7 @@ final class HomeLines {
      * The side Parth doesn't follow (the feed's "ours" names the other): 65% white in the headline; in the THEN/LATER
      * rows, already 70% white, 65% of that (the lines' own 45% dim), so the difference shows there too.
      */
-    private static final int HEAD_OTHER = 0xA6FFFFFF, ROW_OTHER = 0x73FFFFFF;
+    private static final int HEAD_OTHER = 0xA6FFFFFF, ROW_OTHER = 0xA6FFFFFF;   // 65% (was 45%): the faintest text, so the readability floor needs far less shadow
     /** The headline's size (design "Larger, centred"); a line with no shorter form left may shrink to 31 sp. */
     private static final float HEAD_SP = 44f;
 

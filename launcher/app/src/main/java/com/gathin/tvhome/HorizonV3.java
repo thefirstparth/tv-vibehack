@@ -52,6 +52,53 @@ final class HorizonV3 {
         return new float[]{r, g, b, a};
     }
 
+    /** Two colours blended in OKLab, a perceptually even space: a step can only get softer, never invent a colour
+     *  neither end has (going round the hue wheel turned 9 am pink and green, colour review, 26 Oct). */
+    static float[] mixLab(float[] a, float[] b, float t) {
+        double[] p = lab(a), q = lab(b);
+        float[] rgb = fromLab(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t);
+        return new float[]{rgb[0], rgb[1], rgb[2], a[3] + (b[3] - a[3]) * t};
+    }
+
+    private static double lin(double c) {
+        c /= 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    private static float gam(double c) {
+        c = Math.max(0, Math.min(1, c));
+        return (float) (255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055));
+    }
+
+    private static double[] lab(float[] x) {
+        double r = lin(x[0]), g = lin(x[1]), b = lin(x[2]);
+        double l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+        double m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+        double s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+        double L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+        double A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+        double B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+        return new double[]{L, A, B};
+    }
+
+    private static float[] fromLab(double L, double A, double B) {
+        double l = Math.pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
+        double m = Math.pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
+        double s = Math.pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
+        return new float[]{gam(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+                gam(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+                gam(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)};
+    }
+
+    /** The light painted stronger while the sun is up: 1x at night, rising to 1.6x once the sun is 20° up. v3 painted
+     *  every hour at night strength, so day was as dark as night; 2.3x was too much (Parth, colour review, 26 Oct). */
+    private static float[][] dayBoost(float[][] pal, double sunAltDeg) {
+        float k = 1 + 0.6f * sstep(-6, 20, sunAltDeg);
+        float[][] out = new float[pal.length][];
+        for (int i = 0; i < pal.length; i++) out[i] = new float[]{pal[i][0], pal[i][1], pal[i][2], Math.min(1f, pal[i][3] * k)};
+        return out;
+    }
+
     private static float[] mix(float[] a, float[] b, float t) {
         return new float[]{a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t};
     }
@@ -100,8 +147,9 @@ final class HorizonV3 {
     /** The mockup's v3Palette: anchors relative to sunrise (r) and sunset (s), in minutes of the local day. */
     static float[][] palette(int min, int r, int s) {
         int n = (r + s) / 2;
-        Object[][] A = {{90, "LATE_NIGHT"}, {r - 110, "LATE_NIGHT"}, {r - 35, "DAWN"}, {r + 70, "MORNING"}, {n - 60, "MIDDAY"},
-                {n + 60, "MIDDAY"}, {s - 55, "GOLDEN_HOUR"}, {s - 5, "SUNSET"}, {s + 45, "BLUE_HOUR"}, {s + 130, "NIGHT"},
+        Object[][] A = {{90, "LATE_NIGHT"}, {r - 110, "LATE_NIGHT"}, {r - 35, "DAWN"}, {r + 70, "MORNING"}, {(r + 70 + n - 60) / 2, "LATE_MORNING"},
+                {n - 60, "MIDDAY"}, {n + 60, "MIDDAY"}, {(n + 60 + s - 55) / 2, "AFTERNOON"}, {s - 55, "GOLDEN_HOUR"}, {s - 5, "SUNSET"},
+                {s + 45, "BLUE_HOUR"}, {s + 130, "NIGHT"},
                 {1410, "NIGHT"}, {90 + 1440, "LATE_NIGHT"}};
         int m = min < 90 ? min + 1440 : min;
         for (int i = 0; i < A.length - 1; i++) {
@@ -110,7 +158,7 @@ final class HorizonV3 {
                 float t = sstep(a0, a1, m);
                 float[][] pa = pal(HorizonBackground.Mood.valueOf((String) A[i][1]).palette);
                 float[][] pb = pal(HorizonBackground.Mood.valueOf((String) A[i + 1][1]).palette);
-                return new float[][]{mix(pa[0], pb[0], t), mix(pa[1], pb[1], t), mix(pa[2], pb[2], t), mix(pa[3], pb[3], t)};
+                return new float[][]{mixLab(pa[0], pb[0], t), mixLab(pa[1], pb[1], t), mixLab(pa[2], pb[2], t), mixLab(pa[3], pb[3], t)};
             }
         }
         return pal(HorizonBackground.Mood.NIGHT.palette);
@@ -189,95 +237,139 @@ final class HorizonV3 {
 
     // ---- the picture ---------------------------------------------------------------------------------------------
 
+    // ---- Horizon v5 (mock, 26 Oct): seven fixed looks a day x three weathers, each designed and checked on its own -----
+
+    /** The seven looks, in the day's order. */
+    static final String[] LOOK_NAMES = {"Pre-dawn", "Sunrise", "Morning", "Day", "Golden hour", "Evening", "Night"};
+    static final int PRE_DAWN = 0, SUNRISE = 1, MORNING = 2, DAY = 3, GOLDEN = 4, EVENING = 5, NIGHT = 6;
+
+    /** Each look: sky, band, sun glow, accent (r, g, b, a), then the glow's and the accent's place (x, y). */
+    private static final float[][][] LOOK = {
+            {{14, 18, 48, .55f}, {60, 50, 130, .22f}, {150, 80, 120, .22f}, {60, 90, 150, .14f}, {.25f, .64f, .45f, .58f}},
+            {{40, 26, 72, .50f}, {190, 90, 110, .24f}, {245, 140, 96, .34f}, {255, 190, 130, .22f}, {.20f, .62f, .32f, .57f}},
+            {{30, 36, 70, .45f}, {200, 150, 100, .20f}, {250, 200, 140, .30f}, {140, 180, 225, .18f}, {.32f, .52f, .45f, .48f}},
+            {{14, 40, 72, .50f}, {50, 120, 180, .24f}, {90, 180, 215, .30f}, {170, 225, 235, .16f}, {.52f, .45f, .62f, .42f}},
+            {{54, 28, 30, .50f}, {215, 105, 60, .28f}, {255, 150, 70, .36f}, {225, 90, 110, .24f}, {.72f, .60f, .60f, .56f}},
+            {{22, 22, 72, .55f}, {90, 66, 170, .26f}, {70, 110, 206, .28f}, {200, 90, 150, .18f}, {.70f, .60f, .58f, .58f}},
+            {{10, 16, 52, .58f}, {40, 60, 160, .22f}, {72, 82, 204, .24f}, {92, 52, 154, .16f}, {.50f, .62f, .62f, .60f}},
+    };
+
+    /** The night's stars (0 none, 1 a few, 2 many): many, Parth's pick (26 Oct); the emulator's "stars" extra overrides it. */
+    static volatile int stars = 2;
+
+    /** Which look a moment gets, by its minute and the day's sunrise and sunset (the TV's time zone). */
+    static int lookAt(long t) {
+        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+        cal.setTimeInMillis(t > 0 ? t : System.currentTimeMillis());
+        int m = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE);
+        int[] rs = riseSet(cal);
+        int r = rs[0], s = rs[1];
+        if (m >= 22 * 60 || m < 4 * 60 + 30) return NIGHT;
+        if (m < r - 30) return PRE_DAWN;
+        if (m < r + 60) return SUNRISE;
+        if (m < 11 * 60) return MORNING;
+        if (m < s - 75) return DAY;
+        if (m < s + 20) return GOLDEN;
+        return EVENING;
+    }
+
+    /** The feed's sky as one of two weathers: clear (clear, partly) or cloudy (overcast, fog, rain, storm). A third,
+     *  rain, was tried and dropped: it looked the same as cloudy (Parth, 26 Oct). */
+    static String sky(String w) {
+        if (w == null) return "clear";
+        switch (w) {
+            case "overcast": case "fog": case "rain": case "storm": return "cloudy";
+            default: return "clear";
+        }
+    }
+
+    /** A colour pulled toward rain's slate blue. */
+    private static float[] slate(float[] x, float k) {
+        return new float[]{x[0] + (80 - x[0]) * k, x[1] + (100 - x[1]) * k, x[2] + (130 - x[2]) * k, x[3]};
+    }
+
     static Bitmap draw(Resources res, HorizonBackground.State st) {
         long t = st.at > 0 ? st.at : System.currentTimeMillis();
-        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
-        cal.setTimeInMillis(t);
-        int min = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE);
-        int[] rs = riseSet(cal);
-        Astro astro = new Astro(SunTimes.LAT, SunTimes.LON);
-        double d = Astro.days(t);
-        float[][] pal = st.day != null ? pal(st.day.palette) : st.fixedMood ? pal(st.mood.palette) : palette(min, rs[0], rs[1]);
-        List<HorizonBackground.Zone> Z = st.zones;
-
-        double[] sun = Astro.sun(d), sh = astro.horiz(sun[0], sun[1], d);
-        double sAlt = sh[1] / R, sH = sh[0] / R;
-        double[] moon = Astro.moon(d), mh = astro.horiz(moon[0], moon[1], d);
-        double mAlt = mh[1] / R, lit = Astro.moonLit(d);
-        float[] mp = proj(mh[0], mh[1]);
-        boolean moonUp = mAlt > -0.5 && mp[0] > -0.02 && mp[0] < 1.02;
-        String wx = weather(st.wx);
-        double cloud = "overcast".equals(wx) ? 0.92 : "storm".equals(wx) ? 1 : "haze".equals(wx) ? 0.5 : 0;
+        int look = lookAt(t);
+        float[][] L = LOOK[look], pos = {L[4]};
+        float[][] pal = st.day != null ? pal(st.day.palette) : new float[][]{L[0], L[1], L[2], L[3]};
+        String wx = sky(st.wx);
         double kCore = 1, kSpot = 1;
-        if ("overcast".equals(wx)) { pal = satAll(pal, 0.5f); kCore = 0.45; kSpot = 0.35; }
-        if ("haze".equals(wx)) { pal = satAll(pal, 0.7f); kCore = 0.6; kSpot = 0.5; }
-        if ("storm".equals(wx)) { pal = satAll(pal, 0.42f); kCore = 0.5; kSpot = 0.35; }
-
-        // where the light sits: the sun by day, the moon (or the middle) by night
-        float dfac = sstep(-12, -2, sAlt);
-        double sx = Math.max(0.04, Math.min(0.96, 0.5 + 0.42 * (sH / 90)));
-        double sy = 0.62 - 0.30 * Math.max(0, Math.sin(sAlt * R)) + 0.06 * Math.max(0, Math.min(1, -sAlt / 12));
-        double nx = moonUp && mAlt > 5 ? Math.max(0.1, Math.min(0.9, mp[0])) : 0.5;
-        double cx = nx + (sx - nx) * dfac, cy = 0.60 + (sy - 0.60) * dfac;
-        double spx = cx + (cx < 0.5 ? 0.1 : -0.1), spy = cy - 0.05;
+        if ("cloudy".equals(wx)) { pal = satAll(pal, 0.6f); kCore = 0.65; kSpot = 0.55; }
+        if ("rain".equals(wx)) {
+            pal = satAll(pal, 0.5f);
+            pal = new float[][]{slate(pal[0], .35f), slate(pal[1], .35f), slate(pal[2], .35f), slate(pal[3], .35f)};
+            kCore = 0.55; kSpot = 0.45;
+        }
+        List<HorizonBackground.Zone> Z = st.zones;
+        float cx = pos[0][0], cy = pos[0][1], spx = pos[0][2], spy = pos[0][3];
 
         Bitmap b = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas g = new Canvas(b);
-        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);   // no ordered dither: its fixed dot pattern shows as a grid once stretched; the grain dithers instead (22 Oct)
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         g.drawColor(Color.BLACK);
         vertical(g, p, new float[][]{pal[0], clr(pal[0]), clr(pal[0])}, new float[]{0, 0.32f, 1}, 1);
         band(g, p, pal[1], 0.18f, 0.44f, 0.64f);
-        band(g, p, c(st.season.colour), 0.10f, 0.48f, 0.72f);
         glow(g, p, pal[2], cx, cy, 0.72, 0.32, kCore);
         glow(g, p, pal[3], spx, spy, 0.30, 0.20, kSpot);
 
-        // the night: moonlight only (v4, 23 Oct: no stars, no Milky Way, no moon disc; nothing solid in the sky)
-        float night = 1 - sstep(-14, -4, sAlt);
-        double moonWash = moonUp ? lit * sstep(0, 30, mAlt) : 0;
-        if (moonUp && !"storm".equals(wx)) {
-            double mk = lit * sstep(-1, 12, mAlt) * (1 - 0.6 * cloud);
-            float[] mc = c(70, 92, 150, (float) (.10 * moonWash * (1 - cloud))), m0 = c(70, 92, 150, 0);
-            vertical(g, p, new float[][]{mc, m0, m0}, new float[]{0, 0.5f, 1}, 1);
-            glow(g, p, c(190, 205, 255, .16f), mp[0], mp[1], 0.16, 0.24, mk * night + 0.25 * mk * (1 - night));
+        if (look == NIGHT && "clear".equals(wx) && stars > 0) starsAwayFromText(g, Z, stars);
+        if ("cloudy".equals(wx)) {
+            Rng rc = new Rng(5);
+            for (int i = 0; i < 7; i++) glow(g, p, c(70, 74, 88, .16f), rc.next(), 0.10 + rc.next() * 0.42, 0.18 + rc.next() * 0.24, 0.035 + rc.next() * 0.04, 1);
         }
-
-        // weather
-        if ("overcast".equals(wx) || "storm".equals(wx)) {
-            boolean storm = "storm".equals(wx);
-            Rng rc = new Rng(storm ? 3 : 5);
-            float[] cl = storm ? c(16, 20, 28, .5f) : c(66, 70, 84, .34f);
-            if (storm) {
-                float[] dk = c(6, 8, 14, .62f), d0 = c(6, 8, 14, 0);
-                vertical(g, p, new float[][]{dk, d0, d0}, new float[]{0, 0.45f, 1}, 1);
-            }
-            for (int i = 0; i < 9; i++) {
-                double x = rc.next(), y = 0.10 + rc.next() * 0.42, rx = 0.18 + rc.next() * 0.24, ry = 0.035 + rc.next() * 0.04;
-                glow(g, p, cl, x, y, rx, ry, 1);
-                if (!storm) glow(g, p, pal[2], x, y + ry * 0.7, rx * 0.9, ry * 0.6, 0.7 * Math.max(0, 1 - Math.abs(x - cx) * 1.6) * dfac);
-            }
-            if (storm) glow(g, p, c(110, 160, 210, .2f), 0.5, 0.67, 0.62, 0.12, 1);
+        if ("rain".equals(wx)) {
+            vertical(g, p, new float[][]{c(8, 12, 20, .30f), c(8, 12, 20, 0), c(8, 12, 20, 0)}, new float[]{0, 0.45f, 1}, 1);
+            Rng rc = new Rng(3);
+            for (int i = 0; i < 7; i++) glow(g, p, c(30, 38, 52, .28f), rc.next(), 0.10 + rc.next() * 0.42, 0.18 + rc.next() * 0.24, 0.035 + rc.next() * 0.04, 1);
+            glow(g, p, c(90, 130, 180, .14f), 0.5, 0.67, 0.62, 0.12, 1);
         }
-        if ("haze".equals(wx)) {
-            band(g, p, c(190, 180, 168, .13f), 0.14f, 0.55f, 0.82f);
-            g.drawColor(Color.argb(Math.round(0.05f * 255), 130, 124, 118));
-        }
-        // a match on: v2's faint glow in the competition's colour under the sport lines (no ribbon in this build)
         if (st.matchAccent != null) glow(g, p, c((st.matchAccent & 0x00FFFFFF) | (41 << 24)), 0.24, 0.63, 0.26, 0.20, 1);
 
         floor(g, p, b, Z);
-        grain(b);   // after the readability shadows, so they are grained too (a smooth shadow over grain showed steps)
+        grain(b);
         return b;
     }
 
-    /** v3's core colour at about 28%, for the dock band's top edge. */
+    /** Stars for a clear night, fixed (not the real sky), never within 22 px (at 960 wide) of any text block or below
+     *  the horizon line, so they can't touch readability: the floor still checks every block afterwards. */
+    private static void starsAwayFromText(Canvas g, List<HorizonBackground.Zone> Z, int variant) {
+        Rng r = new Rng(11);
+        int n = variant == 2 ? 150 : 45;
+        Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
+        Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+        float margin = 22 * S;
+        for (int i = 0; i < n; i++) {
+            float x = (float) (r.next() * W), y = (float) (r.next() * H * 0.60);
+            double sz = r.next(), br = r.next(), tint = r.next();
+            boolean near = false;
+            for (HorizonBackground.Zone z : Z) {
+                float zx = z.x * S, zy = z.y * S, zw = z.w * S, zh = z.h * S;
+                if (x > zx - margin && x < zx + zw + margin && y > zy - margin && y < zy + zh + margin) { near = true; break; }
+            }
+            if (near) continue;
+            int col = tint < 0.2 ? 0xFFFFE6C8 : tint < 0.4 ? 0xFFD2DCFF : 0xFFFFFFFF;
+            float rad = (float) (0.55 + 0.75 * sz * sz) * S;
+            int a = (int) Math.round(255 * (0.30 + 0.55 * br));
+            if (variant == 2 && br > 0.93) {   // a few brighter ones, each with a soft halo
+                halo.setShader(new RadialGradient(x, y, rad * 5, Color.argb(60, 255, 255, 255), Color.argb(0, 255, 255, 255), Shader.TileMode.CLAMP));
+                g.drawCircle(x, y, rad * 5, halo);
+                rad *= 1.5f;
+                a = 240;
+            }
+            dot.setColor((col & 0x00FFFFFF) | (a << 24));
+            g.drawCircle(x, y, rad, dot);
+        }
+    }
+
     static int edge(HorizonBackground.State st) {
         long t = st.at > 0 ? st.at : System.currentTimeMillis();
         Calendar cal = Calendar.getInstance(TimeZone.getDefault());
         cal.setTimeInMillis(t);
         int[] rs = riseSet(cal);
         int min = cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE);
-        float[][] pal = st.day != null ? pal(st.day.palette) : st.fixedMood ? pal(st.mood.palette) : palette(min, rs[0], rs[1]);
-        return Color.argb(71, clamp255(pal[2][0]), clamp255(pal[2][1]), clamp255(pal[2][2]));
+        float[] core = st.day != null ? pal(st.day.palette)[2] : LOOK[lookAt(t)][2];
+        return Color.argb(71, clamp255(core[0]), clamp255(core[1]), clamp255(core[2]));
     }
 
     /** The feed's sky in the mockup's terms: overcast and rain as cloud, fog as haze, storm; clear and partly clear. */

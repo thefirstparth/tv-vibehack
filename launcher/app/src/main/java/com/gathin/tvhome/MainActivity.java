@@ -478,6 +478,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } catch (Exception ignored) {
             fakeAt = null;
         }
+        try {   // the night's stars variant, a test extra (0 none, 1 a few, 2 many)
+            String sv = i.getStringExtra("stars");
+            if (sv != null) HorizonV3.stars = Integer.parseInt(sv);
+        } catch (NumberFormatException ignored) {
+        }
         fakeMood = HorizonBackground.Mood.named(i.getStringExtra("mood"));
         String sky = i.getStringExtra("sky");
         fakeWx = sky;   // Horizon v3's sky word as given (clear, partly, overcast, fog, rain, storm)
@@ -506,8 +511,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float k = 960f / rw;
         zone(out, "clock line", R.id.leftBlock, 0.55f, k);
         zone(out, "top bar", R.id.topButtons, 0.86f, k);
-        zone(out, "sport lines", R.id.sport, 0.45f, k);
-        zone(out, "weather", R.id.weather, 0.45f, k);
+        zone(out, "sport lines", R.id.sport, 0.65f, k);
+        zone(out, "weather", R.id.weather, 0.65f, k);
         return out;
     }
 
