@@ -188,7 +188,7 @@ final class HorizonBackground {
             StringBuilder z = new StringBuilder();
             for (Zone x : zones) z.append(x.key()).append(';');
             return mood + "|" + season + "|" + sky + "|" + matchAccent + "|" + (day == null ? "" : day.month + "-" + day.day)
-                    + "|" + at / SLOT_MS + "|" + wx + "|" + fixedMood + "|" + z;
+                    + "|" + HorizonV3.lookAt(at) + "|" + HorizonV3.sky(wx) + "|" + HorizonV3.stars + "|" + fixedMood + "|" + z;   // v5: redrawn only when the look, the weather or the text changes
         }
 
         /** The phase's colours (the weekend look's tones come from these): the personal day's, else the mood's. */

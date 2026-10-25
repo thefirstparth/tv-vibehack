@@ -478,6 +478,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         } catch (Exception ignored) {
             fakeAt = null;
         }
+        try {   // the night's stars variant, a test extra (0 none, 1 a few, 2 many)
+            String sv = i.getStringExtra("stars");
+            if (sv != null) HorizonV3.stars = Integer.parseInt(sv);
+        } catch (NumberFormatException ignored) {
+        }
         fakeMood = HorizonBackground.Mood.named(i.getStringExtra("mood"));
         String sky = i.getStringExtra("sky");
         fakeWx = sky;   // Horizon v3's sky word as given (clear, partly, overcast, fog, rain, storm)
