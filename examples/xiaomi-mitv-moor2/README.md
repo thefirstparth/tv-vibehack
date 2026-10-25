@@ -241,6 +241,15 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     (BENCHMARKS), drawn off the main thread after the first frame. Mock renders and the decision: the 26 Oct colour
     review. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-v4-a480b49.apk`.
 
+23. **Horizon v5 colour and star fixes** (`759be62`, on the TV since 26 Oct, installed while the Xbox was on).
+    Richer pre-dawn (a clearer rose-violet glow low where the sun rises), stronger morning gold, and cloudy keeps 75%
+    of its colour and most of its glow, with clouds in the look's own tint instead of grey (cloudy colour 1.3-2.5x).
+    Stars 1.6x bigger and brighter with more halos on clear nights; the brightest few, faint, on cloudy nights; the
+    first bright ones on clear evenings; still never within 22 px of text. Readability on the emulator: every look
+    4.53:1 or better (morning clear gets a light shadow under the sport lines). No TV A/B, at Parth's call: the
+    drawing is the same kind and amount of work as `ca97ee8` (16 ms on the emulator), once per look change.
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-v5-ca97ee8.apk`.
+
 Check the live state any time:
 
 ```bash
