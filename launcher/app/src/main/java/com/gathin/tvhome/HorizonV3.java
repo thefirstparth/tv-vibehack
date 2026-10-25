@@ -52,6 +52,60 @@ final class HorizonV3 {
         return new float[]{r, g, b, a};
     }
 
+    /** Two colours blended through their hues (OKLCH: lightness, chroma, hue), not channel by channel: a straight mix of
+     *  the warm morning and the teal midday passed through grey around 9 am (colour review, 26 Oct). */
+    static float[] mixHue(float[] a, float[] b, float t) {
+        double[] p = lch(a), q = lch(b);
+        double hp = p[2], hq = q[2];
+        if (p[1] < 0.01) hp = hq;   // a grey has no hue of its own: take the other's
+        if (q[1] < 0.01) hq = hp;
+        double dh = hq - hp;
+        if (dh > Math.PI) dh -= 2 * Math.PI;
+        if (dh < -Math.PI) dh += 2 * Math.PI;
+        float[] rgb = fromLch(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, hp + dh * t);
+        return new float[]{rgb[0], rgb[1], rgb[2], a[3] + (b[3] - a[3]) * t};
+    }
+
+    private static double lin(double c) {
+        c /= 255;
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    }
+
+    private static float gam(double c) {
+        c = Math.max(0, Math.min(1, c));
+        return (float) (255 * (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055));
+    }
+
+    private static double[] lch(float[] x) {
+        double r = lin(x[0]), g = lin(x[1]), b = lin(x[2]);
+        double l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+        double m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+        double s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+        double L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+        double A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+        double B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+        return new double[]{L, Math.hypot(A, B), Math.atan2(B, A)};
+    }
+
+    private static float[] fromLch(double L, double C, double h) {
+        double A = C * Math.cos(h), B = C * Math.sin(h);
+        double l = Math.pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
+        double m = Math.pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
+        double s = Math.pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
+        return new float[]{gam(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+                gam(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+                gam(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)};
+    }
+
+    /** The light painted stronger while the sun is up: 1x at night, rising to 2.3x once the sun is 20° up. v3 painted
+     *  every hour at night strength, so day was as dark as night (colour review, 26 Oct). */
+    private static float[][] dayBoost(float[][] pal, double sunAltDeg) {
+        float k = 1 + 1.3f * sstep(-6, 20, sunAltDeg);
+        float[][] out = new float[pal.length][];
+        for (int i = 0; i < pal.length; i++) out[i] = new float[]{pal[i][0], pal[i][1], pal[i][2], Math.min(1f, pal[i][3] * k)};
+        return out;
+    }
+
     private static float[] mix(float[] a, float[] b, float t) {
         return new float[]{a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t};
     }
@@ -110,7 +164,7 @@ final class HorizonV3 {
                 float t = sstep(a0, a1, m);
                 float[][] pa = pal(HorizonBackground.Mood.valueOf((String) A[i][1]).palette);
                 float[][] pb = pal(HorizonBackground.Mood.valueOf((String) A[i + 1][1]).palette);
-                return new float[][]{mix(pa[0], pb[0], t), mix(pa[1], pb[1], t), mix(pa[2], pb[2], t), mix(pa[3], pb[3], t)};
+                return new float[][]{mixHue(pa[0], pb[0], t), mixHue(pa[1], pb[1], t), mixHue(pa[2], pb[2], t), mixHue(pa[3], pb[3], t)};
             }
         }
         return pal(HorizonBackground.Mood.NIGHT.palette);
@@ -209,9 +263,11 @@ final class HorizonV3 {
         String wx = weather(st.wx);
         double cloud = "overcast".equals(wx) ? 0.92 : "storm".equals(wx) ? 1 : "haze".equals(wx) ? 0.5 : 0;
         double kCore = 1, kSpot = 1;
-        if ("overcast".equals(wx)) { pal = satAll(pal, 0.5f); kCore = 0.45; kSpot = 0.35; }
-        if ("haze".equals(wx)) { pal = satAll(pal, 0.7f); kCore = 0.6; kSpot = 0.5; }
-        if ("storm".equals(wx)) { pal = satAll(pal, 0.42f); kCore = 0.5; kSpot = 0.35; }
+        pal = dayBoost(pal, sAlt);
+        // weather mutes less than v3 did (0.5/0.45/0.35 overcast, 0.42/0.5/0.35 storm, 0.7/0.6/0.5 haze): cloudy days keep colour
+        if ("overcast".equals(wx)) { pal = satAll(pal, 0.75f); kCore = 0.7; kSpot = 0.6; }
+        if ("haze".equals(wx)) { pal = satAll(pal, 0.85f); kCore = 0.75; kSpot = 0.65; }
+        if ("storm".equals(wx)) { pal = satAll(pal, 0.65f); kCore = 0.7; kSpot = 0.55; }
 
         // where the light sits: the sun by day, the moon (or the middle) by night
         float dfac = sstep(-12, -2, sAlt);
@@ -245,9 +301,9 @@ final class HorizonV3 {
         if ("overcast".equals(wx) || "storm".equals(wx)) {
             boolean storm = "storm".equals(wx);
             Rng rc = new Rng(storm ? 3 : 5);
-            float[] cl = storm ? c(16, 20, 28, .5f) : c(66, 70, 84, .34f);
+            float[] cl = storm ? c(16, 20, 28, .35f) : c(66, 70, 84, .22f);
             if (storm) {
-                float[] dk = c(6, 8, 14, .62f), d0 = c(6, 8, 14, 0);
+                float[] dk = c(6, 8, 14, .45f), d0 = c(6, 8, 14, 0);
                 vertical(g, p, new float[][]{dk, d0, d0}, new float[]{0, 0.45f, 1}, 1);
             }
             for (int i = 0; i < 9; i++) {
@@ -259,7 +315,7 @@ final class HorizonV3 {
         }
         if ("haze".equals(wx)) {
             band(g, p, c(190, 180, 168, .13f), 0.14f, 0.55f, 0.82f);
-            g.drawColor(Color.argb(Math.round(0.05f * 255), 130, 124, 118));
+            g.drawColor(Color.argb(Math.round(0.03f * 255), 130, 124, 118));
         }
         // a match on: v2's faint glow in the competition's colour under the sport lines (no ribbon in this build)
         if (st.matchAccent != null) glow(g, p, c((st.matchAccent & 0x00FFFFFF) | (41 << 24)), 0.24, 0.63, 0.26, 0.20, 1);

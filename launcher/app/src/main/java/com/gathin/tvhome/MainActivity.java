@@ -506,8 +506,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         float k = 960f / rw;
         zone(out, "clock line", R.id.leftBlock, 0.55f, k);
         zone(out, "top bar", R.id.topButtons, 0.86f, k);
-        zone(out, "sport lines", R.id.sport, 0.45f, k);
-        zone(out, "weather", R.id.weather, 0.45f, k);
+        zone(out, "sport lines", R.id.sport, 0.65f, k);
+        zone(out, "weather", R.id.weather, 0.65f, k);
         return out;
     }
 
