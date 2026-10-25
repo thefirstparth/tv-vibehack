@@ -229,6 +229,18 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     bar 13.55:1, sport lines 3.70 -> 4.47:1 (30 passes, the cap; as v3 in this light), weather 4.24 -> 4.52:1.
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-cols-38586f4.apk`.
 
+22. **Horizon v5: fourteen designed looks** (`ca97ee8`, on the TV since 26 Oct, installed while the Xbox was on;
+    the picture wasn't touched). Replaces v3/v4's continuous sky (thousands of in-between looks, near grey: colour 2-20
+    of 255, and 9 am blended orange into teal through grey). Now 7 fixed looks a day (pre-dawn 04:30, sunrise from
+    sunrise-30 min, morning from sunrise+60, day from 11:00, golden hour from sunset-75, evening from sunset+20,
+    night from 22:00) x 2 weathers (clear: clear, partly; cloudy: overcast, fog, rain, storm). Redrawn only when the
+    look, weather or text changes. The faintest text is brighter (45% -> 65% white), so the readability floor rarely
+    needs shadow (every look measured 4.59:1 or better on the emulator, most 6-8:1). Clear nights get about 150 small
+    fixed stars, never within 22 px of text. No season tint, moon light or moving sun glow; personal days and the
+    match glow kept. **No TV A/B, at Parth's call** (26 Oct): drawing timed on the emulator at 16 ms vs v4's 74 ms
+    (BENCHMARKS), drawn off the main thread after the first frame. Mock renders and the decision: the 26 Oct colour
+    review. Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-v4-a480b49.apk`.
+
 Check the live state any time:
 
 ```bash
@@ -411,6 +423,18 @@ Nothing here blocks using the TV. Pick up any of it later.
   (`mitv_go_suspend=0`; undo `settings put global mitv_go_suspend 1`): slower to turn on, and whether the remote can
   then turn it on is unknown. A longer auto-standby was considered and not recommended (it only changes how often
   the TV sleeps by itself; the remote's power button uses the same standby).
+- **The TV froze in quick standby (25 Oct, about 04:40).** Neither the remote nor the TV's own button woke it; only
+  unplugging it did. Read afterwards, nothing changed: the start was `bootreason=warm` with no Android shutdown or
+  reboot before it (boot history: the previous full start was the A/B restart on 23 Oct 07:03, about 46 h and 8-10
+  quick standbys earlier, so not the 30-standby forced restart). The last app before it slept was FanCode, whose
+  player leaves the video driver broken until a restart (LESSONS); the 24 Oct report already showed slow Home
+  returns (110 ms median, 431 ms worst, against 36 ms). Most likely a Xiaomi firmware/driver fault on resume, set off
+  by that; not provable, as the firmware wipes the log, the drop box and usage events on every start (saved what
+  survived in `backup/diag-1025-*`). Not the launcher (it doesn't run in standby; v4 woke 5 times on 24 Oct).
+  Fix offered and declined for now (Parth, 25 Oct): full shutdown instead of quick standby (`settings put global
+  mitv_go_suspend 0` and `sleep_mode_mitv_go_suspend 0`; undo both back to `1`), about 30-40 s to turn on, remote
+  wake from fully off untested. Workaround meanwhile: restart the TV (hold power → Restart) after watching FanCode.
+  Seen on 25 Oct: `global go_to_str_direct` reads 0 (it was 1 on 20 Oct; nobody changed it, so the firmware does).
 - **A screensaver** (the 1400 screens shown when the TV is idle) was designed and then dropped in
   favour of the 1400 app. The app already draws those screens, so a screensaver would be one small
   DreamService in `launcher/app1400` plus the screensaver settings (record and undo them as above).

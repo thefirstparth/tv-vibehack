@@ -159,3 +159,9 @@ No fix attempt was needed. The previous build is `backup/launcher-builds/tvhome-
 - From 24 Oct the A/B's cold start is started as Home (`am start -W -a MAIN -c HOME -n …`, tools/ab/cold.txt): a plain
   `-n` start made a non-Home task, so the next Home press added a second Home task (upstream cleanyourtv #888). Cold-start
   figures before and after this change are not directly comparable; compare within one test, as always.
+- 26 Oct, on the emulator (not the TV), background drawing only (timed throwaway builds, 3 alternating rounds of 11
+  draws across all looks and weathers, first after each install discarded): Horizon v4 (`a480b49`) median 74.0 ms
+  (max 126) vs Horizon v5 (`e17442e`, the final `ca97ee8` only changes the weather mapping and the star count) median
+  **16.4 ms** (max 20). v5 also redraws only when the look changes (a few times a day) instead of every 5 minutes.
+  Installed **without a TV A/B at Parth's call**; cold start and Home return paths are unchanged (Horizon is drawn
+  after the first frame, off the main thread).

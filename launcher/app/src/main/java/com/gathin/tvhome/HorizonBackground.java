@@ -56,7 +56,12 @@ final class HorizonBackground {
         LATE_NIGHT(rgba(14, 18, 48, .55), rgba(40, 50, 140, .22), rgba(70, 60, 170, .26), rgba(30, 90, 120, .16), .42f, .56f),
         DAWN(rgba(40, 24, 70, .50), rgba(120, 60, 140, .24), rgba(232, 120, 96, .32), rgba(255, 186, 128, .24), .22f, .30f),
         MORNING(rgba(34, 30, 60, .40), rgba(214, 128, 62, .22), rgba(250, 172, 92, .30), rgba(130, 176, 226, .18), .30f, .40f),
+        // two soft in-between moods for Horizon's day (colour review, 26 Oct): morning's orange and midday's teal, and
+        // midday and golden hour, are nearly opposite colours, so going straight from one to the other turned grey or
+        // invented pink and green; these keep each step small (only Horizon's palette uses them, never SunLine's phases)
+        LATE_MORNING(rgba(26, 36, 64, .42), rgba(150, 140, 120, .18), rgba(235, 205, 160, .26), rgba(140, 180, 220, .16), .40f, .50f),
         MIDDAY(rgba(12, 36, 62, .45), rgba(40, 110, 170, .22), rgba(70, 170, 205, .28), rgba(150, 222, 232, .16), .50f, .60f),
+        AFTERNOON(rgba(16, 34, 60, .44), rgba(120, 130, 140, .18), rgba(225, 200, 150, .26), rgba(150, 200, 225, .16), .60f, .55f),
         GOLDEN_HOUR(rgba(50, 30, 20, .45), rgba(210, 112, 40, .26), rgba(255, 172, 64, .32), rgba(255, 124, 84, .22), .66f, .56f),
         SUNSET(rgba(46, 20, 52, .50), rgba(200, 62, 92, .28), rgba(255, 112, 72, .32), rgba(150, 62, 176, .24), .76f, .64f),
         BLUE_HOUR(rgba(20, 22, 70, .55), rgba(80, 62, 170, .26), rgba(62, 112, 206, .28), rgba(206, 92, 144, .18), .80f, .66f),
@@ -183,7 +188,7 @@ final class HorizonBackground {
             StringBuilder z = new StringBuilder();
             for (Zone x : zones) z.append(x.key()).append(';');
             return mood + "|" + season + "|" + sky + "|" + matchAccent + "|" + (day == null ? "" : day.month + "-" + day.day)
-                    + "|" + at / SLOT_MS + "|" + wx + "|" + fixedMood + "|" + z;
+                    + "|" + HorizonV3.lookAt(at) + "|" + HorizonV3.sky(wx) + "|" + HorizonV3.stars + "|" + fixedMood + "|" + z;   // v5: redrawn only when the look, the weather or the text changes
         }
 
         /** The phase's colours (the weekend look's tones come from these): the personal day's, else the mood's. */
