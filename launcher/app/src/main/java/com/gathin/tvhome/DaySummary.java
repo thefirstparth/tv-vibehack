@@ -41,9 +41,24 @@ final class DaySummary {
     }
 
     /** inputs: the TV input app's time by the input chosen on the Inputs menu (InputDay); none, no "inputs". */
+    /**
+     * The build(s) that wrote the day, in order ("759be62 → d7d4c09" on an install day); the sending build only for a
+     * day written before builds were noted.
+     */
+    static String builds(List<String> diary, String sending) {
+        List<String> seen = new ArrayList<>();
+        for (String line : diary) {
+            String[] f = line.split("\t");
+            if (f.length >= 3 && Diary.BUILD.equals(f[1]) && !f[2].trim().isEmpty() && !seen.contains(f[2].trim())) seen.add(f[2].trim());
+        }
+        if (seen.isEmpty()) return sending;
+        return String.join(" \u2192 ", seen.subList(Math.max(0, seen.size() - 3), seen.size()));
+    }
+
     static String json(String date, String build, List<String> diary, UsageDay usage, Map<String, String> names, Tv tv, ZoneId zone, List<InputDay.Use> inputs) {
         List<Long> home = new ArrayList<>(), cold = new ArrayList<>();
         int asks = 0, fresh = 0, drops = 0;
+        build = builds(diary, build);
         for (String line : diary) {
             String[] f = line.split("\t");
             if (f.length < 3) continue;

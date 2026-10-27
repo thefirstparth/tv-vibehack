@@ -65,7 +65,33 @@ final class InputDay {
 
     /** Minutes per chosen input, most first; empty when the input app wasn't used or nothing was chosen. */
     static List<Use> of(List<Choice> choices, UsageDay.App app, List<Long> homes) {
-        if (app == null || choices.isEmpty()) return Collections.emptyList();
+        return of(choices, app, homes, Collections.emptyList(), null, null);
+    }
+
+    /** The dock input's port states among some diary lines ("wall-ms TAB X TAB state"): [time, state], in time order. */
+    static List<long[]> signals(List<String> lines) {
+        List<long[]> out = new ArrayList<>();
+        for (String line : lines) {
+            String[] f = line.split("\t");
+            if (f.length < 3 || !Diary.SIGNAL.equals(f[1])) continue;
+            try {
+                out.add(new long[]{Long.parseLong(f[0].trim()), Long.parseLong(f[2].trim())});
+            } catch (NumberFormatException ignored) {
+                // a broken line: skipped
+            }
+        }
+        out.sort((a, b) -> Long.compare(a[0], b[0]));
+        return out;
+    }
+
+    /**
+     * As above, and a stretch no choice names is the dock input's (dockId, the Xbox) when its port said connected
+     * SETTLE_MS into the stretch (or at its end, if shorter): on this TV a port reads connected only while it is on
+     * screen with a picture, so the TV waking on HDMI 2 or the remote's source button still counts as the Xbox.
+     */
+    static List<Use> of(List<Choice> choices, UsageDay.App app, List<Long> homes, List<long[]> signal, String dockId, String dockName) {
+        boolean bySignal = dockId != null && !signal.isEmpty();
+        if (app == null || (choices.isEmpty() && !bySignal)) return Collections.emptyList();
         List<long[]> runs = new ArrayList<>(app.runs);
         runs.sort((a, b) -> Long.compare(a[0], b[0]));
         Map<String, Use> uses = new LinkedHashMap<>();
@@ -83,8 +109,16 @@ final class InputDay {
                 now = null;
             }
             lastEnd = r[2];
-            if (now == null) continue;
-            Use u = use(uses, choices, now.id);
+            Use u;
+            if (now != null) {
+                u = use(uses, choices, now.id);
+            } else if (bySignal && stateAt(signal, Math.min(r[1] + SETTLE_MS, r[2])) == CONNECTED) {
+                u = uses.get(dockId);
+                if (u == null) uses.put(dockId, u = new Use(dockId, dockName));
+                if (r[0] == r[1]) u.opens++;
+            } else {
+                continue;
+            }
             u.ms += r[2] - r[1];
             if (r[2] - r[1] < 60_000) continue;
             long[] last = u.spans.isEmpty() ? null : u.spans.get(u.spans.size() - 1);
@@ -95,6 +129,21 @@ final class InputDay {
         out.removeIf(u -> u.ms <= 0);
         out.sort((a, b) -> Long.compare(b.ms, a.ms));
         return out;
+    }
+
+    /** The TV re-reads a port's picture when it comes on screen: its state is read this long into a stretch. */
+    static final long SETTLE_MS = 20_000;
+    /** TvInputManager.INPUT_STATE_CONNECTED. */
+    private static final long CONNECTED = 0;
+
+    /** The last state at or before t, or -1 when none is known. */
+    private static long stateAt(List<long[]> signal, long t) {
+        long s = -1;
+        for (long[] x : signal) {
+            if (x[0] > t) break;
+            s = x[1];
+        }
+        return s;
     }
 
     /** The latest choice not yet used in [from, to], or -1. */

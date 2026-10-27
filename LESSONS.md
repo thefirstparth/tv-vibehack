@@ -192,6 +192,15 @@ List them from the TV; don't guess.
 **Two of the launcher's images were JPEGs named `.png`.** Debug builds didn't care; the release build
 refused them until PNG crunching was turned off.
 
+**A key-filtering accessibility service breaks held volume** (Key Mapper, Talkies, our own
+`launcher/keys`): with one on, holding Volume Up moved one step instead of 14 on the emulator, and
+upstream saw it on a MOOR4. Held arrows still repeat. Test remote-button ideas for this first.
+
+**Testing key filters needs real key presses.** `adb shell input keyevent` and the emulator console's
+`event send` never reach an accessibility key filter, and `sendevent` is blocked by SELinux. Android's
+`hid` tool works without root: register a virtual USB keyboard from a JSON file and send reports
+(`adb shell hid /data/local/tmp/keys.json`); its presses take the same path as a remote's.
+
 ## Working safely on a TV people use
 
 **Write down every setting before you change it, with the command that undoes it,** in the TV's

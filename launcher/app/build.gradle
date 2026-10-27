@@ -13,6 +13,8 @@ def diaryUrl = (localProps.getProperty('tv.diaryUrl') ?: '').trim()
 def diaryKey = (localProps.getProperty('tv.diaryKey') ?: '').trim()
 // the build's commit, sent with each day so a slow day can be matched to the build that was on the TV
 def commit = 'git rev-parse --short HEAD'.execute([], rootProject.projectDir).text.trim()
+// built from uncommitted changes: "+" after the commit they started from, so a test build never passes for that commit
+if (!'git status --porcelain -- app shared'.execute([], rootProject.projectDir).text.trim().isEmpty()) commit += '+'
 
 android {
     namespace 'com.gathin.tvhome'

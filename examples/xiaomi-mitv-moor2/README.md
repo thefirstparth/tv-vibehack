@@ -257,6 +257,15 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     exercised end to end (the emulator's network is wired and can't be dropped). No TV A/B: one guarded request on
     a callback the Wi-Fi pill already uses, off the main thread. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-v5b-759be62.apk`.
+25. **Xbox time named in the insights, and the right build per day** (`5fd1ca2`, on the TV since 28 Oct, about
+    04:50, installed while the Xbox was on; it includes `a07db44`). The Xbox tile now notes its switch in the diary
+    like the Inputs menu (Xbox play showed as "Live TV" because only the menu was noted), and an unchosen input-app
+    stretch counts as the Xbox when HDMI 2 has a picture. Each diary day notes the build that wrote it. **Found on
+    the TV:** HDMI 2's state (`dumpsys tv_input`) only updates while HDMI 2 is on screen (the Xbox on with Home
+    showing read "standby"), and the Xbox isn't on HDMI-CEC (Parth keeps the Xbox's HDMI-CEC off), so the tile's
+    green or grey is the state when HDMI 2 was last on screen. `a07db44`'s CEC standby check has nothing to read
+    and changes nothing. Unit-tested and run on the emulator; no TV A/B (diary lines only, one on each HDMI 2 change).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-netback-d7d4c09.apk`.
 
 Check the live state any time:
 
@@ -264,6 +273,58 @@ Check the live state any time:
 tools/venv/bin/python -I tools/tv.py 'pm list packages -d'        # everything disabled
 tools/venv/bin/python -I tools/tv.py 'cmd package resolve-activity -a android.intent.action.MAIN -c android.intent.category.HOME'
 ```
+
+## Remote buttons: giving one a new job
+
+Not done on this TV (28 Oct 2026). The ask was Prime Video → FanCode or Sony LIV, and the Assistant button → the
+Xbox (HDMI 2). This TV has no setting for it, and changing its key files needs root.
+
+**The catch with every remap.** Any app that remaps buttons (Key Mapper, Talkies, our `launcher/keys`) uses
+Android's accessibility key filter. With one on, **holding Volume Up moved the volume one step instead of 14** on
+the emulator (28 Oct). Upstream saw the same on a MOOR4. Held arrows still repeat. Decide whether that's acceptable
+before setting one up.
+
+**1. Easiest, nothing to install: your voice.** Press the Assistant button and say "Open FanCode" or "Open Sony
+LIV". Opening apps works with the Google TV launcher disabled (Talkies found the same). "Switch to HDMI 2" may work;
+not tried here. From Home, the Xbox tile is one press away.
+
+**2. Easy, with the remote: Key Mapper** (free, open source, no ads).
+1. Install Key Mapper on the TV: the Play Store on the TV if it offers it, or the APK from its official GitHub
+   releases (`keymapperorg/KeyMapper`) with `adb install`.
+2. Open it and switch on its service when asked: Settings → Device Preferences → Accessibility → Key Mapper.
+3. **New key map → Record trigger**, press **Prime Video** on the remote, then **Add action → Launch app →
+   FanCode** (or Sony LIV). Save.
+4. Same for the **Assistant** button, with an **Intent** action: `android.intent.action.VIEW`, data
+   `content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW5`, type
+   `vnd.android.cursor.item/channel`, target Activity (the URI the Xbox tile opens; untested in Key Mapper). If
+   recording shows nothing when you press the Assistant button, Google takes it first and it can't be remapped.
+5. **Hold Volume Up** for two seconds. If it moves one step, choose between the remap and held volume.
+
+Undo: switch Key Mapper off in Settings → Device Preferences → Accessibility, or uninstall it.
+
+**3. Our own, from a computer: `launcher/keys`.** A 10 KB app that only remaps buttons, set over adb, with a learn
+mode that tells you each button's code. Same volume catch. Steps in [launcher/README.md](../../launcher/README.md#remote-buttons-optional-not-on-the-tv).
+
+**Known about this remote's buttons** (upstream, another MOOR2 with the Google TV launcher off): the YouTube button
+(190) does nothing; the Settings button (176) crashes a Xiaomi receiver, and after a few crashes Android drops 176,
+178 (Input) and 192 until a reboot. Netflix's button is handled by Xiaomi's `overseaservice`.
+
+## Selling or giving away the TV
+
+**A factory reset undoes everything here.** Every change lives in user data: installed apps (the launcher, 1400),
+disabled apps, background limits (`appops`), settings, usage access, ADB keys and developer options, and the
+launcher's diary. A factory reset wipes all of that. The system itself was never changed: no root, a locked
+bootloader, a `user` build (checked 28 Oct 2026: `ro.build.type=user`, `ro.boot.vbmeta.device_state=locked`). The
+only system app not installed for the user, `com.xiaomi.floatingframe`, was already so in the first snapshot
+(18 Oct), and a reset brings it back anyway.
+
+1. Settings → Accounts: **remove your Google account** (and any Xiaomi account). Otherwise the buyer can hit
+   Google's Factory Reset Protection and need your password.
+2. Settings → Device Preferences → About → **Factory reset**, from the menu rather than the hardware buttons.
+3. Nothing else: the insights site and the feed simply stop hearing from it. Remove the TV from the router's
+   device list if you like.
+
+To return to stock while *keeping* the TV, use the commands under Undo below instead.
 
 ## Undo
 

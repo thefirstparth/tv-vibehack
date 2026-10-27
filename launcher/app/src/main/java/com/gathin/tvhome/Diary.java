@@ -18,26 +18,35 @@ import java.util.concurrent.Executors;
  * The launcher's own diary: one short line per event in files/diary/YYYY-MM-DD.tsv (the TV's local date), written on a
  * background thread so nothing waits for storage. "wall-ms TAB kind TAB value": H a Home return's time to its first
  * drawn frame (ms), C a cold start's time (ms), F a feed answer (1 fresh, 0 an old or failed copy), N the network
- * lost, I an input chosen on the Inputs menu (its id, then TAB and the name the menu showed). Kept 35 days. Read back
+ * lost, I an input chosen on the Inputs menu or the dock's input tile (its id, then TAB and the name it showed), X the dock
+ * input's port state as the TV reports it (0 connected: on this TV only while that input is on screen with a picture),
+ * B the build writing the day (first line of each day and of each start). Kept 35 days. Read back
  * once a day by DiarySend for the day's summary, which is then kept as it was first made in files/diary/sent/ (also 35
  * days), so a day that takes weeks to get through still has the app detail Android has trimmed by then.
  */
 final class Diary {
 
-    static final String HOME = "H", COLD = "C", FEED = "F", NET_LOST = "N", INPUT = "I";
+    static final String HOME = "H", COLD = "C", FEED = "F", NET_LOST = "N", INPUT = "I", SIGNAL = "X", BUILD = "B";
     static final int KEEP_DAYS = 35;
 
     private static Diary one;
     private final File dir, sent;
+    /** The build writing this diary (null in the tests): each day says which build ran it, not which one sent it. */
+    private final String build;
     final ExecutorService io = Executors.newSingleThreadExecutor();
 
     private Diary(Context c) {
-        this(new File(c.getFilesDir(), "diary"));
+        this(new File(c.getFilesDir(), "diary"), c.getString(R.string.tv_build));
     }
 
     /** For the tests: a diary in any folder. */
     Diary(File dir) {
+        this(dir, null);
+    }
+
+    Diary(File dir, String build) {
         this.dir = dir;
+        this.build = build;
         sent = new File(dir, "sent");
     }
 
@@ -63,6 +72,11 @@ final class Diary {
         add(INPUT, clean(id) + "\t" + clean(name));
     }
 
+    /** The dock input's port state (TvInputManager.INPUT_STATE_*), when it changes. */
+    void signal(int state) {
+        add(SIGNAL, state);
+    }
+
     private static String clean(String v) {
         return v == null ? "" : v.replaceAll("[\\t\\r\\n]+", " ").trim();
     }
@@ -80,12 +94,14 @@ final class Diary {
             try {
                 if (!dir.isDirectory() && !dir.mkdirs()) return;
                 LocalDate today = LocalDate.now(ZoneId.systemDefault());
+                String head = "";
                 if (!today.toString().equals(lastDate)) {   // once a day, also when nothing is sent anywhere
                     lastDate = today.toString();
                     prune(today);
+                    if (build != null) head = now + "\t" + BUILD + "\t" + clean(build) + "\n";
                 }
                 try (FileOutputStream out = new FileOutputStream(file(lastDate), true)) {
-                    out.write(line.getBytes(StandardCharsets.UTF_8));
+                    out.write((head + line).getBytes(StandardCharsets.UTF_8));
                 }
             } catch (Exception ignored) {
                 // a diary line is never worth an error on the home screen

@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Remote buttons: its own small APK beside the launcher, so Home is untouched and it comes off with one uninstall.
+// An accessibility service that sees only button presses and gives a few buttons another job (README, "Remote buttons").
+android {
+    namespace 'com.gathin.tvkeys'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.gathin.tvkeys'
+        minSdk 26
+        targetSdk 29
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        // Shrunk like the launcher, and signed with the same debug key so pm install -r updates it in place.
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    // targetSdk 29 is on purpose (one TV, never on Play), as in the launcher; and no app-grid tile or icon on purpose
+    lint {
+        disable 'ExpiredTargetSdkVersion', 'MissingLeanbackLauncher', 'MissingApplicationIcon'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

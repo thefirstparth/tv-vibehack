@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Button presses only. Apps send Android only the event types some service asks for, so asking for announcements
+     from this package alone means other apps do no extra work while it is on; it never reads the screen. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/service_description"
+    android:accessibilityEventTypes="typeAnnouncement"
+    android:packageNames="com.gathin.tvkeys"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRequestFilterKeyEvents"
+    android:canRequestFilterKeyEvents="true"
+    android:canRetrieveWindowContent="false"
+    android:notificationTimeout="0" />
