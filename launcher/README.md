@@ -104,7 +104,9 @@ The Inputs menu can name a port: `input_names` in `config.xml` (`HDMI 2|Xbox`) s
 The dock's input tile (`dock_input`, the Xbox) is green while the device is on. The port alone stays
 "connected" while the Xbox sleeps (Sleep mode keeps HDMI up), so when the TV lists an HDMI-CEC device
 behind the port, the device's own standby turns the tile grey (`InputState`, an idea from Talkies).
-With no CEC device listed, or one that reports nothing useful, the port decides as before.
+With no CEC device listed, or one that reports nothing useful, the port decides as before. On the MOOR2
+the port's state only updates while that input is on screen, and the Xbox isn't on CEC, so the tile shows
+the state from when HDMI 2 was last on screen (MOOR2 README, item 25).
 
 Configure it in [`app/src/main/res/values/config.xml`](app/src/main/res/values/config.xml):
 dock order, hidden apps, Live TV package and columns. Build and install with

@@ -257,6 +257,15 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     exercised end to end (the emulator's network is wired and can't be dropped). No TV A/B: one guarded request on
     a callback the Wi-Fi pill already uses, off the main thread. Undo: `pm install -r` of
     `backup/launcher-builds/tvhome-release-v5b-759be62.apk`.
+25. **Xbox time named in the insights, and the right build per day** (`5fd1ca2`, on the TV since 28 Oct, about
+    04:50, installed while the Xbox was on; it includes `a07db44`). The Xbox tile now notes its switch in the diary
+    like the Inputs menu (Xbox play showed as "Live TV" because only the menu was noted), and an unchosen input-app
+    stretch counts as the Xbox when HDMI 2 has a picture. Each diary day notes the build that wrote it. **Found on
+    the TV:** HDMI 2's state (`dumpsys tv_input`) only updates while HDMI 2 is on screen (the Xbox on with Home
+    showing read "standby"), and the Xbox isn't on HDMI-CEC (Parth keeps the Xbox's HDMI-CEC off), so the tile's
+    green or grey is the state when HDMI 2 was last on screen. `a07db44`'s CEC standby check has nothing to read
+    and changes nothing. Unit-tested and run on the emulator; no TV A/B (diary lines only, one on each HDMI 2 change).
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-netback-d7d4c09.apk`.
 
 Check the live state any time:
 
