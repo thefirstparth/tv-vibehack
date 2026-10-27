@@ -1,2 +1,0 @@
--keep class com.gathin.tvkeys.KeyService { <init>(); }
--keep class com.gathin.tvkeys.Setup { <init>(); }

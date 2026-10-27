@@ -1,3 +1,0 @@
-com.gathin.tvkeys:xml/key_service = 0x7f020000
-com.gathin.tvkeys:string/service_description = 0x7f010001
-com.gathin.tvkeys:string/app_name = 0x7f010000

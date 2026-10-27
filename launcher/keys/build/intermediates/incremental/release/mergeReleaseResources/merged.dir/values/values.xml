@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Remote buttons</string>
-    <string name="service_description">Gives a few remote buttons another job, such as Prime Video opening FanCode. It sees button presses only, never what is on the screen; every other button works as before.</string>
-</resources>

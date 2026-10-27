@@ -1,8 +1,0 @@
-com.gathin.tvkeys-pngs-0 /Users/parthbhatia/tv-vibehack/launcher/keys/build/generated/res/pngs/release
-com.gathin.tvkeys-resValues-1 /Users/parthbhatia/tv-vibehack/launcher/keys/build/generated/res/resValues/release
-com.gathin.tvkeys-packageReleaseResources-2 /Users/parthbhatia/tv-vibehack/launcher/keys/build/intermediates/incremental/release/packageReleaseResources/merged.dir
-com.gathin.tvkeys-packageReleaseResources-3 /Users/parthbhatia/tv-vibehack/launcher/keys/build/intermediates/incremental/release/packageReleaseResources/stripped.dir
-com.gathin.tvkeys-merged-not-compiled-resources-4 /Users/parthbhatia/tv-vibehack/launcher/keys/build/intermediates/merged-not-compiled-resources/release
-com.gathin.tvkeys-release-5 /Users/parthbhatia/tv-vibehack/launcher/keys/build/intermediates/merged_res/release/mergeReleaseResources
-com.gathin.tvkeys-main-6 /Users/parthbhatia/tv-vibehack/launcher/keys/src/main/res
-com.gathin.tvkeys-release-7 /Users/parthbhatia/tv-vibehack/launcher/keys/src/release/res
