@@ -90,6 +90,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean homeCold;
     /** The dock's input tile follows its port: Android calls this when the device on it turns on or off. */
     private android.media.tv.TvInputManager.TvInputCallback inputWatch;
+    /** The HDMI-CEC device the TV lists behind the input tile's port (the Xbox), or null when it lists none. */
+    private String inputDevice;
 
     /** Yesterday's summary, a few seconds after Home appears (DiarySend); taken back when Home goes. */
     private final Runnable diarySend = () -> DiarySend.maybe(this);
@@ -384,25 +386,52 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /**
      * The dock's input tile (config dock_input): its colour from the port's state now, then from Android's callback each
-     * time the device on it turns on or off (no polling). "Connected" is on; standby or unplugged is off.
+     * time the device on it turns on or off (no polling). "Connected" is on; standby or unplugged is off. The Xbox's
+     * Sleep mode keeps the port connected, so the device's own HDMI-CEC state (an input the TV lists behind the port)
+     * decides when there is one: see InputState.on.
      */
     private void watchInput() {
         String id = adapter.inputId();
         android.media.tv.TvInputManager tim = (android.media.tv.TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (id == null || tim == null) return;
         try {
-            adapter.setInputOn(tim.getInputState(id) == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED);
+            inputDevice = null;
+            for (TvInputInfo info : tim.getTvInputList()) {
+                if (id.equals(info.getParentId())) { inputDevice = info.getId(); break; }
+            }
+            showInputState(tim);
             if (inputWatch == null) {
                 inputWatch = new android.media.tv.TvInputManager.TvInputCallback() {
                     @Override
                     public void onInputStateChanged(String inputId, int state) {
-                        if (inputId.equals(adapter.inputId())) adapter.setInputOn(state == android.media.tv.TvInputManager.INPUT_STATE_CONNECTED);
+                        if (inputId.equals(adapter.inputId()) || inputId.equals(inputDevice)) showInputState(tim);
+                    }
+
+                    // a CEC device appears behind a port when it is plugged in or first talks to the TV
+                    @Override
+                    public void onInputAdded(String inputId) {
+                        watchInput();
+                    }
+
+                    @Override
+                    public void onInputRemoved(String inputId) {
+                        watchInput();
                     }
                 };
                 tim.registerCallback(inputWatch, handler);
             }
         } catch (RuntimeException ignored) {
             // no TV input service (the emulator): the tile stays grey and still switches
+        }
+    }
+
+    private void showInputState(android.media.tv.TvInputManager tim) {
+        String id = adapter.inputId(), device = inputDevice;
+        if (id == null) return;
+        try {
+            adapter.setInputOn(InputState.on(tim.getInputState(id), device == null ? null : tim.getInputState(device)));
+        } catch (RuntimeException e) {
+            // the device input went away between the list and the question: the next callback puts it right
         }
     }
 

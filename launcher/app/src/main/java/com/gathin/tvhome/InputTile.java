@@ -58,7 +58,7 @@ final class InputTile extends Drawable {
         text.setTypeface(Fonts.weight(c, 700));
     }
 
-    /** True: the device is on (the port reads "connected"). Returns whether the look changed. */
+    /** True: the device is on (see InputState.on). Returns whether the look changed. */
     boolean setOn(boolean now) {
         boolean changed = now != on;
         on = now;
