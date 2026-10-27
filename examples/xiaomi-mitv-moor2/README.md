@@ -309,6 +309,23 @@ mode that tells you each button's code. Same volume catch. Steps in [launcher/RE
 (190) does nothing; the Settings button (176) crashes a Xiaomi receiver, and after a few crashes Android drops 176,
 178 (Input) and 192 until a reboot. Netflix's button is handled by Xiaomi's `overseaservice`.
 
+## Selling or giving away the TV
+
+**A factory reset undoes everything here.** Every change lives in user data: installed apps (the launcher, 1400),
+disabled apps, background limits (`appops`), settings, usage access, ADB keys and developer options, and the
+launcher's diary. A factory reset wipes all of that. The system itself was never changed: no root, a locked
+bootloader, a `user` build (checked 28 Oct 2026: `ro.build.type=user`, `ro.boot.vbmeta.device_state=locked`). The
+only system app not installed for the user, `com.xiaomi.floatingframe`, was already so in the first snapshot
+(18 Oct), and a reset brings it back anyway.
+
+1. Settings → Accounts: **remove your Google account** (and any Xiaomi account). Otherwise the buyer can hit
+   Google's Factory Reset Protection and need your password.
+2. Settings → Device Preferences → About → **Factory reset**, from the menu rather than the hardware buttons.
+3. Nothing else: the insights site and the feed simply stop hearing from it. Remove the TV from the router's
+   device list if you like.
+
+To return to stock while *keeping* the TV, use the commands under Undo below instead.
+
 ## Undo
 
 Back to the stock Google TV home (keeps the debloat). Run each line separately, **in this order**:
