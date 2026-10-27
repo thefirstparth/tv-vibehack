@@ -186,7 +186,9 @@ final class DiarySend {
         if (app == null) return null;
         List<String> both = new ArrayList<>(diary.lines(day.minusDays(1).toString()));
         both.addAll(lines);
-        return InputDay.of(InputDay.choices(both), app, usage.homes);
+        String dock = c.getString(R.string.dock_input).trim();
+        return InputDay.of(InputDay.choices(both), app, usage.homes, InputDay.signals(both), dock.isEmpty() ? null : dock,
+                c.getString(R.string.dock_input_name).trim());
     }
 
     /** null without usage access (granted once over adb; MOOR2 README). */

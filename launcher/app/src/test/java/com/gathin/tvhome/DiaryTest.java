@@ -195,6 +195,46 @@ public class DiaryTest {
     }
 
     @Test
+    public void theTileOrAWakeOnHdmi2IsNamedByTheSignalWhenNothingWasChosen() {
+        UsageDay u = inputDay(
+                // the TV woke on HDMI 2 with the Xbox on: no choice, but the port has a picture
+                ev(at(21, 19, 10), UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 19, 10), UsageDay.RESUMED, TVIN),
+                ev(at(21, 20, 10), UsageDay.PAUSED, TVIN),
+                ev(at(21, 20, 10), UsageDay.RESUMED, "com.gathin.tvhome"),
+                // later the input app again, the port with no picture (the Xbox off): not named
+                ev(at(21, 21, 0), UsageDay.PAUSED, "com.gathin.tvhome"),
+                ev(at(21, 21, 0), UsageDay.RESUMED, TVIN),
+                ev(at(21, 21, 30), UsageDay.PAUSED, TVIN),
+                ev(at(21, 21, 30), UsageDay.RESUMED, "com.gathin.tvhome"));
+        List<String> lines = Arrays.asList(at(21, 19, 0) + "\tX\t1", (at(21, 19, 10) + 4000) + "\tX\t0",
+                at(21, 20, 10) + "\tX\t0", (at(21, 21, 0) + 3000) + "\tX\t1");
+        List<InputDay.Use> in = InputDay.of(InputDay.choices(lines), u.app(TVIN), u.homes, InputDay.signals(lines), XBOX, "Xbox");
+        assertEquals(1, in.size());
+        assertEquals("Xbox", in.get(0).name);
+        assertEquals(60 * MIN, in.get(0).ms);
+        assertEquals(1, in.get(0).opens);
+        // without the dock input the signal names nothing, as before
+        assertTrue(InputDay.of(InputDay.choices(lines), u.app(TVIN), u.homes).isEmpty());
+    }
+
+    @Test
+    public void aDaySaysWhichBuildsWroteIt() throws Exception {
+        assertEquals("send", DaySummary.builds(Arrays.asList("1\tH\t80"), "send"));
+        assertEquals("759be62 \u2192 d7d4c09", DaySummary.builds(Arrays.asList("1\tB\t759be62", "2\tH\t80", "3\tB\t759be62", "4\tB\td7d4c09"), "send"));
+        java.io.File dir = java.nio.file.Files.createTempDirectory("diary").toFile();
+        Diary d = new Diary(dir, "abc1234");
+        d.netLost();
+        d.netLost();
+        d.io.submit(() -> { }).get();
+        String today = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString();
+        List<String> written = d.lines(today);
+        assertEquals(3, written.size());   // the build once, then the two lines
+        assertTrue(written.get(0).endsWith("\tB\tabc1234"));
+        assertEquals("abc1234", DaySummary.builds(written, "send"));
+    }
+
+    @Test
     public void aFrozenDayIsSentAsFirstMadeWithTodaysSendProblems() throws Exception {
         java.io.File dir = java.nio.file.Files.createTempDirectory("diary").toFile();
         Diary d = new Diary(dir);

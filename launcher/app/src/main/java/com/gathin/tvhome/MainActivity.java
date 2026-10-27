@@ -93,6 +93,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The HDMI-CEC device the TV lists behind the input tile's port (the Xbox), or null when it lists none. */
     private String inputDevice;
     private boolean inputListed;
+    /** The dock input's port state last written to the diary (-1: none yet in this run). */
+    private int loggedSignal = -1;
 
     /** Yesterday's summary, a few seconds after Home appears (DiarySend); taken back when Home goes. */
     private final Runnable diarySend = () -> DiarySend.maybe(this);
@@ -435,7 +437,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String id = adapter.inputId(), device = inputDevice;
         if (id == null) return;
         try {
-            adapter.setInputOn(InputState.on(tim.getInputState(id), device == null ? null : tim.getInputState(device)));
+            int port = tim.getInputState(id);
+            // the diary names the input app's time by it when no choice did (InputDay): the TV woke on HDMI 2, say
+            if (port != loggedSignal) {
+                loggedSignal = port;
+                Diary.get(this).signal(port);
+            }
+            adapter.setInputOn(InputState.on(port, device == null ? null : tim.getInputState(device)));
         } catch (RuntimeException e) {
             // the device input went away between the list and the question: the next callback puts it right
         }

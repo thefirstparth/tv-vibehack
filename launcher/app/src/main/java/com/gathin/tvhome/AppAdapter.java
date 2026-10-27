@@ -194,6 +194,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 ctx.startActivity(v);
+                Diary.get(ctx).input(e.inputId, e.label);   // the diary names the input app's next stretch (InputDay)
             } catch (Exception ex) {
                 Toast.makeText(ctx, "Can't open " + e.label, Toast.LENGTH_SHORT).show();
             }
