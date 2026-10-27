@@ -92,6 +92,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private android.media.tv.TvInputManager.TvInputCallback inputWatch;
     /** The HDMI-CEC device the TV lists behind the input tile's port (the Xbox), or null when it lists none. */
     private String inputDevice;
+    private boolean inputListed;
 
     /** Yesterday's summary, a few seconds after Home appears (DiarySend); taken back when Home goes. */
     private final Runnable diarySend = () -> DiarySend.maybe(this);
@@ -395,9 +396,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         android.media.tv.TvInputManager tim = (android.media.tv.TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (id == null || tim == null) return;
         try {
-            inputDevice = null;
-            for (TvInputInfo info : tim.getTvInputList()) {
-                if (id.equals(info.getParentId())) { inputDevice = info.getId(); break; }
+            if (!inputListed) {   // once, then again only when Android says an input came or went (not on each return to Home)
+                inputDevice = null;
+                for (TvInputInfo info : tim.getTvInputList()) {
+                    if (id.equals(info.getParentId())) { inputDevice = info.getId(); break; }
+                }
+                inputListed = true;
             }
             showInputState(tim);
             if (inputWatch == null) {
@@ -410,11 +414,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     // a CEC device appears behind a port when it is plugged in or first talks to the TV
                     @Override
                     public void onInputAdded(String inputId) {
+                        inputListed = false;
                         watchInput();
                     }
 
                     @Override
                     public void onInputRemoved(String inputId) {
+                        inputListed = false;
                         watchInput();
                     }
                 };
