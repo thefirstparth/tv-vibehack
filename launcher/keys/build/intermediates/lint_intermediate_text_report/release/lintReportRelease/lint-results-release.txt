@@ -1,0 +1,23 @@
+/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:2: Error: Expecting an activity to have android.intent.category.LEANBACK_LAUNCHER intent filter [MissingLeanbackLauncher]
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ ~~~~~~~~
+
+   Explanation for issues of type "MissingLeanbackLauncher":
+   An application intended to run on TV devices must declare a launcher
+   activity for TV in its manifest using a
+   android.intent.category.LEANBACK_LAUNCHER intent filter.
+
+   https://developer.android.com/training/tv/start/start.html#tv-activity
+
+/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:8: Warning: Should explicitly set android:icon, there is no default [MissingApplicationIcon]
+    <application
+     ~~~~~~~~~~~
+
+   Explanation for issues of type "MissingApplicationIcon":
+   You should set an icon for the application as whole because there is no
+   default. This attribute must be set as a reference to a drawable resource
+   containing the image (for example @drawable/icon).
+
+   https://developer.android.com/studio/publish/preparing#publishing-configure
+
+1 errors, 1 warnings

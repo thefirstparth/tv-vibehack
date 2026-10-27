@@ -101,6 +101,11 @@ draws the lines.
 The Inputs menu can name a port: `input_names` in `config.xml` (`HDMI 2|Xbox`) shows "Xbox" with
 "HDMI 2" beside it, and a games console gets a controller icon.
 
+The dock's input tile (`dock_input`, the Xbox) is green while the device is on. The port alone stays
+"connected" while the Xbox sleeps (Sleep mode keeps HDMI up), so when the TV lists an HDMI-CEC device
+behind the port, the device's own standby turns the tile grey (`InputState`, an idea from Talkies).
+With no CEC device listed, or one that reports nothing useful, the port decides as before.
+
 Configure it in [`app/src/main/res/values/config.xml`](app/src/main/res/values/config.xml):
 dock order, hidden apps, Live TV package and columns. Build and install with
 
@@ -148,3 +153,41 @@ Build and install it: `./gradlew :app1400:assembleDebug` in `launcher/`, then pu
 1400 app has no signed release build yet, so `:app1400:assembleRelease` makes an APK that won't
 install; the home screen's own release build is set up, see above.) Undo: `pm uninstall com.gathin.tv1400` (the newspaper pill hides itself) and take it out
 of `grid_order`.
+
+## Remote buttons (optional, not on the TV)
+
+`launcher/keys` is a tiny separate APK (`com.gathin.tvkeys`, about 10 KB, no activity, no tile) that
+gives a few remote buttons another job: Prime Video opening FanCode, the Assistant button switching to
+the Xbox. It is an accessibility service that sees button presses only (never the screen) and does a
+job on release; every other button is handed straight back, and navigation, OK, Back, Home, volume
+and power can't be given a job. The idea follows Talkies' RemoteKeys (MIT).
+
+**Known cost (emulator, 28 Oct): held volume stops repeating.** With any key-filtering accessibility
+service on, holding Volume Up moved the volume one step instead of 14 (held arrows still repeat
+normally, every 50 ms). Upstream CleanYourTV saw the same on a MOOR4. Volume is handled before
+Android's key queue, and the filter breaks its repeat. Not installed for that reason; a fix (the
+service repeating volume itself) needs checking with the real remote, since it could double the
+speed instead.
+
+Install, if wanted: `./gradlew :keys:assembleRelease`, push `keys/build/outputs/apk/release/keys-release.apk`
+with `tools/b64push.py` and `pm install -r`, then switch it on (record it in the MOOR2 README):
+
+```bash
+settings put secure enabled_accessibility_services com.gathin.tvkeys/com.gathin.tvkeys.KeyService
+settings put secure accessibility_enabled 1
+# undo: settings put secure accessibility_enabled 0; settings delete secure enabled_accessibility_services; pm uninstall com.gathin.tvkeys
+```
+
+Set the jobs from a computer (the receiver needs DUMP, which only adb's shell has; the answer comes
+back in am's `data=` line):
+
+```bash
+am broadcast -n com.gathin.tvkeys/.Setup -a com.gathin.tvkeys.LEARN   # next minute: presses are logged, not acted on
+am broadcast -n com.gathin.tvkeys/.Setup -a com.gathin.tvkeys.LIST    # what LEARN saw, and the jobs
+am broadcast -n com.gathin.tvkeys/.Setup -a com.gathin.tvkeys.SET --ei code <code> --es job app:com.fancode.tv
+am broadcast -n com.gathin.tvkeys/.Setup -a com.gathin.tvkeys.SET --ei code <code> --es job input:com.mediatek.tvinput/.hdmi.HDMIInputService/HW5
+am broadcast -n com.gathin.tvkeys/.Setup -a com.gathin.tvkeys.SET --ei code <code>   # back to normal
+```
+
+A switch made this way isn't in the insights diary as "Xbox" (only the launcher's tile and Inputs
+menu name it).

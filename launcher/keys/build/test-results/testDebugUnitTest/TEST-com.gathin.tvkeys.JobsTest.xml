@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.gathin.tvkeys.JobsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-27T22:33:00" hostname="Parths-Wiz-MacBook.local" time="0.0">
+  <properties/>
+  <testcase name="onlyWellFormedJobsAreKept" classname="com.gathin.tvkeys.JobsTest" time="0.0"/>
+  <testcase name="appAndAssistantButtonsCanBeGivenAJob" classname="com.gathin.tvkeys.JobsTest" time="0.0"/>
+  <testcase name="navigationVolumeHomeAndPowerAlwaysKeepTheirJobs" classname="com.gathin.tvkeys.JobsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

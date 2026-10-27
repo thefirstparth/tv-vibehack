@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.gathin.tvkeys-release-5:/xml_key_service.xml.flat",
+        "source": "com.gathin.tvkeys-main-6:/xml/key_service.xml"
+    }
+]

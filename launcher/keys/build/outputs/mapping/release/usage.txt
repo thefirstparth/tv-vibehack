@@ -1,0 +1,14 @@
+com.gathin.tvkeys.Jobs:
+    static final java.lang.String APP
+    static final java.lang.String INPUT
+    static final java.lang.String NONE
+    private void <init>()
+com.gathin.tvkeys.KeyService:
+    private static final long LEARN_MS
+    static final java.lang.String TAG
+com.gathin.tvkeys.R$string
+com.gathin.tvkeys.R$xml
+com.gathin.tvkeys.R
+com.gathin.tvkeys.KeyService:
+    public static android.content.SharedPreferences prefs(android.content.Context)
+    public static void run()

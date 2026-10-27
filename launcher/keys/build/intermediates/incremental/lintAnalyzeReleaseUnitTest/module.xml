@@ -1,0 +1,25 @@
+<lint-module
+    format="1"
+    dir="/Users/parthbhatia/tv-vibehack/launcher/keys"
+    name=":keys"
+    type="APP"
+    maven="tvhome:keys:unspecified"
+    agpVersion="8.5.2"
+    buildFolder="build"
+    bootClassPath="/Users/parthbhatia/Library/Android/sdk/platforms/android-34/android.jar:/Users/parthbhatia/Library/Android/sdk/build-tools/34.0.0/core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-34">
+  <lintOptions
+      disable="ExpiredTargetSdkVersion"
+      abortOnError="true"
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true">
+    <severities>
+      <severity
+        id="ExpiredTargetSdkVersion"
+        severity="IGNORE" />
+    </severities>
+  </lintOptions>
+  <variant name="release"/>
+</lint-module>

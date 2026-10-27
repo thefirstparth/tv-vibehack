@@ -1,0 +1,67 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.gathin.tvkeys"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="29" />
+10
+11    <uses-feature
+11-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:4:5-87
+12        android:name="android.software.leanback"
+12-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:4:19-59
+13        android:required="false" />
+13-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:4:60-84
+14    <uses-feature
+14-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:5:5-90
+15        android:name="android.hardware.touchscreen"
+15-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:5:19-62
+16        android:required="false" />
+16-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:5:63-87
+17    <!-- No activity: nothing to open, and no tile in the launcher's app grid. -->
+18    <application
+18-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:8:5-30:19
+19        android:allowBackup="false"
+19-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:10:9-36
+20        android:extractNativeLibs="false"
+21        android:label="@string/app_name" >
+21-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:9:9-41
+22        <service
+22-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:12:9-23:19
+23            android:name="com.gathin.tvkeys.KeyService"
+23-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:13:13-39
+24            android:exported="true"
+24-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:14:13-36
+25            android:label="@string/app_name"
+25-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:15:13-45
+26            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+26-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:16:13-79
+27            <intent-filter>
+27-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:17:13-19:29
+28                <action android:name="android.accessibilityservice.AccessibilityService" />
+28-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:18:17-92
+28-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:18:25-89
+29            </intent-filter>
+30
+31            <meta-data
+31-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:20:13-22:55
+32                android:name="android.accessibilityservice"
+32-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:21:17-60
+33                android:resource="@xml/key_service" />
+33-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:22:17-52
+34        </service>
+35
+36        <!-- Setting a button's job, from a computer only: it needs DUMP, which adb's shell has and apps can't get. -->
+37        <receiver
+37-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:26:9-29:60
+38            android:name="com.gathin.tvkeys.Setup"
+38-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:27:13-34
+39            android:exported="true"
+39-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:28:13-36
+40            android:permission="android.permission.DUMP" />
+40-->/Users/parthbhatia/tv-vibehack/launcher/keys/src/main/AndroidManifest.xml:29:13-57
+41    </application>
+42
+43</manifest>

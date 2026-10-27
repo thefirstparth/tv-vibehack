@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.5.2" type="partial_results">
+    <map id="UnsafeImplicitIntentLaunch">
+            <map id="actionsSent">
+                    <map id="android.intent.action.VIEW (used to start an activity)">
+                        <location id="0"
+                            file="${:keys*release*MAIN*sourceProvider*0*javaDir*0}/com/gathin/tvkeys/KeyService.java"
+                            line="92"
+                            column="21"
+                            startOffset="3793"
+                            endLine="92"
+                            endColumn="51"
+                            endOffset="3823"/>
+                    </map>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <entry
+            name="model"
+            string="string[app_name(U),service_description(U)],xml[key_service(U)];2^1;;;"/>
+    </map>
+
+</incidents>
