@@ -196,6 +196,11 @@ refused them until PNG crunching was turned off.
 `launcher/keys`): with one on, holding Volume Up moved one step instead of 14 on the emulator, and
 upstream saw it on a MOOR4. Held arrows still repeat. Test remote-button ideas for this first.
 
+**On the MOOR2 remote, Prime Video can be remapped; the Assistant button can't** (28 Oct): Prime Video arrives as
+key 194 (`KEYCODE_BUTTON_7`) and an accessibility service sees it first; the Assistant button (219) is taken by Google
+before any service. Use the remote-buttons app's learn mode to find out in one press; keep the window open long
+enough (the first 60-second window closed before the presses).
+
 **Testing key filters needs real key presses.** `adb shell input keyevent` and the emulator console's
 `event send` never reach an accessibility key filter, and `sendevent` is blocked by SELinux. Android's
 `hid` tool works without root: register a virtual USB keyboard from a JSON file and send reports

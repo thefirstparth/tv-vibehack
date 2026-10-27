@@ -266,6 +266,19 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     green or grey is the state when HDMI 2 was last on screen. `a07db44`'s CEC standby check has nothing to read
     and changes nothing. Unit-tested and run on the emulator; no TV A/B (diary lines only, one on each HDMI 2 change).
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-netback-d7d4c09.apk`.
+26. **The remote's Prime Video button switches to the Xbox** (28 Oct, about 04:55, Parth at the remote). The remote-
+    buttons app `com.gathin.tvkeys` (`launcher/keys`, `backup/launcher-builds/tvkeys-release-137be93.apk`) is
+    installed and its accessibility service is on; Prime Video (key 194, `KEYCODE_BUTTON_7`, scan 207) has the job
+    `input:com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`. Tested by Parth from Home and from inside an app. Prime
+    Video itself still opens from its tile. The **Assistant button can't be remapped**: Google takes it (`KEYCODE_ASSIST`,
+    219) before any accessibility service sees it. Cost: held volume on the TV remote stops repeating; Parth's soundbar
+    has its own remote, so it doesn't matter here. Before: `accessibility_enabled=0`, `enabled_accessibility_services`
+    null. Undo:
+    ```bash
+    settings put secure accessibility_enabled 0
+    settings delete secure enabled_accessibility_services
+    pm uninstall com.gathin.tvkeys
+    ```
 
 Check the live state any time:
 
@@ -276,8 +289,8 @@ tools/venv/bin/python -I tools/tv.py 'cmd package resolve-activity -a android.in
 
 ## Remote buttons: giving one a new job
 
-Not done on this TV (28 Oct 2026). The ask was Prime Video → FanCode or Sony LIV, and the Assistant button → the
-Xbox (HDMI 2). This TV has no setting for it, and changing its key files needs root.
+Done on this TV with option 3 (item 26): Prime Video switches to the Xbox. The Assistant button can't be remapped.
+This TV has no setting for it, and changing its key files needs root.
 
 **The catch with every remap.** Any app that remaps buttons (Key Mapper, Talkies, our `launcher/keys`) uses
 Android's accessibility key filter. With one on, **holding Volume Up moved the volume one step instead of 14** on
