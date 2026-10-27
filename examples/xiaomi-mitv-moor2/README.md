@@ -274,6 +274,41 @@ tools/venv/bin/python -I tools/tv.py 'pm list packages -d'        # everything d
 tools/venv/bin/python -I tools/tv.py 'cmd package resolve-activity -a android.intent.action.MAIN -c android.intent.category.HOME'
 ```
 
+## Remote buttons: giving one a new job
+
+Not done on this TV (28 Oct 2026). The ask was Prime Video → FanCode or Sony LIV, and the Assistant button → the
+Xbox (HDMI 2). This TV has no setting for it, and changing its key files needs root.
+
+**The catch with every remap.** Any app that remaps buttons (Key Mapper, Talkies, our `launcher/keys`) uses
+Android's accessibility key filter. With one on, **holding Volume Up moved the volume one step instead of 14** on
+the emulator (28 Oct). Upstream saw the same on a MOOR4. Held arrows still repeat. Decide whether that's acceptable
+before setting one up.
+
+**1. Easiest, nothing to install: your voice.** Press the Assistant button and say "Open FanCode" or "Open Sony
+LIV". Opening apps works with the Google TV launcher disabled (Talkies found the same). "Switch to HDMI 2" may work;
+not tried here. From Home, the Xbox tile is one press away.
+
+**2. Easy, with the remote: Key Mapper** (free, open source, no ads).
+1. Install Key Mapper on the TV: the Play Store on the TV if it offers it, or the APK from its official GitHub
+   releases (`keymapperorg/KeyMapper`) with `adb install`.
+2. Open it and switch on its service when asked: Settings → Device Preferences → Accessibility → Key Mapper.
+3. **New key map → Record trigger**, press **Prime Video** on the remote, then **Add action → Launch app →
+   FanCode** (or Sony LIV). Save.
+4. Same for the **Assistant** button, with an **Intent** action: `android.intent.action.VIEW`, data
+   `content://android.media.tv/passthrough/com.mediatek.tvinput%2F.hdmi.HDMIInputService%2FHW5`, type
+   `vnd.android.cursor.item/channel`, target Activity (the URI the Xbox tile opens; untested in Key Mapper). If
+   recording shows nothing when you press the Assistant button, Google takes it first and it can't be remapped.
+5. **Hold Volume Up** for two seconds. If it moves one step, choose between the remap and held volume.
+
+Undo: switch Key Mapper off in Settings → Device Preferences → Accessibility, or uninstall it.
+
+**3. Our own, from a computer: `launcher/keys`.** A 10 KB app that only remaps buttons, set over adb, with a learn
+mode that tells you each button's code. Same volume catch. Steps in [launcher/README.md](../../launcher/README.md#remote-buttons-optional-not-on-the-tv).
+
+**Known about this remote's buttons** (upstream, another MOOR2 with the Google TV launcher off): the YouTube button
+(190) does nothing; the Settings button (176) crashes a Xiaomi receiver, and after a few crashes Android drops 176,
+178 (Input) and 192 until a reboot. Netflix's button is handled by Xiaomi's `overseaservice`.
+
 ## Undo
 
 Back to the stock Google TV home (keeps the debloat). Run each line separately, **in this order**:

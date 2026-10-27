@@ -41,7 +41,7 @@ Upstream is **github.com/Gathin23/cleanyourtv**, the old tv-vibehack, renamed. W
    - After a few crashes, Android drops 176, 178 (Input) and 192 (Xiaomi TV) until the next reboot.
    - We never recorded which app buttons our remote has, or whether they work.
    - Check: ask Parth which buttons the remote has, or read `logcat | grep "process is bad"` from the TV.
-   - Upstream's fix is an accessibility key service. It costs held-volume repeat (measured on the same firmware), so **don't copy it**. If it matters, use Key Mapper.
+   - Upstream's fix is an accessibility key service. It costs held-volume repeat (measured on the same firmware), so **don't copy it**. Key Mapper uses the same key filter and has the same cost (28 Oct: emulator, held Volume Up one step instead of 14); see the MOOR2 README, "Remote buttons".
 3. **Casting.**
    - On Chromecast hardware, casting needs setupwraith after a reboot, which we disabled.
    - Upstream's Xiaomi Mi Box S says casting still works there. Our A/Bs list "casting checked", but it's unclear whether that was a real phone cast after a reboot.
