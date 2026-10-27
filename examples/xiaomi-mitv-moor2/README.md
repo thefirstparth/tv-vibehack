@@ -270,7 +270,9 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     buttons app `com.gathin.tvkeys` (`launcher/keys`, `backup/launcher-builds/tvkeys-release-137be93.apk`) is
     installed and its accessibility service is on; Prime Video (key 194, `KEYCODE_BUTTON_7`, scan 207) has the job
     `input:com.mediatek.tvinput/.hdmi.HDMIInputService/HW5`. Tested by Parth from Home and from inside an app. Prime
-    Video itself still opens from its tile. The **Assistant button can't be remapped**: Google takes it (`KEYCODE_ASSIST`,
+    Video itself still opens from its tile. The 28 Oct insights keep this test (04:45-05:00, one cold start after the
+    install, a few Home presses): a test window would drop the day's Home speed and feed numbers, the first for this
+    build and the button app (Claude's call, Parth asleep). The **Assistant button can't be remapped**: Google takes it (`KEYCODE_ASSIST`,
     219) before any accessibility service sees it. Cost: held volume on the TV remote stops repeating; Parth's soundbar
     has its own remote, so it doesn't matter here. Before: `accessibility_enabled=0`, `enabled_accessibility_services`
     null. Undo:
