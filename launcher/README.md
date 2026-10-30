@@ -168,8 +168,8 @@ and power can't be given a job. The idea follows Talkies' RemoteKeys (MIT).
 service on, holding Volume Up moved the volume one step instead of 14 (held arrows still repeat
 normally, every 50 ms). Upstream CleanYourTV saw the same on a MOOR4. Volume is handled before
 Android's key queue, and the filter breaks its repeat. A fix (the service repeating volume itself)
-would need checking with the real remote, since it could double the speed instead. On the MOOR2 (28 Oct) it's installed anyway: Parth's soundbar has its own remote, so held volume on
-the TV remote doesn't matter. Prime Video switches to the Xbox (MOOR2 README, item 26).
+would need checking with the real remote, since it could double the speed instead. On the MOOR2 it ran 28-30 Oct (Prime Video to the Xbox), then was removed at Parth's call (MOOR2 README, item
+26).
 
 Install, if wanted: `./gradlew :keys:assembleRelease`, push `keys/build/outputs/apk/release/keys-release.apk`
 with `tools/b64push.py` and `pm install -r`, then switch it on (record it in the MOOR2 README):
