@@ -206,6 +206,13 @@ enough (the first 60-second window closed before the presses).
 `hid` tool works without root: register a virtual USB keyboard from a JSON file and send reports
 (`adb shell hid /data/local/tmp/keys.json`); its presses take the same path as a remote's.
 
+**Check Home with the real feed, in every state, before calling a layout done** (31 Oct). City names were cut off
+whenever the headline was an upcoming match (no score): the weather column moved up to line up with it and went past
+its area's top edge. Every check had a scored headline, and the emulator showed no lines at all (its internet is
+blocked). Serve a saved copy of the feed from the Mac (`python3 -m http.server`, a throwaway build with
+`tv.feedUrl=http://10.0.2.2:PORT/...`, and `settings put global global_http_proxy_exclusion_list 10.0.2.2` so only
+that host gets through) and look at an upcoming match, a live score and a weather word.
+
 ## Working safely on a TV people use
 
 **Write down every setting before you change it, with the command that undoes it,** in the TV's

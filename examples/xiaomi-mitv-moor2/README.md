@@ -282,6 +282,14 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     pm uninstall com.gathin.tvkeys
     ```
 
+27. **City names no longer cut off** (`fc35f7c`, on the TV since 31 Oct, 08:00, with Parth's go). On 31 Oct the tops of
+    BENGALURU, RANCHI and PRAYAGRAJ were cut: Home lines up the headline with the big temperatures by moving one side,
+    and an upcoming match's headline (no score: "India v United Arab Emirates") sits higher than the temperatures, so
+    the weather column moved up past the lines' top edge. Now the higher side moves down, never up, and the lines
+    don't clip. Checked on the emulator with that day's real feed served from the Mac, then on the TV (screenshot).
+    The bug was older than this week; earlier checks had scored headlines, and emulator checks had no feed at all.
+    Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-xboxname-5fd1ca2.apk`.
+
 Check the live state any time:
 
 ```bash
