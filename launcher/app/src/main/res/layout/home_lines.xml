@@ -6,8 +6,10 @@
     android:id="@+id/lines"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:clipChildren="false"
     android:visibility="gone">
-    <!-- size and margins come from the ViewStub in activity_main.xml -->
+    <!-- size and margins come from the ViewStub in activity_main.xml; nothing is cut at the edges when the baseline
+         alignment moves one side down (HomeLines.alignBaselines) -->
 
     <LinearLayout
         android:id="@+id/sport"

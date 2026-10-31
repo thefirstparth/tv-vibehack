@@ -153,11 +153,17 @@ final class HomeLines {
         alignBaselines();
     }
 
-    /** The headline sits on the same baseline as the big temperatures: the weather side moves to meet it. */
+    /**
+     * The headline sits on the same baseline as the big temperatures: the side whose baseline is higher moves down to
+     * meet the other, never up. An upcoming match's headline has no score and sits higher than the temperatures; the
+     * weather side used to move up to it and the city names went past the lines' top edge, cut off (31 Oct).
+     */
     private void alignBaselines() {
         View temp = weatherCols.getChildCount() > 0 ? weatherCols.getChildAt(0).findViewById(R.id.temp) : null;
         boolean both = sport.getVisibility() == View.VISIBLE && weatherCols.getVisibility() == View.VISIBLE && temp != null && temp.getVisibility() == View.VISIBLE;
-        weather.setTranslationY(both ? baselineIn(hA) - baselineIn(temp) : 0);
+        int d = both ? baselineIn(hA) - baselineIn(temp) : 0;
+        weather.setTranslationY(Math.max(0, d));
+        sport.setTranslationY(Math.max(0, -d));
     }
 
     private int baselineIn(View v) {
