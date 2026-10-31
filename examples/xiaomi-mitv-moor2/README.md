@@ -282,7 +282,7 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     pm uninstall com.gathin.tvkeys
     ```
 
-27. **City names no longer cut off** (`fc35f7c`, on the TV since 31 Oct, 08:00, with Parth's go). On 31 Oct the tops of
+27. **City names no longer cut off** (`fc35f7c`, on the TV since 31 Oct, 08:00, installed straight after Parth reported it). On 31 Oct the tops of
     BENGALURU, RANCHI and PRAYAGRAJ were cut: Home lines up the headline with the big temperatures by moving one side,
     and an upcoming match's headline (no score: "India v United Arab Emirates") sits higher than the temperatures, so
     the weather column moved up past the lines' top edge. Now the higher side moves down, never up, and the lines
