@@ -18,18 +18,19 @@ const store = {
 let data = store.get("tv-days");
 let example = false;   // made-up days to show the screens before the first real one arrives
 let failed = false, signedOut = false;
-let { view, date } = route();
+let { view, date, month: shownMonth } = route();
 let period = route().period || store.get("tv-period") || "month";
 
-/** "#day/2026-10-20", "#insights/year", "#week": the view, for Day the date shown, for Insights the period. */
+/** "#day/2026-10-20", "#month/2026-10", "#insights/year", "#week": the view, for Day the date shown, for Month the
+ * month, for Insights the period. */
 function route() {
   const [v, d] = location.hash.slice(1).split("/");
-  return { view: VIEWS.includes(v) ? v : "day", date: /^\d{4}-\d{2}-\d{2}$/.test(d ?? "") ? d : null, period: PERIODS[d] ? d : null };
+  return { view: VIEWS.includes(v) ? v : "day", date: /^\d{4}-\d{2}-\d{2}$/.test(d ?? "") ? d : null, month: /^\d{4}-\d{2}$/.test(d ?? "") ? d : null, period: PERIODS[d] ? d : null };
 }
 /** Tabs and day steps replace the history entry, so Back is one step out of the app. */
 function go(v, d = null, keep = false) {
   if (v === "insights") { period = d || period; store.set("tv-period", period); d = period; }
-  view = v; date = v === "day" ? d : null;
+  view = v; date = v === "day" ? d : null; shownMonth = v === "month" ? d : null;
   history.replaceState(null, "", `#${v}${d ? "/" + d : ""}`);
   draw(!keep);
 }
@@ -157,7 +158,11 @@ function weekView(days, watts, rate) {
 }
 
 function monthView(days, watts, rate) {
-  const end = days[days.length - 1].date, month = monthOf(days, end), t = totals(month, watts), apps = topApps(month);
+  // the months with a day recorded, oldest first; the one asked for (#month/2026-10), else the latest
+  const months = [...new Set(days.map(d => d.date.slice(0, 7)))];
+  let i = shownMonth ? months.indexOf(shownMonth) : -1;
+  if (i < 0) i = months.length - 1;
+  const end = days.filter(d => d.date.slice(0, 7) === months[i]).at(-1).date, month = monthOf(days, end), t = totals(month, watts), apps = topApps(month);
   const name = new Date(end + "T12:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
   const y = +end.slice(0, 4), m = +end.slice(5, 7), n = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;   // Monday first
@@ -171,8 +176,12 @@ function monthView(days, watts, rate) {
     const h = v >= 60 ? `${Math.round(v / 60)}h` : `${v}m`;
     cells.push(v ? `<span class="c on${a < .78 ? " pale" : ""}" style="background:rgba(36,66,232,${a.toFixed(2)})"><b>${dd}</b><small>${h}</small></span>` : off ? `<span class="c off"><b>${dd}</b><small>off</small></span>` : `<span class="c"><b>${dd}</b></span>`);
   }
-  const top = apps[0];
-  return `<section class="card" aria-labelledby="h"><p class="label">${+end.slice(8) === n ? "The whole month" : "The month so far"}</p><h1 id="h" tabindex="-1">${esc(name)}</h1>
+  const top = apps[0], prev = months[i - 1], next = months[i + 1];
+  return `<div class="dayNav">
+      <button type="button" data-month="${prev ?? ""}" ${prev ? "" : "disabled"} aria-label="The month before"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span>Month ${i + 1} of ${months.length} recorded</span>
+      <button type="button" data-month="${next ?? ""}" ${next ? "" : "disabled"} aria-label="The month after"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <section class="card" aria-labelledby="h"><p class="label">${next || +end.slice(8) === n ? "The whole month" : "The month so far"}</p><h1 id="h" tabindex="-1">${esc(name)}</h1>
       ${hero(hoursHtml(t.on), `on · ${count(t.days, "day", "days")} recorded`)}
       <div class="cal" role="img" aria-label="Hours on, each day of ${esc(name)}">${["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map(w => `<span class="w">${w}</span>`).join("")}${cells.join("")}</div>
       <p class="key">Key: each day shows its hours on (h, rounded) or minutes (m); darker blue, more hours; striped, the TV was off all day; plain, no summary that day.</p>
@@ -281,6 +290,7 @@ function draw(moved) {
   for (const b of tabs.querySelectorAll("button")) b.setAttribute("aria-current", b.dataset.view === view ? "page" : "false");
   for (const d of main.querySelectorAll("details[data-key]")) d.ontoggle = () => store.set("open-" + d.dataset.key, d.open);
   for (const b of main.querySelectorAll("[data-day]")) b.onclick = () => { if (b.dataset.day) { const side = b.getAttribute("aria-label"); go("day", b.dataset.day, true); main.querySelector(`[aria-label="${side}"]:not([disabled])`)?.focus(); } };
+  for (const b of main.querySelectorAll("[data-month]")) b.onclick = () => { if (b.dataset.month) { const side = b.getAttribute("aria-label"); go("month", b.dataset.month, true); main.querySelector(`[aria-label="${side}"]:not([disabled])`)?.focus(); } };
   for (const b of main.querySelectorAll("[data-period]")) b.onclick = () => { go("insights", b.dataset.period, true); main.querySelector(`[data-period="${b.dataset.period}"]`)?.focus(); };
   if (view === "day" && date && !days.some(d => d.date === date)) history.replaceState(null, "", "#day");
   if (moved) { document.getElementById("h")?.focus({ preventScroll: true }); window.scrollTo(0, 0); }
@@ -413,7 +423,7 @@ document.getElementById("signOut").onclick = async () => {
   sheet.close();
   signin("Signed out of this phone.");
 };
-window.addEventListener("hashchange", () => { const r = route(); view = r.view; date = r.date; if (r.period) period = r.period; draw(true); });
+window.addEventListener("hashchange", () => { const r = route(); view = r.view; date = r.date; shownMonth = r.month; if (r.period) period = r.period; draw(true); });
 window.addEventListener("online", () => load(false));
 window.addEventListener("offline", topLine);
 window.addEventListener("scroll", () => document.getElementById("top").classList.toggle("solid", scrollY > 4), { passive: true });
