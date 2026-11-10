@@ -29,6 +29,10 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
    cmd package set-home-activity --user 0 com.gathin.tvhome/.MainActivity
    pm disable-user --user 0 com.google.android.apps.tv.launcherx
    ```
+   **If this is ever redone (after a factory reset), check who owns the saved Wi-Fi first:**
+   `dumpsys wifi | grep -o 'cname=[^ ]*'`. If it names setupwraith (the first-run wizard), forget the network and
+   join it again from Settings before disabling setupwraith. Otherwise disabling setupwraith drops the Wi-Fi, and
+   ADB with it (three new units upstream, including another MOOR2; cleanyourtv review of 10 Nov).
 3. **Dock:** YouTube, Netflix, JioHotstar, FanCode. Grid below, 4 a row: Prime Video, Sony LIV,
    Apple TV, Spotify (row 2, the most used after the dock); 1400, F1 TV, Play Store, Settings (row 3);
    then the rest A–Z. Media Player and Google Play Movies & TV are hidden. All set in
@@ -342,6 +346,10 @@ bootloader, a `user` build (checked 28 Oct 2026: `ro.build.type=user`, `ro.boot.
 only system app not installed for the user, `com.xiaomi.floatingframe`, was already so in the first snapshot
 (18 Oct), and a reset brings it back anyway.
 
+Don't re-enable setupwraith before the reset, though upstream's MOOR2 list says to: on its own that is setupwraith on
+with launcherx off, the state under Undo that has factory-reset two Xiaomi TVs. The two steps below never pass
+through it.
+
 1. Settings → Accounts: **remove your Google account** (and any Xiaomi account). Otherwise the buyer can hit
    Google's Factory Reset Protection and need your password.
 2. Settings → Device Preferences → About → **Factory reset**, from the menu rather than the hardware buttons.
@@ -369,6 +377,13 @@ $T 'pm enable com.google.android.tungsten.setupwraith'
   `pm enable com.google.android.apps.tv.launcherx` first, and **do not reboot**.
 - Wait 15 s after the last `pm` command before any reboot: Android writes package state about 10 s later.
 - `tools/restore.sh` enables in list order (setupwraith before launcherx): don't use it for this TV; use the lines above.
+- **Not even for a minute, and not to fix casting.** On a MiTV-MOEU0, setupwraith was turned back on with launcherx
+  still off to get casting back; Home went to `RecoveryActivity`, one reboot later the TV stuck on the boot animation
+  ("Cannot load Android system"), and only a factory reset brought it back (upstream cleanyourtv #3578). That is two
+  Xiaomi resets from this state. If setupwraith ever has to go back on, launcherx goes on and becomes Home first.
+- **Never install the community "Cast Fix" add-on** (`thayford/castfix`, listed on cleanyour.tv): it turns setupwraith
+  on and off again at every boot, which is that state at every boot. If casting ever fails, first check
+  `settings get global cached_apps_freezer` (a frozen Cast receiver; see the 10 Nov upstream review, section 6).
 
 The 1400 app (the moon pill hides itself when it is gone; then take `com.gathin.tv1400` out of
 `grid_order` in `launcher/app/src/main/res/values/config.xml` and reinstall the launcher):
