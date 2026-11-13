@@ -293,6 +293,23 @@ Another Android TV is on the same network, so always run `tools/tv.py --probe` a
     don't clip. Checked on the emulator with that day's real feed served from the Mac, then on the TV (screenshot).
     The bug was older than this week; earlier checks had scored headlines, and emulator checks had no feed at all.
     Undo: `pm install -r` of `backup/launcher-builds/tvhome-release-xboxname-5fd1ca2.apk`.
+28. **Xiaomi's app updater disabled; PatchWall and Xiaomi TV+ disabled again** (14 Nov, Parth's go, TV on Home).
+    On 8 Nov at 19:30 and 19:39 `com.xiaomi.mitv.updateservice` installed new versions of PatchWall
+    (`com.mitv.tvhome.atv`, 4.3.0 → 4.21.148) and Xiaomi TV+ (`com.mitv.tvhome.mitvplus`, 3.8.3 → 3.21.66) over the
+    disabled system apps; an update clears the disable, so both came back as tiles on Home and ran (10 Nov: PatchWall
+    80 MB in the background, Xiaomi TV+ 339 MB while open). Upstream saw the same on a Mi Box S (the updater's
+    LifeKeeper reinstalled PatchWall about 3 minutes after each disable; with the updater off it stayed off 37 days).
+    So the updater goes first, then the two apps, one command each:
+    ```
+    pm disable-user --user 0 com.xiaomi.mitv.updateservice
+    pm disable-user --user 0 com.mitv.tvhome.atv
+    pm disable-user --user 0 com.mitv.tvhome.mitvplus
+    ```
+    The firmware updaters `com.mitv.upgrader` and `com.mitv.ABUpdateStatus` stay on. Xiaomi's own apps no longer
+    update; Play Store updates are unaffected. Whether the disabled updater also had a part in firmware updates is not
+    known (the firmware is the February 2026 build, unchanged since 18 Oct). The newer versions stay installed
+    (disabled), so no storage came back. Undo, in reverse order: `pm enable com.mitv.tvhome.mitvplus`,
+    `pm enable com.mitv.tvhome.atv`, `pm enable com.xiaomi.mitv.updateservice`.
 
 Check the live state any time:
 
